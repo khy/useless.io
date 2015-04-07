@@ -1,0 +1,13 @@
+GET     /access_tokens/:guid                controllers.core.accesstoken.AccessTokenController.get(guid: java.util.UUID)
+GET     /access_tokens                      controllers.core.accesstoken.AccessTokenController.find()
+POST    /access_tokens                      controllers.core.accesstoken.AccessTokenController.create()
+POST    /accounts/:guid/access_tokens       controllers.core.accesstoken.AccessTokenController.createForAccount(guid: java.util.UUID)
+POST    /access_tokens/authorizations/:code controllers.core.accesstoken.AuthorizationController.authorize(code: java.util.UUID)
+
+GET     /accounts/:guid                     controllers.core.account.AccountController.get(guid: java.util.UUID)
+GET     /accounts                           controllers.core.account.AccountController.find()
+POST    /apis                               controllers.core.account.ApiController.create()
+POST    /apps                               controllers.core.account.AppController.create()
+POST    /users                              controllers.core.account.UserController.create()
+
+GET     /                                   controllers.core.MainController.index

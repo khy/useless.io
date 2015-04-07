@@ -1,0 +1,281 @@
+package functional.accesstoken
+
+import java.util.UUID
+import org.specs2.mutable.Specification
+import play.api.test.WithServer
+import play.api.test.Helpers._
+import play.api.libs.json.Json
+import io.useless.accesstoken.{ AccessToken, AuthorizedAccessToken, Scope => UselessScope }
+import io.useless.account.{ App, User }
+import io.useless.play.json.accesstoken.AccessTokenJson._
+import io.useless.util.mongo.MongoUtil
+
+import models.account.Scope
+import support.{ AccountFactory, RequestHelpers }
+
+class AccessTokenSpec
+  extends Specification
+  with    AccountFactory
+  with    RequestHelpers
+{
+
+  "GET /access_tokens/[UUID]" should {
+
+    trait Context extends WithServer {
+      MongoUtil.clearDb()
+      val user = createUser("khy@useless.io", "khy", Some("Kevin Hyland"))
+      val _app = createApp("Gran Mal", "granmal.com")
+      val userAccessToken = block { user.addAccessToken(Some(_app.guid), Seq(UselessScope("haiku/read"))) }.right.get
+      val url = s"http://localhost:$port/access_tokens/${userAccessToken.guid}"
+    }
+
+    "reject the request if it is not authenticated" in new Context {
+      val response = get(url, auth = None)
+      response.status must beEqualTo(UNAUTHORIZED)
+    }
+
+    "reject the request if it is authenticated with a non-existant access token" in new Context {
+      val response = get(url, auth = UUID.randomUUID)
+      response.status must beEqualTo(UNAUTHORIZED)
+    }
+
+    "return a 404 if the access token has been deleted" in new Context {
+      val api = createApi("haiku")
+      userAccessToken.delete()
+      val response = get(url, auth = api.accessTokens(0).guid)
+      response.status must beEqualTo(NOT_FOUND)
+    }
+
+    "return the specified access token" in new Context {
+      val api = createApi("haiku")
+      val response = get(url, auth = api.accessTokens(0).guid)
+      response.status must beEqualTo(OK)
+
+      val json = Json.parse(response.body)
+      val accessToken = Json.fromJson[AccessToken](json).get
+      accessToken.scopes must contain (UselessScope("haiku/read"))
+
+      val resourceOwner = accessToken.resourceOwner.asInstanceOf[User]
+      resourceOwner.guid must beEqualTo(user.guid)
+      resourceOwner.handle must beEqualTo("khy")
+      resourceOwner.name must beEqualTo(Some("Kevin Hyland"))
+
+      val client = accessToken.client.asInstanceOf[Some[App]].get
+      client.guid must beEqualTo(_app.guid)
+      client.name must beEqualTo("Gran Mal")
+      client.url must beEqualTo("granmal.com")
+    }
+
+  }
+
+  "GET /access_tokens" should {
+
+    trait Context extends WithServer {
+      MongoUtil.clearDb()
+
+      val user = createUser("khy@useless.io", "khy", None)
+      val adminApp = createApp("Admin", "admin.useless.io")
+      val regularApp = createApp("Gran Mal", "granmal.com")
+
+      val adminAccessToken = block { user.addAccessToken(Some(adminApp.guid), Seq(Scope.Admin)) }.right.get
+      val regularAccessToken = block { user.addAccessToken(Some(regularApp.guid), Seq()) }.right.get
+
+      val url = s"http://localhost:$port/access_tokens"
+    }
+
+    "reject the request if it is not authenticated" in new Context {
+      val response = get(url, auth = None)
+      response.status must beEqualTo(UNAUTHORIZED)
+    }
+
+    "reject the request if it is authenticated with a non-existant access token" in new Context {
+      val response = get(url, auth = UUID.randomUUID)
+      response.status must beEqualTo(UNAUTHORIZED)
+    }
+
+    "reject the request if it is authenticated with a non-admin access token" in new Context {
+      val response = get(url, auth = regularAccessToken.guid)
+      response.status must beEqualTo(UNAUTHORIZED)
+    }
+
+    "return all access tokens for the authenticated account" in new Context {
+      val response = get(url, auth = adminAccessToken.guid)
+      response.status must beEqualTo(OK)
+
+      val json = Json.parse(response.body)
+      val accessTokens = Json.fromJson[Seq[AccessToken]](json).get.map { accessToken =>
+        accessToken.asInstanceOf[AuthorizedAccessToken]
+      }
+      accessTokens.length must beGreaterThanOrEqualTo (2)
+
+      val guids = accessTokens.map(_.guid)
+      guids must contain (adminAccessToken.guid)
+      guids must contain (regularAccessToken.guid)
+    }
+
+  }
+
+  "POST /access_tokens" should {
+
+    trait Context extends WithServer {
+      MongoUtil.clearDb()
+
+      val user = createUser("khy@useless.io", "khy", None)
+      val regularApp = createApp("Gran Mal", "granmal.com")
+      val adminApp = createApp("Admin", "admin.useless.io")
+
+      val adminAccessToken = block { user.addAccessToken(Some(adminApp.guid), Seq(Scope.Admin)) }.right.get
+      val regularAccessToken = block { user.addAccessToken(Some(regularApp.guid), Seq()) }.right.get
+
+      val url = s"http://localhost:$port/access_tokens"
+    }
+
+    "reject the request if it is not authenticated" in new Context {
+      val response = post(url, auth = None, body = Json.obj())
+      response.status must beEqualTo(UNAUTHORIZED)
+    }
+
+    "reject the request if it is authenticated with a non-existant access token" in new Context {
+      val response = post(url, auth = UUID.randomUUID, body = Json.obj())
+      response.status must beEqualTo(UNAUTHORIZED)
+    }
+
+    "reject the request if it is authenticated with a non-admin access token" in new Context {
+      val response = post(url, auth = regularAccessToken.guid, body = Json.obj())
+      response.status must beEqualTo(UNAUTHORIZED)
+    }
+
+    "reject the request if it specifies Platform scope" in new Context {
+      val body = Json.obj("scopes" -> Json.arr("platform"))
+      val response = post(url, auth = adminAccessToken.guid, body)
+      response.status must beEqualTo(UNPROCESSABLE_ENTITY)
+    }
+
+    "reject the request if it specifies Auth scope" in new Context {
+      val body = Json.obj("scopes" -> Json.arr("auth"))
+      val response = post(url, auth = adminAccessToken.guid, body)
+      response.status must beEqualTo(UNPROCESSABLE_ENTITY)
+    }
+
+    "create an access token for the authenticated account without a client if none is specified, and without scopes if none are specified" in new Context {
+      val response = post(url, auth = adminAccessToken.guid, Json.obj())
+      val json = Json.parse(response.body)
+      val accessToken = Json.fromJson[AccessToken](json).get.asInstanceOf[AuthorizedAccessToken]
+      accessToken.client must beNone
+      accessToken.scopes must be empty
+    }
+
+    "create an access token for the authenticated account with the specified client GUID and scopes" in new Context {
+      val body = Json.obj(
+        "client_guid" -> regularApp.guid.toString,
+        "scopes" -> Json.arr("haiku/read", "haiku/write")
+      )
+      val response = post(url, auth = adminAccessToken.guid, body)
+      val json = Json.parse(response.body)
+      val accessToken = Json.fromJson[AccessToken](json).get.asInstanceOf[AuthorizedAccessToken]
+      accessToken.client.get.guid must beEqualTo(regularApp.guid)
+      accessToken.scopes must contain (UselessScope("haiku/read"))
+      accessToken.scopes must contain (UselessScope("haiku/write"))
+    }
+
+  }
+
+  "POST /accounts/[UUID]/access_tokens" should {
+
+    trait Context extends WithServer {
+      MongoUtil.clearDb()
+      val user = createUser("khy@useless.io", "khy", None)
+      val authApp = createApp("Admin", "auth.useless.io", Seq(Scope.Auth))
+      val trustedApp = createApp("Gran Mal", "granmal.com", Seq(Scope.Trusted))
+      val url = s"http://localhost:$port/accounts/${user.guid}/access_tokens"
+    }
+
+    "reject the request if it is not authenticated" in new Context {
+      val response = post(url, auth = None, body = Json.obj())
+      response.status must beEqualTo(UNAUTHORIZED)
+    }
+
+    "reject the request if it is authenticated with a non-existant access token" in new Context {
+      val response = post(url, auth = UUID.randomUUID, body = Json.obj())
+      response.status must beEqualTo(UNAUTHORIZED)
+    }
+
+    "reject the request if it is authenticated with an access token without the Auth or Trusted scope" in new Context {
+      val regularApp = createApp("Lamps", "lamps.com")
+      val response = post(url, auth = regularApp.accessTokens(0).guid, body = Json.obj())
+      response.status must beEqualTo(UNAUTHORIZED)
+    }
+
+    "return a 404 if the specified account GUID does not exist" in new Context {
+      val badUrl = s"http://localhost:$port/accounts/${UUID.randomUUID.toString}/access_token"
+      val response = post(badUrl, auth = authApp.accessTokens(0).guid, body = Json.obj())
+      response.status must beEqualTo(NOT_FOUND)
+    }
+
+    "create a new access token with the authenticated account as client, and the specified account as resource owner, " +
+    "with a scope of Admin, if the request is authenticated with an access token with Auth scope" in new Context {
+      val createResponse = post(url, auth = authApp.accessTokens(0).guid, body = Json.obj())
+      createResponse.status must beEqualTo(CREATED)
+
+      val json = Json.parse(createResponse.body)
+      val accessToken = Json.fromJson[AccessToken](json).get.asInstanceOf[AuthorizedAccessToken]
+      accessToken.resourceOwner.guid must beEqualTo(user.guid)
+      accessToken.client.get.guid must beEqualTo(authApp.guid)
+      accessToken.scopes must contain (Scope.Admin)
+    }
+
+    "ignore any requested scopes if the requesting access token has Auth scope" in new Context {
+      val response = post(url, auth = authApp.accessTokens(0).guid, Json.obj(
+        "scopes" -> Json.arr("platform", "auth", "trusted", "haiku/write"))
+      )
+
+      val json = Json.parse(response.body)
+      val accessToken = Json.fromJson[AccessToken](json).get.asInstanceOf[AuthorizedAccessToken]
+      accessToken.scopes must contain (Scope.Admin)
+      accessToken.scopes must not contain (UselessScope("platform"))
+      accessToken.scopes must not contain (UselessScope("auth"))
+      accessToken.scopes must not contain (UselessScope("trusted"))
+      accessToken.scopes must not contain (UselessScope("haiku/write"))
+    }
+
+    "reject the request if it is authenticated with a Trusted access token, but asks for Platform scope" in new Context {
+      val body = Json.obj("scopes" -> Json.arr("platform"))
+      val response = post(url, auth = trustedApp.accessTokens(0).guid, body)
+      response.status must beEqualTo(UNPROCESSABLE_ENTITY)
+    }
+
+    "reject the request if it is authenticated with a Trusted access token, but asks for Auth scope" in new Context {
+      val body = Json.obj("scopes" -> Json.arr("auth"))
+      val response = post(url, auth = trustedApp.accessTokens(0).guid, body)
+      response.status must beEqualTo(UNPROCESSABLE_ENTITY)
+    }
+
+    "reject the request if it is authenticated with a Trusted access token, but asks for Admin scope" in new Context {
+      val body = Json.obj("scopes" -> Json.arr("admin"))
+      val response = post(url, auth = trustedApp.accessTokens(0).guid, body)
+      response.status must beEqualTo(UNPROCESSABLE_ENTITY)
+    }
+
+    "reject the request if it is authenticated with a Trusted access token, but asks for Trusted scope" in new Context {
+      val body = Json.obj("scopes" -> Json.arr("trusted"))
+      val response = post(url, auth = trustedApp.accessTokens(0).guid, body)
+      response.status must beEqualTo(UNPROCESSABLE_ENTITY)
+    }
+
+    "create a new access token with the authenticated account as client, and the specified account as resource owner, " +
+    "with any requested, non-useless-core scopes, if the request is authenticated with an access token with Trusted Scope" in new Context {
+      val body = Json.obj("scopes" -> Json.arr("haiku/read", "haiku/write"))
+      val response = post(url, auth = trustedApp.accessTokens(0).guid, body)
+      response.status must beEqualTo(CREATED)
+
+      val json = Json.parse(response.body)
+      val accessToken = Json.fromJson[AccessToken](json).get.asInstanceOf[AuthorizedAccessToken]
+      accessToken.resourceOwner.guid must beEqualTo(user.guid)
+      accessToken.client.get.guid must beEqualTo(trustedApp.guid)
+      accessToken.scopes must contain (UselessScope("haiku/read"))
+      accessToken.scopes must contain (UselessScope("haiku/write"))
+    }
+
+  }
+
+}
