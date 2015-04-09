@@ -21,6 +21,8 @@ import mongo.User._
 
 object Account extends MongoAccess {
 
+  override def mongoUri = configuration.getString("core.mongo.uri")
+
   protected[account] lazy val collection = mongo.collection("accounts")
 
   def ensureIndexes() {
