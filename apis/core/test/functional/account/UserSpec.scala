@@ -6,7 +6,7 @@ import play.api.test.Helpers._
 import play.api.libs.json.Json
 import io.useless.util.mongo.MongoUtil
 
-import models.account.Account
+import models.core.account.Account
 import support.RequestHelpers
 
 class UserSpec

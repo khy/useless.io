@@ -9,7 +9,7 @@ import io.useless.account.{ Account, AuthorizedApp, User, AuthorizedUser }
 import io.useless.play.json.account.AccountJson._
 import io.useless.util.mongo.MongoUtil
 
-import models.account.Scope
+import models.core.account.Scope
 import support.{ AccountFactory, RequestHelpers }
 
 class AccountSpec

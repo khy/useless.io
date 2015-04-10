@@ -10,7 +10,7 @@ import io.useless.account.{ App, User }
 import io.useless.play.json.accesstoken.AccessTokenJson._
 import io.useless.util.mongo.MongoUtil
 
-import models.account.Scope
+import models.core.account.Scope
 import support.{ AccountFactory, RequestHelpers }
 
 class AccessTokenSpec

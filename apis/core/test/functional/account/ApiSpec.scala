@@ -7,7 +7,7 @@ import play.api.test.Helpers._
 import play.api.libs.json.Json
 import io.useless.util.mongo.MongoUtil
 
-import models.account.{ Account, Scope }
+import models.core.account.{ Account, Scope }
 import support.{ AccountFactory, RequestHelpers }
 
 class ApiSpec

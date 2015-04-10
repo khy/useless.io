@@ -1,10 +1,10 @@
 package object support {
 
-  type AccountFactory = models.account.AccountFactory
+  type AccountFactory = models.core.account.AccountFactory
 
 }
 
-package models.account {
+package models.core.account {
 
   import java.util.UUID
   import scala.concurrent.Await

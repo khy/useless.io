@@ -1,4 +1,4 @@
-package models.account
+package models.core.account
 
 import org.specs2.mutable.{ Specification, Before }
 import play.api.test.Helpers
