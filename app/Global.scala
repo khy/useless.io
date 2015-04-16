@@ -1,7 +1,7 @@
-import play.api.Application
+import play.api.{Application, Logger}
 import play.api.mvc.WithFilters
+import com.typesafe.config.ConfigRenderOptions
 import io.useless.play.filter.{ AccessLogFilter, RequestTimeFilter }
-import io.useless.util.Logger
 
 import models.core.account.Account
 
@@ -10,11 +10,13 @@ object Global
     new AccessLogFilter,
     new RequestTimeFilter
   )
-  with Logger
 {
 
   override def onStart(app: Application) {
-    logger.info("Ensuring indexes...")
+    Logger.info("Using this config:")
+    Logger.info(app.configuration.underlying.root.render(ConfigRenderOptions.concise))
+
+    Logger.info("Ensuring indexes...")
     Account.ensureIndexes()
   }
 
