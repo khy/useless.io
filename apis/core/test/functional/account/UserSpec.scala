@@ -41,7 +41,7 @@ class UserSpec
       response.status mustBe CREATED
 
       val user = block { Account.forEmail("khy@useless.io") }
-      user mustBe 'some
+      user mustBe 'defined
     }
 
     "reject the request if the specified email already exists" in {
