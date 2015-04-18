@@ -9,3 +9,5 @@ libraryDependencies ++= Seq(
 )
 
 Mongo.defaultSettings
+
+javaOptions in Test += "-Dconfig.file=conf/core.test.conf"
