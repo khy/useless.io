@@ -16,13 +16,12 @@ class AuthorizationSpec
   extends Specification
   with    AccountFactory
   with    RequestHelpers
-  with    MongoHelper
 {
 
   "POST /access_tokens/authorizations" should {
 
     trait Context extends WithServer {
-      clearDb()
+      MongoHelper.clearDb()
       val _app = createApp("Account", "account.useless.io")
       val user = createUser("khy@useless.io", "khy", None)
       val accessToken = block { user.addAccessToken(Some(_app.guid), Seq()) }.right.get

@@ -12,11 +12,10 @@ import support.MongoHelper
 class AccountSpec
   extends Specification
   with    AccountFactory
-  with    MongoHelper
 {
 
   trait Context extends Before {
-    def before = clearDb()
+    def before = MongoHelper.clearDb()
   }
 
   "Account.createAccount" should {

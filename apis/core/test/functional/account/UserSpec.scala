@@ -16,12 +16,9 @@ class UserSpec
   with    OneServerPerSuite
   with    BeforeAndAfterEach
   with    RequestHelpers
-  with    MongoHelper
 {
 
-  override def beforeEach {
-    clearDb()
-  }
+  override def beforeEach { MongoHelper.clearDb() }
 
   val url = s"http://localhost:$port/users"
 

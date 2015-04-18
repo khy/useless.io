@@ -14,11 +14,10 @@ class AppSpec
   extends Specification
   with    AccountFactory
   with    RequestHelpers
-  with    MongoHelper
 {
 
   trait Context extends WithServer {
-    clearDb()
+    MongoHelper.clearDb()
     val adminUser = createUser("khy@useless.io", "khy", None, Seq(Scope.Platform))
     val adminAccessToken = adminUser.accessTokens(0).guid
     val url = s"http://localhost:$port/apps"

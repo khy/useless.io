@@ -1,9 +1,12 @@
 package support
 
 import io.useless.util.mongo.MongoUtil
+import io.useless.reactivemongo.MongoAccessor
 
-trait MongoHelper {
+object MongoHelper {
 
-  def clearDb() = MongoUtil.clearDb("core.mongo.uri")
+  private lazy val mongo = MongoAccessor("core.mongo.uri")
+
+  def clearDb() = MongoUtil.clearDb(mongo)
 
 }

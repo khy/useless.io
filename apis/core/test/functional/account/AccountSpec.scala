@@ -16,13 +16,12 @@ class AccountSpec
   extends Specification
   with    AccountFactory
   with    RequestHelpers
-  with    MongoHelper
 {
 
   "GET /accounts/[UUID]" should {
 
     trait Context extends WithServer {
-      clearDb()
+      MongoHelper.clearDb()
       val api = createApi("haiku")
       val user = createUser("khy@useless.io", "khy", Some("Kevin Hyland"))
       val url = s"http://localhost:$port/accounts/${user.guid}"
@@ -85,7 +84,7 @@ class AccountSpec
   "GET /accounts" should {
 
     trait Context extends WithServer {
-      clearDb()
+      MongoHelper.clearDb()
       val api = createApp("Gran Mal", "granmal.com")
       val user = createUser("khy@useless.io", "khy", Some("Kevin Hyland"))
       val appAccessToken = api.accessTokens(0)

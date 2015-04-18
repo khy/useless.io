@@ -8,8 +8,10 @@ import io.useless.reactivemongo.MongoAccessor
 object MongoUtil {
 
   def clearDb(uriConfigKey: String): Boolean = {
-    val mongo = MongoAccessor(uriConfigKey)
+    clearDb(MongoAccessor(uriConfigKey))
+  }
 
+  def clearDb(mongo: MongoAccessor): Boolean = {
     val clear = mongo.db.collectionNames.map { collectionNames =>
       collectionNames.
         filterNot { _.startsWith("system.") }.
