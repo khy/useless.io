@@ -10,18 +10,19 @@ import io.useless.util.mongo.MongoUtil
 import io.useless.play.json.UuidJson._
 import io.useless.play.json.accesstoken.AccessTokenJson._
 
-import support.{ AccountFactory, RequestHelpers }
+import support._
 
 class AuthorizationSpec
   extends Specification
   with    AccountFactory
   with    RequestHelpers
+  with    MongoHelper
 {
 
   "POST /access_tokens/authorizations" should {
 
     trait Context extends WithServer {
-      MongoUtil.clearDb()
+      clearDb()
       val _app = createApp("Account", "account.useless.io")
       val user = createUser("khy@useless.io", "khy", None)
       val accessToken = block { user.addAccessToken(Some(_app.guid), Seq()) }.right.get

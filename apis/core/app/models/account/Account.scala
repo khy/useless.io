@@ -9,7 +9,7 @@ import reactivemongo.api.indexes.{ Index, IndexType }
 import io.useless.util.Validator
 import io.useless.accesstoken.{ Scope => UselessScope }
 import io.useless.account.{ Account => UselessAccount }
-import io.useless.reactivemongo.MongoAccess
+import io.useless.reactivemongo.MongoAccessor
 import io.useless.reactivemongo.bson.UuidBson._
 import io.useless.reactivemongo.bson.DateTimeBson._
 
@@ -19,11 +19,11 @@ import mongo.Api._
 import mongo.App._
 import mongo.User._
 
-object Account extends MongoAccess {
+object Account {
 
-  override def mongoUri = configuration.getString("core.mongo.uri")
-
-  protected[account] lazy val collection = mongo.collection("accounts")
+  protected[account] lazy val collection = {
+    MongoAccessor("core.mongo.uri").collection("accounts")
+  }
 
   def ensureIndexes() {
     collection.indexesManager.ensure(new Index(

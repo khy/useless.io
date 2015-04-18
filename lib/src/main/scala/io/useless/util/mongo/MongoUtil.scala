@@ -3,11 +3,13 @@ package io.useless.util.mongo
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits.global
-import io.useless.reactivemongo.MongoAccess
+import io.useless.reactivemongo.MongoAccessor
 
-object MongoUtil extends MongoAccess {
+object MongoUtil {
 
-  def clearDb(): Boolean = {
+  def clearDb(uriConfigKey: String): Boolean = {
+    val mongo = MongoAccessor(uriConfigKey)
+
     val clear = mongo.db.collectionNames.map { collectionNames =>
       collectionNames.
         filterNot { _.startsWith("system.") }.

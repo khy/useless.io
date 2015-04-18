@@ -8,16 +8,17 @@ import play.api.libs.json.Json
 import io.useless.util.mongo.MongoUtil
 
 import models.core.account.{ Account, Scope }
-import support.{ AccountFactory, RequestHelpers }
+import support._
 
 class AppSpec
   extends Specification
   with    AccountFactory
   with    RequestHelpers
+  with    MongoHelper
 {
 
   trait Context extends WithServer {
-    MongoUtil.clearDb()
+    clearDb()
     val adminUser = createUser("khy@useless.io", "khy", None, Seq(Scope.Platform))
     val adminAccessToken = adminUser.accessTokens(0).guid
     val url = s"http://localhost:$port/apps"

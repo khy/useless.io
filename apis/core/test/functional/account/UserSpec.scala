@@ -9,17 +9,18 @@ import play.api.libs.json.Json
 import io.useless.util.mongo.MongoUtil
 
 import models.core.account.Account
-import support.RequestHelpers
+import support._
 
 class UserSpec
   extends PlaySpec
   with    OneServerPerSuite
   with    BeforeAndAfterEach
   with    RequestHelpers
+  with    MongoHelper
 {
 
   override def beforeEach {
-    MongoUtil.clearDb()
+    clearDb()
   }
 
   val url = s"http://localhost:$port/users"

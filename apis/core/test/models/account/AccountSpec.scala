@@ -7,14 +7,16 @@ import io.useless.util.mongo.MongoUtil
 
 import mongo.Api._
 import mongo.App._
+import support.MongoHelper
 
 class AccountSpec
   extends Specification
   with    AccountFactory
+  with    MongoHelper
 {
 
   trait Context extends Before {
-    def before = MongoUtil.clearDb()
+    def before = clearDb()
   }
 
   "Account.createAccount" should {
