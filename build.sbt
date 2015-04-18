@@ -7,8 +7,11 @@ lazy val lib = project.
   settings(Defaults.itSettings: _*)
 
 lazy val core = (project in file("apis/core")).enablePlugins(PlayScala).dependsOn(lib)
+lazy val haiku = (project in file("apis/haiku")).enablePlugins(PlayScala).dependsOn(lib)
 
 lazy val root = (project in file(".")).
   enablePlugins(PlayScala).
-  dependsOn(core).
-  aggregate(lib, core)
+  dependsOn(core, haiku).
+  aggregate(lib, core, haiku)
+
+parallelExecution in Global := false

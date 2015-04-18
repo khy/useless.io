@@ -1,0 +1,2 @@
+GET     /haikus   controllers.haiku.HaikuController.index
+POST    /haikus   controllers.haiku.HaikuController.create
