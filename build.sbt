@@ -11,4 +11,4 @@ lazy val core = (project in file("apis/core")).enablePlugins(PlayScala).dependsO
 lazy val root = (project in file(".")).
   enablePlugins(PlayScala).
   dependsOn(core).
-  aggregate(core)
+  aggregate(lib, core)
