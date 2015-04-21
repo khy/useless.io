@@ -1,0 +1,39 @@
+@(signUpForm: Form[controllers.auth.LoginController.SignUpData])
+
+@views.html.auth.main {
+
+  <nav class="navbar navbar-default no-wrap" role="navigation">
+    <div class="container">
+      <div class="navbar-header">
+        <span class="navbar-brand domain">
+          <span class="subdomain">auth</span>.useless.io
+        </span>
+      </div>
+
+      <ul class="nav navbar-nav navbar-right">
+        <li><a class="sign-in" href="@controllers.auth.routes.SessionController.form()">Sign In</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <div class="container">
+
+    <h1>Sign Up</h1>
+
+    @if(signUpForm.hasErrors) {
+      <div class="alert alert-danger">
+        @helpers.auth.Form.errorMessageWithContext(signUpForm.errors.head)
+      </div>
+    }
+
+    @helper.form(action = controllers.auth.routes.LoginController.create(), 'role -> "form", 'class -> "login") {
+      <input type="text" name="name" value="@signUpForm("name").value.getOrElse("")" class="name form-control input-lg" placeholder="Name">
+      <input type="email" name="email" value="@signUpForm("email").value.getOrElse("")" class="email form-control input-lg" placeholder="Email">
+      <input type="text" name="handle" value="@signUpForm("handle").value.getOrElse("")" class="handle form-control input-lg" placeholder="Handle">
+      <input type="password" name="password" value="" class="password form-control input-lg" placeholder="Password">
+      <button type="submit" class="btn btn-primary btn-lg btn-block">Sign Up</button>
+    }
+
+  </div>
+
+}

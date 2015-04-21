@@ -1,0 +1,76 @@
+@(
+  app: io.useless.account.App,
+  richScopes: Seq[services.auth.RichScope],
+  authForm: Form[controllers.auth.AccessTokenController.AuthData],
+  userDisplay: String
+)
+
+@views.html.auth.main {
+
+  <nav class="navbar navbar-default no-wrap" role="navigation">
+    <div class="container">
+      <div class="navbar-header">
+        <span class="navbar-brand domain">
+          <span class="subdomain">auth</span>.useless.io
+        </span>
+      </div>
+
+      <ul class="nav navbar-nav navbar-right">
+        <li><p class="navbar-text">@userDisplay</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <div class="container">
+
+    <h2><a href="@app.url" target="_blank">@app.name</a> would like to access your useless.io account.
+
+      @if(richScopes.length > 0) {
+        <span>In particular, it has requested the following special permissions:</span>
+      } else {
+        <span>It has not requested any special permissions.</span>
+      }
+    </h2>
+
+    @if(richScopes.length > 0) {
+      <table class="scope table table-striped table-bordered">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>API</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          @for(richScope <- richScopes) {
+            <tr>
+              <td class="scope-name">@richScope.name</td>
+              <td class="scope-api">@richScope.context.map(_ + ".useless.io").getOrElse("Core")</td>
+              <td class="scope-description">
+                @if(richScope.description.isDefined) {
+                  @richScope.description.get
+                } else {
+                  <em class="text-muted">No description available</em>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+
+    @helper.form(action = controllers.auth.routes.AccessTokenController.create(), 'role -> "form", 'class -> "access-token") {
+      <input type="hidden" name="app_guid" value="@authForm("app_guid").value.get">
+
+      @if(authForm("scopes").value.isDefined) {
+        <input type="hidden" name="scopes" value="@authForm("scopes").value.get">
+      }
+
+      <input type="submit" name="action" value="Allow" class="allow btn btn-lg btn-success btn-block">
+      <input type="submit" name="action" value="Deny" class="deny btn btn-lg btn-danger btn-block">
+    }
+
+  </div>
+
+}

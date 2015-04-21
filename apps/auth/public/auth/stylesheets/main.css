@@ -1,0 +1,69 @@
+.navbar.no-wrap .navbar-header {
+  float: left;
+}
+
+.navbar.no-wrap .navbar-right {
+  float: right;
+  margin: 0;
+}
+
+.navbar.no-wrap .navbar-right li a {
+  padding: 15px 15px;
+}
+
+.navbar .navbar-brand.domain,
+.navbar .navbar-brand.domain:hover {
+  font-size: 1.5em;
+  color: #BBB;
+  font-weight: 300;
+}
+
+.navbar .navbar-brand .subdomain {
+  color: #333;
+  font-weight: 400;
+}
+
+.container h1 {
+  margin-bottom: 0.75em !important;
+}
+
+.container h2 {
+  margin-bottom: 20px;
+}
+
+form input[type="text"], form input[type="email"], form input[type="password"] {
+  margin-bottom: 20px;
+  border-radius: 0;
+}
+
+form {
+  margin-bottom: 20px;
+}
+
+form.access-token {
+  margin-top: 2.5em;
+}
+
+form.access-token input.allow {
+  margin-bottom: 1.5em;
+}
+
+.btn.btn-lg {
+  border-radius: 0;
+}
+
+.alert {
+  border-radius: 0;
+}
+
+h2 {
+  margin-top: 20px;
+}
+
+h2 span {
+  color: #BBB;
+}
+
+table.scope {
+  margin-top: 1em;
+}

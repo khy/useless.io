@@ -1,0 +1,27 @@
+@(userDisplay: String)
+
+@main {
+
+  <nav class="navbar navbar-default no-wrap" role="navigation">
+    <div class="container">
+      <div class="navbar-header">
+        <span class="navbar-brand domain">
+          <span class="subdomain">auth</span>.useless.io
+        </span>
+      </div>
+
+      <ul class="nav navbar-nav navbar-right">
+        <li><p class="navbar-text">@userDisplay</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <div class="container">
+    <h1>You're signed in.</h1>
+    <p>If everything had gone to plan, you wouldn't be here. Typically,
+      auth.useless.io selflessly redirects you back to the application that is
+      requesting access to your account. So, there's not much to see here.
+    </p>
+  </div>
+
+}

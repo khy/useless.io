@@ -1,0 +1,13 @@
+GET     /auth           controllers.auth.AccessTokenController.form
+POST    /auth           controllers.auth.AccessTokenController.create
+
+GET     /sign-in        controllers.auth.SessionController.form
+POST    /sign-in        controllers.auth.SessionController.create
+GET     /sign-out       controllers.auth.SessionController.delete
+
+GET     /sign-up        controllers.auth.LoginController.form
+POST    /sign-up        controllers.auth.LoginController.create
+
+GET     /               controllers.auth.MainController.index
+
+GET     /assets/*file   controllers.auth.Assets.at(path="/public", file)
