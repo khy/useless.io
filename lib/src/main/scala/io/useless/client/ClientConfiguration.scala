@@ -9,7 +9,7 @@ trait ClientConfiguration
   with    Configuration
 {
 
-  def baseUrlConfigKey = "useless.baseUrl"
+  def baseUrlConfigKey = "useless.core.baseUrl"
 
   def clientConfiguration = new DefaultClientConfiguration(baseUrlConfigKey)
 

@@ -12,7 +12,7 @@ class ConfigurationSpec
   describe ("the default config") {
 
     it ("should return the canonical useless URL") {
-      configuration.getString("useless.baseUrl") should be (Some("http://useless.io"))
+      configuration.getString("useless.core.baseUrl") should be (Some("http://useless.io/core"))
     }
 
   }

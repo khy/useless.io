@@ -33,7 +33,7 @@ class ClientConfigurationSpec
 
     override lazy val configuration = Configuration.from(Map(
       "useless.client.accessTokenGuid" -> "invalid-guid",
-      "useless.baseUrl" -> "http://useless.io/"
+      "useless.core.baseUrl" -> "http://useless.io/"
     ))
 
   }
@@ -42,7 +42,7 @@ class ClientConfigurationSpec
 
     override lazy val configuration = Configuration.from(Map(
       "useless.client.accessTokenGuid" -> "3a65a664-89a0-4f5b-8b9e-f3226af0ff99",
-      "useless.baseUrl" -> "http://useless.io"
+      "useless.core.baseUrl" -> "http://useless.io"
     ))
 
   }
