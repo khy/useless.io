@@ -4,6 +4,7 @@ import com.typesafe.config.ConfigRenderOptions
 import io.useless.play.filter.{ AccessLogFilter, RequestTimeFilter }
 
 import models.core.account.Account
+import daos.account.AuthorizationDao
 
 object Global
   extends WithFilters(
@@ -18,6 +19,7 @@ object Global
 
     Logger.info("Ensuring indexes...")
     Account.ensureIndexes()
+    AuthorizationDao.instance.ensureIndexes()
   }
 
 }

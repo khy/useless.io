@@ -1,0 +1,62 @@
+@(user: Option[io.useless.account.User])(content: Html)
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <title>account.useless.io</title>
+    <link rel="stylesheet" media="screen" href="@controllers.account.routes.Assets.at("stylesheets/bootstrap-3.0.3.min.css")">
+    <link rel="stylesheet" media="screen" href="@controllers.account.routes.Assets.at("stylesheets/main.css")">
+  </head>
+
+  <body>
+    <nav class="navbar navbar-default no-wrap" role="navigation">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar-collapse">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+
+          <span class="navbar-brand domain">
+            <span class="subdomain">account</span>.useless.io
+          </span>
+        </div>
+
+        <div class="collapse navbar-collapse" id="navbar-collapse">
+          @if(user.isDefined) {
+            <ul class="nav navbar-nav">
+              <li><a href="@controllers.account.routes.AccountController.index">Account</a></li>
+            </ul>
+
+            <ul class="nav navbar-nav navbar-right">
+              <li class="dropdown">
+                <a href="#" class="dropdown-toggle" data-toggle="dropdown">Signed in as @user.get.name <b class="caret"></b></a>
+                <ul class="dropdown-menu">
+                  <li><a href="@controllers.account.routes.ApplicationController.signOut">Sign Out</a></li>
+                </ul>
+              </li>
+            </ul>
+          } else {
+            <ul class="nav navbar-nav navbar-right">
+              <li><a href="@helpers.account.UrlHelper.authUrl">Sign In</a></li>
+            </ul>
+          }
+        </div>
+
+      </div>
+    </nav>
+
+    <div class="container">
+      @content
+    </div>
+
+    <script src="@controllers.account.routes.Assets.at("javascripts/jquery-1.9.0.min.js")" type="text/javascript"></script>
+    <script src="@controllers.account.routes.Assets.at("javascripts/bootstrap-3.0.3.min.js")" type="text/javascript"></script>
+  </body>
+</html>

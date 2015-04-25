@@ -1,0 +1,11 @@
+.navbar .navbar-brand.domain,
+.navbar .navbar-brand.domain:hover {
+  font-size: 1.5em;
+  color: #BBB;
+  font-weight: 300;
+}
+
+.navbar .navbar-brand .subdomain {
+  color: #333;
+  font-weight: 400;
+}

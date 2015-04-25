@@ -1,0 +1,27 @@
+@(implicit user: io.useless.account.AuthorizedUser)
+
+@views.html.account.main(Some(user)) {
+
+  <form role="form">
+    <div class="form-group">
+      <label for="exampleInputEmail1">Name</label>
+      <input type="email" class="form-control" value="@user.name" disabled>
+    </div>
+
+    <div class="form-group">
+      <label for="exampleInputEmail1">Handle</label>
+      <input type="email" class="form-control" value="@user.handle" disabled>
+    </div>
+
+    <div class="form-group">
+      <label for="exampleInputEmail1">Email</label>
+      <input type="email" class="form-control" value="@user.email" disabled>
+    </div>
+
+    <div class="form-group">
+      <label for="exampleInputEmail1">GUID</label>
+      <input type="email" class="form-control" value="@user.guid" disabled>
+    </div>
+  </form>
+
+}

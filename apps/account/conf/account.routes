@@ -1,0 +1,5 @@
+GET     /                           controllers.account.ApplicationController.index
+GET     /sign-out                   controllers.account.ApplicationController.signOut
+GET     /account                    controllers.account.AccountController.index
+GET     /auth                       controllers.account.AuthRedirectController.auth(code: String)
+GET     /assets/*file               controllers.account.Assets.at(path="/public", file)
