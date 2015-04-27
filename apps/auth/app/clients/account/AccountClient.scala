@@ -2,6 +2,7 @@ package clients.auth.account
 
 import java.util.UUID
 import scala.concurrent.Future
+import play.api.Play
 
 import io.useless.play.client.ResourceClient
 import io.useless.accesstoken.AccessToken
@@ -12,7 +13,12 @@ object AccountClient
   with    ResourceClient
 {
 
-  lazy val instance: AccountClient = new DefaultAccountClient(resourceClient)
+  lazy val instance: AccountClient = {
+    val config = Play.current.configuration
+    val accessTokenGuid = config.getString("auth.accessTokenGuid").get
+    val _resourceClient = resourceClient.withAuth(accessTokenGuid)
+    new DefaultAccountClient(resourceClient)
+  }
 
   def withAuth(accessToken: AccessToken) = {
     val newResourceClient = resourceClient.withAuth(accessToken.guid.toString)
