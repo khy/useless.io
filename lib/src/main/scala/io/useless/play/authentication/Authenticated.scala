@@ -1,11 +1,22 @@
 package io.useless.play.authentication
 
-object Authenticated
+import java.util.UUID
+
+import io.useless.util.Configuration
+
+object Authenticated extends Authenticated("useless.client.accessTokenGuid")
+
+class Authenticated(guidConfigKey: String)
   extends BaseAuthenticated
   with    ClientAuthDaoComponent
+  with    Configuration
 {
 
-  val authDao = new ClientAuthDao
+  val authDao = new ClientAuthDao(
+    configuration.getString(guidConfigKey).map { raw =>
+      UUID.fromString(raw)
+    }
+  )
 
 }
 

@@ -15,7 +15,7 @@ trait ConfigurationComponent {
 
 trait DefaultConfigurationComponent extends ConfigurationComponent {
 
-  def configuration = Play.maybeApplication.map { application =>
+  lazy val configuration = Play.maybeApplication.map { application =>
     application.configuration
   }.getOrElse(fallbackConfig)
 
