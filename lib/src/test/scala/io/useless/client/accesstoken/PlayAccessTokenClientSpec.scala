@@ -17,7 +17,7 @@ class PlayAccessTokenClientSpec
 {
 
   class MockPlayAccessTokenClient(status: Int, json: JsValue)
-    extends PlayAccessTokenClient
+    extends PlayAccessTokenClient(optAuthGuid = None)
     with    MockBaseClientComponent
   {
 

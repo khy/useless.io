@@ -8,22 +8,25 @@ import io.useless.account.Account
 import io.useless.play.client.ResourceClient
 import io.useless.play.json.account.AccountJson._
 
-class PlayAccountClient
-  extends AccountClient
-  with    ResourceClient
-{
+class PlayAccountClient(
+  optAuthGuid: Option[UUID]
+) extends AccountClient with ResourceClient {
+
+  private lazy val _resourceClient = optAuthGuid.map { authGuid =>
+    resourceClient.withAuth(authGuid.toString)
+  }.getOrElse(resourceClient)
 
   def getAccount(guid: UUID) = {
     val path = "/accounts/%s".format(guid.toString)
-    resourceClient.get(path)
+    _resourceClient.get(path)
   }
 
   def getAccountForEmail(email: String) = {
-    resourceClient.find("/accounts", "email" -> email).map(_.items.headOption)
+    _resourceClient.find("/accounts", "email" -> email).map(_.items.headOption)
   }
 
   def getAccountForHandle(handle: String) = {
-    resourceClient.find("/accounts", "handle" -> handle).map(_.items.headOption)
+    _resourceClient.find("/accounts", "handle" -> handle).map(_.items.headOption)
   }
 
 }

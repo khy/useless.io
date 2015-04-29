@@ -8,7 +8,9 @@ import io.useless.account.Account
 
 object AccountClient extends Mockable[AccountClient] {
 
-  def instance: AccountClient = mock.getOrElse(new PlayAccountClient)
+  def instance(optAuthGuid: Option[UUID] = None): AccountClient = {
+    mock.getOrElse(new PlayAccountClient(optAuthGuid))
+  }
 
 }
 

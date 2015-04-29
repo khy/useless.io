@@ -21,7 +21,7 @@ object Haiku {
     MongoAccessor("haiku.mongo.uri").collection("haikus")
   }
 
-  val accountClient = AccountClient.instance
+  val accountClient = AccountClient.instance()
 
   def find(optUserHandle: Option[String], pagination: Pagination): Future[Seq[Haiku]] = {
     val count = pagination.count.getOrElse(30)

@@ -78,7 +78,7 @@ object NoteService extends BaseService {
     )
   }
 
-  private val accountClient = AccountClient.instance
+  private val accountClient = AccountClient.instance()
 
   private def buildNotes(dbNotes: Seq[db.Note]): Future[Seq[Note]] = {
     def getAccounts(guids: Seq[UUID]): Future[Seq[Account]] = Future.sequence {

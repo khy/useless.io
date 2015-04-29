@@ -22,7 +22,7 @@ trait ClientAuthDaoComponent extends AuthDaoComponent {
 
   class ClientAuthDao extends AuthDao {
 
-    private lazy val client = AccessTokenClient.instance
+    private lazy val client = AccessTokenClient.instance()
 
     def getAccessToken(guid: UUID) = client.getAccessToken(guid)
 

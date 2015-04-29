@@ -8,7 +8,9 @@ import io.useless.accesstoken.AccessToken
 
 object AccessTokenClient extends Mockable[AccessTokenClient] {
 
-  def instance: AccessTokenClient = mock.getOrElse(new PlayAccessTokenClient)
+  def instance(optAuthGuid: Option[UUID] = None): AccessTokenClient = {
+    mock.getOrElse(new PlayAccessTokenClient(optAuthGuid))
+  }
 
 }
 

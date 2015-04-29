@@ -17,7 +17,7 @@ class PlayAccountClientSpec
 {
 
   class MockPlayAccountClient(status: Int, json: JsValue)
-    extends PlayAccountClient
+    extends PlayAccountClient(optAuthGuid = None)
     with    MockBaseClientComponent
   {
 
