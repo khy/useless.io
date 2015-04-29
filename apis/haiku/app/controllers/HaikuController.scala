@@ -11,6 +11,7 @@ import io.useless.account.User
 import models.haiku.Haiku
 import models.haiku.json.HaikuJson._
 import lib.haiku.Pagination
+import controllers.haiku.auth.Auth
 
 object HaikuController extends Controller {
 
@@ -23,7 +24,7 @@ object HaikuController extends Controller {
     }
   }
 
-  def create = Authenticated.async(parse.json) { request =>
+  def create = Auth.async(parse.json) { request =>
     val lines = (request.body \ "lines").as[Seq[String]]
 
     request.accessToken.resourceOwner match {

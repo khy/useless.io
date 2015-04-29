@@ -13,13 +13,16 @@ trait ResourceClient
   with JsonClient
 {
 
-  lazy val resourceClient: ResourceClient = new DefaultResourceClient(jsonClient)
+  def resourceClient(auth: String): ResourceClient = {
+    val _jsonClient = jsonClient(auth)
+    new DefaultResourceClient(_jsonClient)
+  }
 
 }
 
 trait ResourceClientComponent {
 
-  def resourceClient: ResourceClient
+  def resourceClient(auth: String): ResourceClient
 
   trait ResourceClient {
 

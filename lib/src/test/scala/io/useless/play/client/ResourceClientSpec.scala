@@ -23,13 +23,15 @@ class ResourceClientSpec
     linkHeader: Option[String] = None
   ) extends ResourceClient with MockBaseClientComponent {
 
-    override lazy val baseClient = new MockBaseClient(status, json, body, linkHeader)
+    override def baseClient(auth: String) = new MockBaseClient(status, json, body, linkHeader)
 
-    def get(path: String) = resourceClient.get[Account](path)
+    val _resourceClient = resourceClient("auth")
 
-    def find(path: String) = resourceClient.find[Account](path)
+    def get(path: String) = _resourceClient.get[Account](path)
 
-    def create(path: String) = resourceClient.create[Account](path, JsNull)
+    def find(path: String) = _resourceClient.find[Account](path)
+
+    def create(path: String) = _resourceClient.create[Account](path, JsNull)
 
   }
 

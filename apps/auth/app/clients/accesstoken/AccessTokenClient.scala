@@ -15,12 +15,12 @@ object AccessTokenClient
   lazy val instance: AccessTokenClient = {
     val config = Play.current.configuration
     val accessTokenGuid = config.getString("auth.accessTokenGuid").get
-    val _resourceClient = resourceClient.withAuth(accessTokenGuid)
+    val _resourceClient = resourceClient(accessTokenGuid)
     new DefaultAccessTokenClient(_resourceClient)
   }
 
   def withAuth(accessToken: AccessToken) = {
-    val newResourceClient = resourceClient.withAuth(accessToken.guid.toString)
+    val newResourceClient = resourceClient(accessToken.guid.toString)
     new DefaultAccessTokenClient(newResourceClient)
   }
 

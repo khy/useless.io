@@ -15,7 +15,7 @@ object AccountClient
 {
 
   def instance(accessToken: AccessToken): AccountClient = {
-    val _resourceClient = resourceClient.withAuth(accessToken.toString)
+    val _resourceClient = resourceClient(accessToken.guid.toString)
     new DefaultAccountClient(_resourceClient)
   }
 

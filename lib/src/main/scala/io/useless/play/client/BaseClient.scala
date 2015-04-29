@@ -18,13 +18,13 @@ trait BaseClient
   with    Logger
 {
 
-  lazy val baseClient: BaseClient = new ConfigurableBaseClient
+  def baseClient(auth: String): BaseClient = new ConfigurableBaseClient(auth)
 
 }
 
 trait BaseClientComponent {
 
-  def baseClient: BaseClient
+  def baseClient(auth: String): BaseClient
 
   trait BaseClient {
 
@@ -43,17 +43,11 @@ trait ConfigurableBaseClientComponent extends BaseClientComponent {
   self: ClientConfigurationComponent with
         LoggerComponent =>
 
-  class ConfigurableBaseClient(
-    optAuth: Option[String] = None
-  ) extends BaseClient {
+  class ConfigurableBaseClient(val auth: String) extends BaseClient {
 
-    def this(accessTokenGuid: UUID) = this(Some(accessTokenGuid.toString))
+    def this(accessTokenGuid: UUID) = this(accessTokenGuid.toString)
 
     def this(accessToken: AccessToken) = this(accessToken.guid)
-
-    lazy val auth = optAuth.getOrElse {
-      clientConfiguration.accessTokenGuid.toString
-    }
 
     def get(path: String, query: (String, String)*) = {
       logger.info("BaseClient request: GET %s (as [%s])".format(path, auth))

@@ -4,17 +4,17 @@ import io.useless.accesstoken.Scope
 
 object Authorized {
 
-  def apply(scopes: Scope*) = new Authorized(scopes)
+  def apply(scopes: Scope*) = new Authorized("useless.client.accessTokenGuid", scopes)
 
 }
 
-class Authorized(scopes: Seq[Scope])
+class Authorized(guidConfigKey: String, scopes: Seq[Scope])
   extends BaseAuthenticated
   with    ClientAuthDaoComponent
   with    ScopeAuthorizerComponent
 {
 
-  val authDao = new ClientAuthDao
+  lazy val authDao = new ClientAuthDao(guidConfigKey)
 
   override val authorizer = new ScopeAuthorizer(scopes)
 

@@ -17,11 +17,11 @@ class PlayAccountClientSpec
 {
 
   class MockPlayAccountClient(status: Int, json: JsValue)
-    extends PlayAccountClient(optAuthGuid = None)
+    extends PlayAccountClient(UUID.randomUUID)
     with    MockBaseClientComponent
   {
 
-    override lazy val baseClient = new MockBaseClient(status, json)
+    override def baseClient(auth: String) = new MockBaseClient(status, json)
 
   }
 

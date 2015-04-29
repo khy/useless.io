@@ -23,13 +23,15 @@ class JsonClientSpec
     linkHeader: Option[String] = None
   ) extends JsonClient with MockBaseClientComponent {
 
-    override lazy val baseClient = new MockBaseClient(status, json, body, linkHeader)
+    override def baseClient(auth: String) = new MockBaseClient(status, json, body, linkHeader)
 
-    def get(path: String) = jsonClient.get(path)
+    val _jsonClient = jsonClient("auth")
 
-    def find(path: String) = jsonClient.find(path)
+    def get(path: String) = _jsonClient.get(path)
 
-    def create(path: String) = jsonClient.create(path, JsNull)
+    def find(path: String) = _jsonClient.find(path)
+
+    def create(path: String) = _jsonClient.create(path, JsNull)
 
   }
 

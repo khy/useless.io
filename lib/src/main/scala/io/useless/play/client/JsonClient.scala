@@ -13,13 +13,16 @@ trait JsonClient
   with BaseClient
 {
 
-  lazy val jsonClient: JsonClient = new DefaultJsonClient(baseClient)
+  def jsonClient(auth: String): JsonClient = {
+    val _baseClient = baseClient(auth)
+    new DefaultJsonClient(_baseClient)
+  }
 
 }
 
 trait JsonClientComponent {
 
-  def jsonClient: JsonClient
+  def jsonClient(auth: String): JsonClient
 
   trait JsonClient {
 
@@ -42,7 +45,7 @@ trait DefaultJsonClientComponent extends JsonClientComponent {
   class DefaultJsonClient(baseClient: BaseClient) extends JsonClient {
 
     def withAuth(auth: String) = {
-      val newBaseClient = new ConfigurableBaseClient(Some(auth))
+      val newBaseClient = new ConfigurableBaseClient(auth)
       new DefaultJsonClient(newBaseClient)
     }
 

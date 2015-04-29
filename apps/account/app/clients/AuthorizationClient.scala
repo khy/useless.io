@@ -16,8 +16,8 @@ object AuthorizationClient
   lazy val instance = {
     val config = Play.current.configuration
     val accessTokenGuid = config.getString("account.accessTokenGuid").get
-    val _resourceClient = resourceClient.withAuth(accessTokenGuid)
-    new DefaultAuthorizationClient(resourceClient)
+    val _resourceClient = resourceClient(accessTokenGuid)
+    new DefaultAuthorizationClient(_resourceClient)
   }
 
 }

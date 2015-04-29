@@ -10,12 +10,13 @@ import io.useless.account.Account
 import io.useless.accesstoken.AccessToken
 import io.useless.client.account.AccountClient
 import io.useless.pagination._
+import io.useless.util.{Configuration, Uuid}
 
 import db.Driver.simple._
 import db.Notes
 import models.books.Note
 
-object NoteService extends BaseService {
+object NoteService extends BaseService with Configuration {
 
   def getNote(guid: UUID): Future[Option[Note]] = {
     val futureDbNotes = withDbSession { implicit session =>
@@ -78,7 +79,13 @@ object NoteService extends BaseService {
     )
   }
 
-  private val accountClient = AccountClient.instance()
+  lazy val accountClient = {
+    val authGuid = configuration.getString("books.accessTokenGuid").flatMap { raw =>
+      Uuid.parseUuid(raw).toOption
+    }.get
+
+    AccountClient.instance(authGuid)
+  }
 
   private def buildNotes(dbNotes: Seq[db.Note]): Future[Seq[Note]] = {
     def getAccounts(guids: Seq[UUID]): Future[Seq[Account]] = Future.sequence {
