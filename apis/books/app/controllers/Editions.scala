@@ -6,11 +6,11 @@ import play.api._
 import play.api.mvc._
 import play.api.libs.json.Json
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
-import io.useless.play.authentication.Authenticated
 import io.useless.play.json.ClientErrorJson
 
 import services.books.EditionService
 import models.books.Edition.format
+import controllers.books.auth.Auth
 
 object Editions extends Controller {
 
@@ -19,7 +19,7 @@ object Editions extends Controller {
   case class NewEdition(book_guid: UUID, page_count: Int)
   private implicit val newEditionReads = Json.reads[NewEdition]
 
-  def create = Authenticated.async(parse.json) { request =>
+  def create = Auth.async(parse.json) { request =>
     request.body.validate[NewEdition].fold(
       error => Future.successful(Conflict),
       newEdition => {

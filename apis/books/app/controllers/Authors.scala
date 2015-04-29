@@ -5,15 +5,15 @@ import play.api._
 import play.api.mvc._
 import play.api.libs.json.Json
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
-import io.useless.play.authentication.Authenticated
 
 import services.books.AuthorService
 import models.books.Author
 import models.books.Author.format
+import controllers.books.auth.Auth
 
 object Authors extends Controller {
 
-  def index(name: String) = Authenticated.async {
+  def index(name: String) = Auth.async {
     AuthorService.findAuthors(name).map { authors =>
       Ok(Json.toJson(authors))
     }
@@ -22,7 +22,7 @@ object Authors extends Controller {
   case class NewAuthor(name: String)
   private implicit val newAuthorReads = Json.reads[NewAuthor]
 
-  def create = Authenticated.async(parse.json) { request =>
+  def create = Auth.async(parse.json) { request =>
     request.body.validate[NewAuthor].fold(
       error => Future.successful(Conflict),
       newAuthor => AuthorService.addAuthor(

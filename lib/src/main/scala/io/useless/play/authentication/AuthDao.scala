@@ -20,9 +20,9 @@ trait AuthDaoComponent {
 
 trait ClientAuthDaoComponent extends AuthDaoComponent {
 
-  class ClientAuthDao extends AuthDao {
+  class ClientAuthDao(optAuthGuid: Option[UUID] = None) extends AuthDao {
 
-    private lazy val client = AccessTokenClient.instance()
+    private lazy val client = AccessTokenClient.instance(optAuthGuid)
 
     def getAccessToken(guid: UUID) = client.getAccessToken(guid)
 
