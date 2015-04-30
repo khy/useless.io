@@ -8,84 +8,60 @@ import play.api.libs.json.Reads
 import io.useless.accesstoken.AccessToken
 import io.useless.client._
 
-trait ResourceClient
-  extends DefaultResourceClientComponent
-  with JsonClient
-{
+object ResourceClient {
 
-  def resourceClient(auth: String): ResourceClient = {
-    val _jsonClient = jsonClient(auth)
-    new DefaultResourceClient(_jsonClient)
+  def apply(baseUrl: String, auth: String): ResourceClient = {
+    val jsonClient = JsonClient(baseUrl, auth)
+    new DefaultResourceClient(jsonClient)
   }
 
 }
 
-trait ResourceClientComponent {
+trait ResourceClient {
 
-  def resourceClient(auth: String): ResourceClient
+  def get[T](path: String)(implicit reads: Reads[T]): Future[Option[T]]
 
-  trait ResourceClient {
+  def find[T](path: String, query: (String, String)*)(implicit reads: Reads[T]): Future[Page[T]]
 
-    def withAuth(auth: String): ResourceClient
-
-    def get[T](path: String)(implicit reads: Reads[T]): Future[Option[T]]
-
-    def find[T](path: String, query: (String, String)*)(implicit reads: Reads[T]): Future[Page[T]]
-
-    def create[T](path: String, body: JsValue)(implicit reads: Reads[T]): Future[Either[String, T]]
-
-  }
+  def create[T](path: String, body: JsValue)(implicit reads: Reads[T]): Future[Either[String, T]]
 
 }
 
-trait DefaultResourceClientComponent extends ResourceClientComponent {
+class DefaultResourceClient(jsonClient: JsonClient) extends ResourceClient {
 
-  self: DefaultJsonClientComponent with
-        ConfigurableBaseClientComponent =>
-
-  class DefaultResourceClient(jsonClient: JsonClient) extends ResourceClient {
-
-    def this(baseClient: BaseClient) = this(new DefaultJsonClient(baseClient))
-
-    def withAuth(auth: String) = {
-      new DefaultResourceClient(jsonClient.withAuth(auth))
+  def get[T](path: String)(implicit reads: Reads[T]) = {
+    jsonClient.get(path).map { optJson =>
+      optJson.map { json =>
+        Json.fromJson[T](json) match {
+          case success: JsSuccess[T] => success.get
+          case error: JsError => throw new InvalidJsonResponseException(json, error)
+        }
+      }
     }
+  }
 
-    def get[T](path: String)(implicit reads: Reads[T]) = {
-      jsonClient.get(path).map { optJson =>
-        optJson.map { json =>
+  def find[T](path: String, query: (String, String)*)(implicit reads: Reads[T]) = {
+    jsonClient.find(path, query:_*).map { page =>
+      page.copy(
+        items = page.items.map { json =>
           Json.fromJson[T](json) match {
             case success: JsSuccess[T] => success.get
             case error: JsError => throw new InvalidJsonResponseException(json, error)
           }
         }
-      }
+      )
     }
+  }
 
-    def find[T](path: String, query: (String, String)*)(implicit reads: Reads[T]) = {
-      jsonClient.find(path, query:_*).map { page =>
-        page.copy(
-          items = page.items.map { json =>
-            Json.fromJson[T](json) match {
-              case success: JsSuccess[T] => success.get
-              case error: JsError => throw new InvalidJsonResponseException(json, error)
-            }
-          }
-        )
-      }
-    }
-
-    def create[T](path: String, body: JsValue)(implicit reads: Reads[T]) = {
-      jsonClient.create(path, body).map { result =>
-        result.right.map { json =>
-          Json.fromJson[T](json) match {
-            case success: JsSuccess[T] => success.get
-            case error: JsError => throw new InvalidJsonResponseException(json, error)
-          }
+  def create[T](path: String, body: JsValue)(implicit reads: Reads[T]) = {
+    jsonClient.create(path, body).map { result =>
+      result.right.map { json =>
+        Json.fromJson[T](json) match {
+          case success: JsSuccess[T] => success.get
+          case error: JsError => throw new InvalidJsonResponseException(json, error)
         }
       }
     }
-
   }
 
 }

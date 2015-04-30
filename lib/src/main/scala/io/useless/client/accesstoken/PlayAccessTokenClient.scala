@@ -6,14 +6,20 @@ import play.api.libs.json.Json
 import io.useless.accesstoken.AccessToken
 import io.useless.play.client.ResourceClient
 import io.useless.play.json.accesstoken.AccessTokenJson._
+import io.useless.util.Configuration
 
-class PlayAccessTokenClient(authGuid: UUID) extends AccessTokenClient with ResourceClient {
+class PlayAccessTokenClient(
+  authGuid: UUID
+) extends AccessTokenClient with Configuration {
 
-  private lazy val _resourceClient = resourceClient(authGuid.toString)
+  protected lazy val resourceClient = {
+    val baseUrl = configuration.underlying.getString("useless.core.baseUrl")
+    ResourceClient(baseUrl, authGuid.toString)
+  }
 
   def getAccessToken(guid: UUID) = {
     val path = "/access_tokens/%s".format(guid.toString)
-    _resourceClient.get(path)
+    resourceClient.get(path)
   }
 
 }

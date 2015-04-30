@@ -8,7 +8,7 @@ import play.api.libs.json._
 
 import io.useless.account.User
 import io.useless.play.json.account.AccountJson._
-import io.useless.play.client.MockBaseClientComponent
+import io.useless.play.client._
 import io.useless.test.Await
 
 class PlayAccountClientSpec
@@ -18,10 +18,13 @@ class PlayAccountClientSpec
 
   class MockPlayAccountClient(status: Int, json: JsValue)
     extends PlayAccountClient(UUID.randomUUID)
-    with    MockBaseClientComponent
   {
 
-    override def baseClient(auth: String) = new MockBaseClient(status, json)
+    override lazy val resourceClient = {
+      val baseClient = new MockBaseClient(status, json)
+      val jsonClient = new DefaultJsonClient(baseClient)
+      new DefaultResourceClient(jsonClient)
+    }
 
   }
 

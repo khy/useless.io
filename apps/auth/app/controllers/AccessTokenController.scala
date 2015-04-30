@@ -17,7 +17,7 @@ import services.auth.ScopeService
 
 object AccessTokenController extends Controller {
 
-  lazy val accountClient = AccountClient.instance
+  lazy val accountClient = AccountClient.instance()
   lazy val scopeService = ScopeService.instance
 
   case class AuthData(appGuid: String, scopes: Option[String])
@@ -36,7 +36,7 @@ object AccessTokenController extends Controller {
       Logger.error(s"Access token form errors: ${form.errorsAsJson}")
       Future.successful(InternalServerError)
     } else {
-      val accessTokenClient = AccessTokenClient.withAuth(request.accessToken)
+      val accessTokenClient = AccessTokenClient.instance(Some(request.accessToken))
 
       val authData = form.value.get
       val appGuid = UUID.fromString(authData.appGuid)
@@ -75,7 +75,7 @@ object AccessTokenController extends Controller {
       },
       authData => {
         request.body.get("action").flatMap(_.headOption).map { action =>
-          val accessTokenClient = AccessTokenClient.withAuth(request.accessToken)
+          val accessTokenClient = AccessTokenClient.instance(Some(request.accessToken))
 
           val appGuid = UUID.fromString(authData.appGuid)
           val scopes = parseScopes(authData.scopes)

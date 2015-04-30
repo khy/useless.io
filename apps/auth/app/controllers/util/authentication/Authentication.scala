@@ -60,7 +60,7 @@ trait ApplicationClientAuthDaoComponent extends AuthDaoComponent {
 
   class ApplicationClientAuthDao extends AuthDao {
 
-    private lazy val client = AccessTokenClient.instance
+    private lazy val client = AccessTokenClient.instance()
 
     def getAccessToken(guid: UUID) = client.getAccessToken(guid)
 

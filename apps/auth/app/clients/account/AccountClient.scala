@@ -7,22 +7,20 @@ import play.api.Play
 import io.useless.play.client.ResourceClient
 import io.useless.accesstoken.AccessToken
 import io.useless.account.{ App, AuthorizedApp, User }
+import io.useless.util.Configuration
 
 object AccountClient
   extends DefaultAccountClientComponent
-  with    ResourceClient
+  with    Configuration
 {
 
-  lazy val instance: AccountClient = {
-    val config = Play.current.configuration
-    val accessTokenGuid = config.getString("auth.accessTokenGuid").get
-    val _resourceClient = resourceClient(accessTokenGuid)
-    new DefaultAccountClient(_resourceClient)
-  }
-
-  def withAuth(accessToken: AccessToken) = {
-    val newResourceClient = resourceClient(accessToken.guid.toString)
-    new DefaultAccountClient(newResourceClient)
+  def instance(optAccessToken: Option[AccessToken] = None): AccountClient = {
+    val baseUrl = configuration.underlying.getString("useless.core.baseUrl")
+    val auth = optAccessToken.map(_.guid.toString).getOrElse {
+      configuration.underlying.getString("account.accessTokenGuid")
+    }
+    val resourceClient = ResourceClient(baseUrl, auth)
+    new DefaultAccountClient(resourceClient)
   }
 
 }

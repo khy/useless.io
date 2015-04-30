@@ -90,7 +90,7 @@ class FunctionalSpec
       val email = testEmail()
       val result = LoginService.create(email, "secret", None, None)
       val userAccessToken = Helpers.await(result).right.get
-      AccessTokenClient.withAuth(userAccessToken).createAccessToken(accountAppGuid, Seq(Scope("admin")))
+      AccessTokenClient.instance(Some(userAccessToken)).createAccessToken(accountAppGuid, Seq(Scope("admin")))
 
       browser.goTo(authUrl)
       browser.url must beEqualTo("/sign-in")
@@ -105,7 +105,7 @@ class FunctionalSpec
       val email = testEmail()
       val result = LoginService.create(email, "secret", None, None)
       val userAccessToken = Helpers.await(result).right.get
-      AccessTokenClient.withAuth(userAccessToken).createAccessToken(accountAppGuid, Seq(Scope("admin")))
+      AccessTokenClient.instance(Some(userAccessToken)).createAccessToken(accountAppGuid, Seq(Scope("admin")))
 
       browser.goTo("/sign-in")
       browser.fill("input.email").`with`(email)

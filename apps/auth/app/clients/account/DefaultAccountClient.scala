@@ -6,14 +6,12 @@ import play.api.libs.json.Json
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
 
 import io.useless.account.{ Account, App, AuthorizedApp, User }
-import io.useless.play.client.ResourceClientComponent
+import io.useless.play.client.ResourceClient
 import io.useless.play.json.account.AccountJson._
 
 import clients.auth.UnexpectedAccountTypeException
 
 trait DefaultAccountClientComponent {
-
-  self: ResourceClientComponent =>
 
   class DefaultAccountClient(
     resourceClient: ResourceClient
