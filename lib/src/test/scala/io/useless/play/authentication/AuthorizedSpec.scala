@@ -44,11 +44,15 @@ class AuthorizedSpec
 
   implicit def mockClient = new MockAccessTokenClient(Seq(readAccessToken, writeAccessToken))
 
+  object TestAuthorized extends Authorized("accessTokenGuid", Seq(writeScope, deleteScope)) {
+    override lazy val authDao = new ClientAuthDao(UUID.randomUUID)
+  }
+
   object TestController
     extends Controller
   {
 
-    def index = Authorized(writeScope, deleteScope) { request =>
+    def index = TestAuthorized { request =>
       request.accessToken.resourceOwner match {
         case user: User => Ok("Hi, " + user.handle)
         case _ => Ok("Say, hey")

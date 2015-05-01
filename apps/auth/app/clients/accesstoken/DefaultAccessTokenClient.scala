@@ -6,15 +6,13 @@ import play.api.libs.json.Json
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
 
 import io.useless.accesstoken.{ AccessToken, AuthorizedAccessToken, Scope }
-import io.useless.play.client.ResourceClientComponent
+import io.useless.play.client.ResourceClient
 import io.useless.play.json.UuidJson._
 import io.useless.play.json.accesstoken.AccessTokenJson._
 
 import clients.auth.UnexpectedAccessTokenTypeException
 
 trait DefaultAccessTokenClientComponent {
-
-  self: ResourceClientComponent =>
 
   class DefaultAccessTokenClient(
     resourceClient: ResourceClient

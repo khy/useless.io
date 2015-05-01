@@ -11,17 +11,22 @@ import io.useless.reactivemongo.MongoAccessor
 import io.useless.client.account.AccountClient
 import io.useless.reactivemongo.bson.UuidBson._
 import io.useless.reactivemongo.bson.DateTimeBson._
+import io.useless.util.configuration.Configuration
+import io.useless.util.configuration.RichConfiguration._
 
 import mongo.HaikuMongo._
 import lib.haiku.{ Pagination, TwoPhaseLineSyllableCounter }
 
-object Haiku {
+object Haiku extends Configuration {
 
   private lazy val collection = {
     MongoAccessor("haiku.mongo.uri").collection("haikus")
   }
 
-  val accountClient = AccountClient.instance()
+  lazy val accountClient = {
+    val authGuid = configuration.underlying.getUuid("haiku.accessTokenGuid")
+    AccountClient.instance(authGuid)
+  }
 
   def find(optUserHandle: Option[String], pagination: Pagination): Future[Seq[Haiku]] = {
     val count = pagination.count.getOrElse(30)

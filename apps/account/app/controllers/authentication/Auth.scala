@@ -13,7 +13,7 @@ object Auth
   with    SignInRejectorComponent
 {
 
-  val authDao = new ClientAuthDao
+  val authDao = new ClientAuthDao("account.accessTokenGuid")
 
   override val authenticator = new SessionAuthenticator("auth")
 

@@ -14,9 +14,9 @@ import daos.auth.LoginDao
 
 object LoginService {
 
-  lazy val accessTokenClient = AccessTokenClient.instance
+  lazy val accessTokenClient = AccessTokenClient.instance()
 
-  lazy val accountClient = AccountClient.instance
+  lazy val accountClient = AccountClient.instance()
 
   lazy val dao = LoginDao.instance
 

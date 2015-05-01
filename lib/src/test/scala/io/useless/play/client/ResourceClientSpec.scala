@@ -16,27 +16,21 @@ class ResourceClientSpec
   with    Matchers
 {
 
-  class ApiResourceClient(
+  def resourceClient(
     status: Int,
     json: JsValue = JsNull,
     body: Option[String] = None,
     linkHeader: Option[String] = None
-  ) extends ResourceClient with MockBaseClientComponent {
-
-    override lazy val baseClient = new MockBaseClient(status, json, body, linkHeader)
-
-    def get(path: String) = resourceClient.get[Account](path)
-
-    def find(path: String) = resourceClient.find[Account](path)
-
-    def create(path: String) = resourceClient.create[Account](path, JsNull)
-
+  ): ResourceClient = {
+    val baseClient = new MockBaseClient(status, json, body, linkHeader)
+    val jsonClient = new DefaultJsonClient(baseClient)
+    new DefaultResourceClient(jsonClient)
   }
 
   describe ("ResourceClient#get") {
 
     it ("should throw an InvalidJsonResponseException if the baseClient returns a 200, but with invalid JSON") {
-      val client = new ApiResourceClient(200, Json.obj("invalid" -> "JSON"))
+      val client = resourceClient(200, Json.obj("invalid" -> "JSON"))
       a [InvalidJsonResponseException] should be thrownBy { Await(client.get("/api")) }
     }
 
@@ -48,7 +42,7 @@ class ResourceClientSpec
         )
       )
 
-      val client = new ApiResourceClient(200, apiJson)
+      val client = resourceClient(200, apiJson)
       val api = Await(client.get("/api")).get.asInstanceOf[Api]
       api.key should be ("museum")
     }
@@ -58,7 +52,7 @@ class ResourceClientSpec
   describe ("ResourceClient#find") {
 
     it ("should throw an InvalidJsonResponseException if the baseClient returns a 200, but with invalid JSON") {
-      val client = new ApiResourceClient(200, Json.obj("invalid" -> "JSON"))
+      val client = resourceClient(200, Json.obj("invalid" -> "JSON"))
       a [InvalidJsonResponseException] should be thrownBy { Await(client.find("/api")) }
     }
 
@@ -70,7 +64,7 @@ class ResourceClientSpec
         )
       )
 
-      val client = new ApiResourceClient(200, apiJson)
+      val client = resourceClient(200, apiJson)
       a [InvalidJsonResponseException] should be thrownBy { Await(client.find("/api")) }
     }
 
@@ -82,7 +76,7 @@ class ResourceClientSpec
         )
       ))
 
-      val client = new ApiResourceClient(200, apiJson)
+      val client = resourceClient(200, apiJson)
       val api = Await(client.find("/api")).items(0).asInstanceOf[Api]
       api.key should be ("museum")
     }
@@ -97,7 +91,7 @@ class ResourceClientSpec
           "key" -> "museum"
         )
       ))
-      val client = new ApiResourceClient(200, json, linkHeader = Some(linkHeader))
+      val client = resourceClient(200, json, linkHeader = Some(linkHeader))
       val page = Await(client.find("/api"))
       page.next should be (Some("http://useless.io/next"))
     }
@@ -107,8 +101,8 @@ class ResourceClientSpec
   describe ("ResourceClient#create") {
 
     it ("should throw an InvalidJsonResponseException if the baseClient returns a 201, but with invalid JSON") {
-      val client = new ApiResourceClient(201, Json.obj("invalid" -> "JSON"))
-      a [InvalidJsonResponseException] should be thrownBy  { Await(client.create("/api")) }
+      val client = resourceClient(201, Json.obj("invalid" -> "JSON"))
+      a [InvalidJsonResponseException] should be thrownBy  { Await(client.create("/api", JsNull)) }
     }
 
     it ("should return the resource if the baseClient returns a 201 with valid JSON") {
@@ -119,8 +113,8 @@ class ResourceClientSpec
         )
       )
 
-      val client = new ApiResourceClient(201, apiJson)
-      Await(client.create("/api")) match {
+      val client = resourceClient(201, apiJson)
+      Await(client.create("/api", JsNull)) match {
         case Right(api: Api) => api.key should be ("museum")
         case result => fail("Expected Right[Api], got: %s".format(result))
       }

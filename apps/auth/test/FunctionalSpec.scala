@@ -7,16 +7,12 @@ import play.api.test.Helpers._
 import play.api.{ Application, Plugin }
 import io.useless.accesstoken.{ AccessToken, Scope }
 import io.useless.account.App
-import io.useless.client.ClientConfiguration
 
 import clients.auth.accesstoken._
 import clients.auth.account._
 import services.auth.LoginService
 
-class FunctionalSpec
-  extends Specification
-  with    ClientConfiguration
-{
+class FunctionalSpec extends Specification {
 
   val accountAppGuid = UUID.fromString("a198fb60-f97c-4837-a47b-d12eaae0d0f7")
   val authUrl = s"/auth?app_guid=${accountAppGuid}&scopes=admin"
@@ -90,7 +86,7 @@ class FunctionalSpec
       val email = testEmail()
       val result = LoginService.create(email, "secret", None, None)
       val userAccessToken = Helpers.await(result).right.get
-      AccessTokenClient.withAuth(userAccessToken).createAccessToken(accountAppGuid, Seq(Scope("admin")))
+      AccessTokenClient.instance(Some(userAccessToken)).createAccessToken(accountAppGuid, Seq(Scope("admin")))
 
       browser.goTo(authUrl)
       browser.url must beEqualTo("/sign-in")
@@ -105,7 +101,7 @@ class FunctionalSpec
       val email = testEmail()
       val result = LoginService.create(email, "secret", None, None)
       val userAccessToken = Helpers.await(result).right.get
-      AccessTokenClient.withAuth(userAccessToken).createAccessToken(accountAppGuid, Seq(Scope("admin")))
+      AccessTokenClient.instance(Some(userAccessToken)).createAccessToken(accountAppGuid, Seq(Scope("admin")))
 
       browser.goTo("/sign-in")
       browser.fill("input.email").`with`(email)

@@ -8,7 +8,7 @@ import play.api.libs.json._
 import io.useless.accesstoken.AccessToken
 import io.useless.account.User
 import io.useless.play.json.accesstoken.AccessTokenJson._
-import io.useless.play.client.MockBaseClientComponent
+import io.useless.play.client._
 import io.useless.test.Await
 
 class PlayAccessTokenClientSpec
@@ -17,11 +17,14 @@ class PlayAccessTokenClientSpec
 {
 
   class MockPlayAccessTokenClient(status: Int, json: JsValue)
-    extends PlayAccessTokenClient(optAuthGuid = None)
-    with    MockBaseClientComponent
+    extends PlayAccessTokenClient(UUID.randomUUID)
   {
 
-    override lazy val baseClient = new MockBaseClient(status, json)
+    override lazy val resourceClient = {
+      val baseClient = new MockBaseClient(status, json)
+      val jsonClient = new DefaultJsonClient(baseClient)
+      new DefaultResourceClient(jsonClient)
+    }
 
   }
 

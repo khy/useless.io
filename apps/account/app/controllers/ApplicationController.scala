@@ -14,7 +14,7 @@ object ApplicationController
   with    SessionAuthenticatorComponent
 {
 
-  val authDao = new ClientAuthDao
+  val authDao = new ClientAuthDao("account.accessTokenGuid")
   val authenticator = new SessionAuthenticator("auth")
 
   def index = Action.async { request =>
