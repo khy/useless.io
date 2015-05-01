@@ -1,19 +1,10 @@
-package io.useless.util
+package io.useless.util.configuration
 
 import play.api.Play
 import play.api.{ Configuration => PlayConfig }
 import com.typesafe.config.ConfigFactory
 
-trait Configuration
-  extends DefaultConfigurationComponent
-
-trait ConfigurationComponent {
-
-  def configuration: PlayConfig
-
-}
-
-trait DefaultConfigurationComponent extends ConfigurationComponent {
+trait Configuration {
 
   lazy val configuration = Play.maybeApplication.map { application =>
     application.configuration

@@ -7,7 +7,7 @@ import play.api.Play
 import io.useless.play.client.ResourceClient
 import io.useless.accesstoken.AccessToken
 import io.useless.account.{ App, AuthorizedApp, User }
-import io.useless.util.Configuration
+import io.useless.util.configuration.Configuration
 
 object AccountClient
   extends DefaultAccountClientComponent

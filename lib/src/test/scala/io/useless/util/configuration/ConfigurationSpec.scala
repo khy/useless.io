@@ -1,4 +1,4 @@
-package io.useless.util
+package io.useless.util.configuration
 
 import org.scalatest.FunSpec
 import org.scalatest.Matchers

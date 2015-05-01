@@ -5,7 +5,7 @@ import scala.concurrent.duration.FiniteDuration
 import reactivemongo.api._
 import reactivemongo.api.collections.default.BSONCollection
 
-import io.useless.util.Configuration
+import io.useless.util.configuration.Configuration
 
 object MongoAccessor extends Configuration {
 

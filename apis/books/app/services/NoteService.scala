@@ -10,7 +10,8 @@ import io.useless.account.Account
 import io.useless.accesstoken.AccessToken
 import io.useless.client.account.AccountClient
 import io.useless.pagination._
-import io.useless.util.{Configuration, Uuid}
+import io.useless.util.configuration.Configuration
+import io.useless.util.configuration.RichConfiguration._
 
 import db.Driver.simple._
 import db.Notes
@@ -80,10 +81,7 @@ object NoteService extends BaseService with Configuration {
   }
 
   lazy val accountClient = {
-    val authGuid = configuration.getString("books.accessTokenGuid").flatMap { raw =>
-      Uuid.parseUuid(raw).toOption
-    }.get
-
+    val authGuid = configuration.underlying.getUuid("books.accessTokenGuid")
     AccountClient.instance(authGuid)
   }
 

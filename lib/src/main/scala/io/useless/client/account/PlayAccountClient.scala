@@ -7,7 +7,7 @@ import play.api.libs.json.Json
 import io.useless.account.Account
 import io.useless.play.client.ResourceClient
 import io.useless.play.json.account.AccountJson._
-import io.useless.util.Configuration
+import io.useless.util.configuration.Configuration
 
 class PlayAccountClient(
   authGuid: UUID
