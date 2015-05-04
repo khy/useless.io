@@ -10,3 +10,4 @@ services:
 before_script:
   - psql -c 'CREATE ROLE useless LOGIN;' -U postgres
   - psql -c 'CREATE DATABASE useless_books_test OWNER useless;' -U postgres
+  - psql -c 'CREATE EXTENSION IF NOT EXISTS pg_trgm;' -U postgres useless_books_test
