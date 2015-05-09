@@ -12,7 +12,7 @@ resolvers ++= Seq(
   "Sonatype OSS Releases"   at "https://oss.sonatype.org/content/groups/public"
 )
 
-val playVersion = "2.3.8"
+val playVersion = "2.3.9"
 
 libraryDependencies ++= Seq(
   "com.typesafe.play" %%  "play"          % playVersion,
