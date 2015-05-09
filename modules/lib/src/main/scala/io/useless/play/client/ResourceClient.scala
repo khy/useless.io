@@ -13,24 +13,14 @@ object ResourceClient {
 
   def apply(baseUrl: String, auth: String)(implicit app: Application): ResourceClient = {
     val jsonClient = JsonClient(baseUrl, auth)
-    new DefaultResourceClient(jsonClient)
+    new ResourceClient(jsonClient)
   }
 
 }
 
-trait ResourceClient {
+class ResourceClient(jsonClient: JsonClient) {
 
-  def get[T](path: String)(implicit reads: Reads[T]): Future[Option[T]]
-
-  def find[T](path: String, query: (String, String)*)(implicit reads: Reads[T]): Future[Page[T]]
-
-  def create[T](path: String, body: JsValue)(implicit reads: Reads[T]): Future[Either[String, T]]
-
-}
-
-class DefaultResourceClient(jsonClient: JsonClient) extends ResourceClient {
-
-  def get[T](path: String)(implicit reads: Reads[T]) = {
+  def get[T](path: String)(implicit reads: Reads[T]): Future[Option[T]] = {
     jsonClient.get(path).map { optJson =>
       optJson.map { json =>
         Json.fromJson[T](json) match {
@@ -41,7 +31,7 @@ class DefaultResourceClient(jsonClient: JsonClient) extends ResourceClient {
     }
   }
 
-  def find[T](path: String, query: (String, String)*)(implicit reads: Reads[T]) = {
+  def find[T](path: String, query: (String, String)*)(implicit reads: Reads[T]): Future[Page[T]] = {
     jsonClient.find(path, query:_*).map { page =>
       page.copy(
         items = page.items.map { json =>
@@ -54,7 +44,7 @@ class DefaultResourceClient(jsonClient: JsonClient) extends ResourceClient {
     }
   }
 
-  def create[T](path: String, body: JsValue)(implicit reads: Reads[T]) = {
+  def create[T](path: String, body: JsValue)(implicit reads: Reads[T]): Future[Either[String, T]] = {
     jsonClient.create(path, body).map { result =>
       result.right.map { json =>
         Json.fromJson[T](json) match {
