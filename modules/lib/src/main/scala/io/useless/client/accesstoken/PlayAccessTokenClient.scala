@@ -1,6 +1,7 @@
 package io.useless.client.accesstoken
 
 import java.util.UUID
+import play.api.Application
 import play.api.libs.json.Json
 
 import io.useless.accesstoken.AccessToken
@@ -10,6 +11,8 @@ import io.useless.util.configuration.Configuration
 
 class PlayAccessTokenClient(
   authGuid: UUID
+)(
+  implicit app: Application
 ) extends AccessTokenClient with Configuration {
 
   protected lazy val resourceClient = {

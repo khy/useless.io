@@ -5,15 +5,17 @@ import org.scalatest.Matchers
 import java.util.UUID
 import play.api.libs.ws.Response
 import play.api.libs.json._
+import org.scalatestplus.play.OneAppPerSuite
 
 import io.useless.account.User
 import io.useless.play.json.account.AccountJson._
 import io.useless.play.client._
-import io.useless.test.Await
+import io.useless.test.{ Await, ImplicitPlayApplication }
 
 class PlayAccountClientSpec
   extends FunSpec
   with    Matchers
+  with    ImplicitPlayApplication
 {
 
   class MockPlayAccountClient(status: Int, json: JsValue)

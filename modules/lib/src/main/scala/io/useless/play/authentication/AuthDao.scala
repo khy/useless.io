@@ -2,6 +2,7 @@ package io.useless.play.authentication
 
 import java.util.UUID
 import scala.concurrent.Future
+import play.api.Application
 
 import io.useless.accesstoken.AccessToken
 import io.useless.client.accesstoken.AccessTokenClient
@@ -23,9 +24,9 @@ trait AuthDaoComponent {
 
 trait ClientAuthDaoComponent extends AuthDaoComponent with Configuration {
 
-  class ClientAuthDao(authGuid: UUID) extends AuthDao {
+  class ClientAuthDao(authGuid: UUID)(implicit app: Application) extends AuthDao {
 
-    def this(guidConfigKey: String) = {
+    def this(guidConfigKey: String)(implicit app: Application) = {
       this(configuration.underlying.getUuid(guidConfigKey))
     }
 

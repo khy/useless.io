@@ -2,7 +2,7 @@ package clients.auth.accesstoken
 
 import java.util.UUID
 import scala.concurrent.Future
-import play.api.Play
+import play.api.Play.current
 
 import io.useless.play.client.ResourceClient
 import io.useless.accesstoken.{ AccessToken, AuthorizedAccessToken, Scope }

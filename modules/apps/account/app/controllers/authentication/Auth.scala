@@ -2,6 +2,7 @@ package controllers.account.authentication
 
 import java.util.UUID
 import play.api.mvc.{ Cookie, Request, Results }
+import play.api.Play.current
 import io.useless.play.authentication._
 
 import controllers.account.routes.ApplicationController

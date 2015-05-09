@@ -3,17 +3,16 @@ package io.useless.play.client
 import java.util.UUID
 import scala.concurrent.Future
 import com.ning.http.client.AsyncHttpClientConfig
-import play.api.libs.ws.{ WSResponse, WSClient }
-import play.api.libs.ws.ning.NingWSClient
-import play.api.libs.ws.WS.WSRequestHolder
+import play.api.Application
+import play.api.libs.ws.{ WS, WSResponse, WSClient }
 import play.api.libs.json.JsValue
 
 import io.useless.util.Logger
 
 object BaseClient {
 
-  def apply(baseUrl: String, auth: String): BaseClient = {
-    new DefaultBaseClient(baseUrl, auth)
+  def apply(baseUrl: String, auth: String)(implicit app: Application): BaseClient = {
+    new DefaultBaseClient(WS.client, baseUrl, auth)
   }
 
 }
@@ -32,6 +31,7 @@ trait BaseClient {
 
 
 class DefaultBaseClient(
+  val client: WSClient,
   val baseUrl: String,
   val auth: String
 ) extends BaseClient with Logger {
@@ -54,11 +54,6 @@ class DefaultBaseClient(
     val strippedBaseUrl = "/$".r.replaceAllIn(baseUrl, "")
     val strippedPath = "^/".r.replaceAllIn(path, "")
     strippedBaseUrl + "/" + strippedPath
-  }
-
-  private lazy val client: WSClient = {
-    val config = new AsyncHttpClientConfig.Builder().build()
-    new NingWSClient(config)
   }
 
 }

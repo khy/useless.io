@@ -14,11 +14,15 @@ import io.useless.accesstoken.AccessToken
 import io.useless.account.{ Account, User }
 import io.useless.client.UnauthorizedException
 import io.useless.client.accesstoken.{ AccessTokenClient, MockAccessTokenClient }
+import io.useless.test.ImplicitPlayApplication
 
 class AuthenticationSpec
   extends FunSpec
   with    Matchers
+  with    ImplicitPlayApplication
 {
+
+
 
   val accessToken = AccessToken(
     guid = UUID.fromString("3a65a664-89a0-4f5b-8b9e-f3226af0ff99"),

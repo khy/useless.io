@@ -3,6 +3,7 @@ package io.useless.play.authentication
 import java.util.UUID
 import org.scalatest.FunSpec
 import org.scalatest.Matchers
+import org.scalatestplus.play.OneAppPerSuite
 import play.api.mvc._
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
@@ -10,10 +11,12 @@ import play.api.test.Helpers._
 import io.useless.accesstoken.{ AccessToken, Scope }
 import io.useless.account.User
 import io.useless.client.accesstoken.{ AccessTokenClient, MockAccessTokenClient }
+import io.useless.test.ImplicitPlayApplication
 
 class AuthorizedSpec
   extends FunSpec
   with    Matchers
+  with    ImplicitPlayApplication
 {
 
   val readScope = Scope("read")

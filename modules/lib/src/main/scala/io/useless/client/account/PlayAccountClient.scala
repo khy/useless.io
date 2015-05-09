@@ -2,6 +2,7 @@ package io.useless.client.account
 
 import java.util.UUID
 import scala.concurrent.ExecutionContext.Implicits.global
+import play.api.Application
 import play.api.libs.json.Json
 
 import io.useless.account.Account
@@ -11,7 +12,9 @@ import io.useless.util.configuration.Configuration
 
 class PlayAccountClient(
   authGuid: UUID
-)extends AccountClient with Configuration {
+)(
+  implicit app: Application
+) extends AccountClient with Configuration {
 
   protected lazy val resourceClient = {
     val baseUrl = configuration.underlying.getString("useless.core.baseUrl")

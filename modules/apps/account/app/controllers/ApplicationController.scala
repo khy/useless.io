@@ -3,6 +3,7 @@ package controllers.account
 import play.api._
 import play.api.mvc._
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
+import play.api.Play.current
 import io.useless.account.User
 import io.useless.play.authentication.ClientAuthDaoComponent
 

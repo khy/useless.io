@@ -3,6 +3,7 @@ package services.books
 import java.util.UUID
 import java.sql.Timestamp
 import scala.concurrent.Future
+import play.api.Play.current
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import org.joda.time.DateTime
 import io.useless.ClientError

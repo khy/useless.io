@@ -2,6 +2,7 @@ package models.haiku
 
 import java.util.UUID
 import scala.concurrent.Future
+import play.api.Play.current
 import play.api.libs.concurrent.Execution.Implicits._
 import scala.collection.mutable
 import org.joda.time.DateTime

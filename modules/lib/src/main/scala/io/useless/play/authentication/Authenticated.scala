@@ -1,8 +1,8 @@
 package io.useless.play.authentication
 
-object Authenticated extends Authenticated("useless.client.accessTokenGuid")
+import play.api.Application
 
-class Authenticated(guidConfigKey: String)
+class Authenticated(guidConfigKey: String)(implicit app: Application)
   extends BaseAuthenticated
   with    ClientAuthDaoComponent
 {

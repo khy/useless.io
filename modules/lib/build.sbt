@@ -24,7 +24,8 @@ libraryDependencies ++= Seq(
   "com.typesafe.play" %% "play-test"    % playVersion  % "test",
   "org.scalatest"     %% "scalatest"    % "2.2.4"      % "test,it",
   "org.mockito"       %  "mockito-all"  % "1.9.5"      % "test",
-  "org.scalacheck"    %% "scalacheck"   % "1.12.2"     % "test"
+  "org.scalacheck"    %% "scalacheck"   % "1.12.2"     % "test",
+  "org.scalatestplus" %% "play"         % "1.1.0"      % "test"
 )
 
 parallelExecution in Test := false

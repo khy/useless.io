@@ -2,6 +2,7 @@ package clients.account
 
 import java.util.UUID
 import scala.concurrent.Future
+import play.api.Play.current
 import play.api.libs.concurrent.Execution.Implicits._
 import io.useless.client.ClientException
 import io.useless.play.client.ResourceClient
