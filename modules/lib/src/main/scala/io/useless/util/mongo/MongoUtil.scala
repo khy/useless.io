@@ -20,7 +20,7 @@ object MongoUtil {
         forall    { result => result }
     }
 
-    Await.result(clear, 1.second)
+    Await.result(clear, 10.second)
   }
 
 }
