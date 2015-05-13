@@ -12,23 +12,36 @@ import io.useless.util.Logger
 object BaseClient {
 
   def apply(baseUrl: String, auth: String)(implicit app: Application): BaseClient = {
-    new BaseClient(WS.client, baseUrl, auth)
+    new DefaultBaseClient(WS.client, baseUrl, auth)
   }
 
 }
 
-class BaseClient(
-  client: WSClient,
+trait BaseClient {
+
+  def baseUrl: String
+
+  def auth: String
+
+  def get(path: String, query: (String, String)*): Future[WSResponse]
+
+  def post(path: String, body: JsValue): Future[WSResponse]
+
+}
+
+
+class DefaultBaseClient(
+  val client: WSClient,
   val baseUrl: String,
   val auth: String
-) extends Logger {
+) extends BaseClient with Logger {
 
-  def get(path: String, query: (String, String)*): Future[WSResponse] = {
+  def get(path: String, query: (String, String)*) = {
     logger.info("BaseClient request: GET %s (as [%s])".format(path, auth))
     request(path).withQueryString(query:_*).get
   }
 
-  def post(path: String, body: JsValue): Future[WSResponse] = {
+  def post(path: String, body: JsValue) = {
     logger.info("BaseClient request: POST %s (as [%s])".format(path, auth))
     request(path).post(body)
   }

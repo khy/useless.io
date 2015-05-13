@@ -12,14 +12,24 @@ object JsonClient {
 
   def apply(baseUrl: String, auth: String)(implicit app: Application): JsonClient = {
     val baseClient = BaseClient(baseUrl, auth)
-    new JsonClient(baseClient)
+    new DefaultJsonClient(baseClient)
   }
 
 }
 
-class JsonClient(baseClient: BaseClient) {
+trait JsonClient {
 
-  def get(path: String): Future[Option[JsValue]] = {
+  def get(path: String): Future[Option[JsValue]]
+
+  def find(path: String, query: (String, String)*): Future[Page[JsValue]]
+
+  def create(path: String, body: JsValue): Future[Either[String, JsValue]]
+
+}
+
+class DefaultJsonClient(baseClient: BaseClient) extends JsonClient {
+
+  def get(path: String) = {
     baseClient.get(path).map { response =>
       response.status match {
         case 200 => Some(response.json)
@@ -31,7 +41,7 @@ class JsonClient(baseClient: BaseClient) {
     }
   }
 
-  def find(path: String, query: (String, String)*): Future[Page[JsValue]] = {
+  def find(path: String, query: (String, String)*) = {
     baseClient.get(path, query:_*).map { response =>
       response.status match {
         case 200 => Json.fromJson[Seq[JsValue]](response.json) match {
@@ -45,7 +55,7 @@ class JsonClient(baseClient: BaseClient) {
     }
   }
 
-  def create(path: String, body: JsValue): Future[Either[String, JsValue]] = {
+  def create(path: String, body: JsValue) = {
     baseClient.post(path, body).map { response =>
       response.status match {
         case 201 => Right(response.json)
