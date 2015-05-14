@@ -1,5 +1,3 @@
-name := "useless-account"
-
-version := "0.0.1"
+Defaults.Settings.base
 
 javaOptions in Test += "-Dconfig.file=conf/account.test.conf"

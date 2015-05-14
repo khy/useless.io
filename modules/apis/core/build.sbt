@@ -1,13 +1,10 @@
-name := "useless-core"
-
-version := "0.10.0"
-
-libraryDependencies ++= Seq(
-  "org.reactivemongo" %% "reactivemongo" % "0.10.5.0.akka23"
-) ++ Seq(
-  "org.scalatestplus"   %% "play"       % "1.1.0"           % "test"
-)
+Defaults.Settings.base
 
 Mongo.defaultSettings
+
+libraryDependencies ++= Seq(
+  Defaults.Dependencies.reactiveMongo,
+  Defaults.Dependencies.scalaTestPlay
+)
 
 javaOptions in Test += "-Dconfig.file=conf/core.test.conf"

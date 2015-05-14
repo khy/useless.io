@@ -6,7 +6,7 @@ scalacOptions in ThisBuild ++= Seq("-unchecked", "-deprecation", "-feature", "-l
 
 parallelExecution in Global := false
 
-lazy val lib = (project in file("modules/lib")).configs(IntegrationTest).settings(Defaults.itSettings: _*)
+lazy val lib = (project in file("modules/lib")).configs(IntegrationTest).settings(sbt.Defaults.itSettings: _*)
 
 lazy val core = (project in file("modules/apis/core")).enablePlugins(PlayScala).dependsOn(lib)
 
