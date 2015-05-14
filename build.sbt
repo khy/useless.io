@@ -10,7 +10,7 @@ lazy val lib = (project in file("modules/lib")).configs(IntegrationTest).setting
 
 lazy val core = (project in file("modules/apis/core")).enablePlugins(PlayScala).dependsOn(lib)
 
-lazy val books = (project in file("modules/apis/books")).enablePlugins(PlayScala).dependsOn(lib)
+lazy val books = (project in file("modules/apis/books")).enablePlugins(PlayScala, Postgres).dependsOn(lib)
 lazy val haiku = (project in file("modules/apis/haiku")).enablePlugins(PlayScala).dependsOn(lib)
 
 lazy val auth = (project in file("modules/apps/auth")).enablePlugins(PlayScala).dependsOn(lib)
