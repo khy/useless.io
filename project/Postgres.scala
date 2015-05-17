@@ -3,8 +3,6 @@ import Keys._
 
 object Postgres extends AutoPlugin {
 
-  val dumpBaseDirectory = "dump/postgres"
-
   object autoImport {
 
     val postgresRemoteHost = settingKey[String](
@@ -21,6 +19,10 @@ object Postgres extends AutoPlugin {
 
     val postgresRemoteDatabase = settingKey[String](
       "The name of the remote PostgreSQL database to connect to."
+    )
+
+    val postgresDumpBaseDirectory = settingKey[String](
+      "The directory where PostgreSQL dumps will be stored."
     )
 
     val postgresDumpRemote = taskKey[File](
@@ -43,8 +45,10 @@ object Postgres extends AutoPlugin {
 
   override def projectSettings = Seq(
 
+    postgresDumpBaseDirectory := "dump/postgres",
+
     postgresDumpRemote := {
-      val directory = dumpBaseDirectory + "/" + postgresRemoteHost.value + "/" + postgresRemoteDatabase.value
+      val directory = postgresDumpBaseDirectory.value + "/" + postgresRemoteHost.value + "/" + postgresRemoteDatabase.value
       IO.createDirectory(file(directory))
       val dumpFile = file(directory + "/" + (buildUniqueString()) + ".sql")
 
