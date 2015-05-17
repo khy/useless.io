@@ -27,26 +27,68 @@ object Postgres extends AutoPlugin {
       "Dumps the configured remote PostgreSQL database, returning the dump file."
     )
 
+    val postgresLocalDatabase = settingKey[String](
+      "The name of the local PostgreSQL database to be replaced."
+    )
+
+    val postgresRestoreFromRemote = taskKey[Unit](
+      "Drop the local PostgreSQL database, and replace it with the remote one."
+    )
+
   }
 
   import autoImport._
 
+  def buildUniqueString() = (System.currentTimeMillis / 1000).toString
+
   override def projectSettings = Seq(
 
     postgresDumpRemote := {
-      IO.createDirectory(file(dumpBaseDirectory))
-      val dumpFile = file(dumpBaseDirectory + "/" + (System.currentTimeMillis / 1000))
+      val directory = dumpBaseDirectory + "/" + postgresRemoteHost.value + "/" + postgresRemoteDatabase.value
+      IO.createDirectory(file(directory))
+      val dumpFile = file(directory + "/" + (buildUniqueString()) + ".sql")
 
       val command = Seq(
         "pg_dump",
         "--host", postgresRemoteHost.value,
         "--username", postgresRemoteUsername.value,
-        "--dbname", postgresRemoteDatabase.value
+        "--dbname", postgresRemoteDatabase.value,
+        "--no-owner",
+        "--no-privileges"
       )
 
       Process(command, None, "PGPASSWORD" -> postgresRemotePassword.value) #> dumpFile !
 
       dumpFile
+    },
+
+    postgresRestoreFromRemote := {
+      val dumpFile = postgresDumpRemote.value
+      val localDatabase = postgresLocalDatabase.value
+      val tmpDatabase = localDatabase + "_" + buildUniqueString()
+      val backupDatabase = localDatabase + "_bak"
+
+      s"createdb ${tmpDatabase}".!
+
+      Seq(
+        "psql",
+        "--dbname", tmpDatabase,
+        "--file", dumpFile.getPath
+      ).!
+
+      s"dropdb --if-exists ${backupDatabase}".!
+
+      Seq(
+        "psql",
+        "--dbname", "postgres",
+        "--command", s"ALTER DATABASE ${localDatabase} RENAME TO ${backupDatabase}"
+      ).!
+
+      Seq(
+        "psql",
+        "--dbname", "postgres",
+        "--command", s"ALTER DATABASE ${tmpDatabase} RENAME TO ${localDatabase}"
+      ).!
     }
 
   )
