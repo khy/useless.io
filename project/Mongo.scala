@@ -1,103 +1,84 @@
 import sbt._
 import Keys._
-import com.typesafe.sbt.packager.Keys.stage
 
-object Mongo {
+object Mongo extends AutoPlugin {
 
-  val productionDumpDir = "dump/production"
+  object autoImport {
 
-  val devDatabase = "useless_core_dev"
-
-  object Keys {
-
-    val productionMongoHost = settingKey[String](
-      "The host of the production Mongo DB."
+    val mongoRemoteHost = settingKey[String](
+      "The host of the remote Mongo database."
     )
 
-    val productionMongoPort = settingKey[Int](
-      "The port of the production Mongo DB."
+    val mongoRemoteUsername = settingKey[String](
+      "The username used to access the remote Mongo database."
     )
 
-    val productionMongoDatabase = settingKey[String](
-      "The name of the production Mongo DB "
+    val mongoRemotePassword = settingKey[String](
+      "The password used to access the remote Mongo database."
     )
 
-    val productionMongoUsername = settingKey[String](
-      "The username used to access the production Mongo DB."
+    val mongoRemoteDatabase = settingKey[String](
+      "The name of the production Mongo database to connect to."
     )
 
-    val productionMongoPassword = settingKey[String](
-      "The password used to access the production Mongo DB"
+    val mongoDumpBaseDirectory = settingKey[String](
+      "The directory where Mongo dumps will be stored."
     )
 
-    val dumpProductionMongo = taskKey[Unit](
-      "Dumps the production Mongo DB to a unique subdirectory of the " +
-      s"'${productionDumpDir}' directory"
+    val mongoDumpRemote = taskKey[File](
+      "Dumps the configured remote Mongo database, returning the dump file."
     )
 
-    val restoreLastProductionMongoDump = taskKey[Unit](
-      s"Restores the latest Mongo dump in the '${productionDumpDir}' directory."
+    val mongoLocalDatabase = settingKey[String](
+      "The name of the local PostgreSQL database to be replaced."
     )
 
-    val restoreMongoFromProduction = taskKey[Unit](
+    val mongoRestoreFromRemote = taskKey[Unit](
       "Dumps the production Mongo DB and restores it."
     )
 
   }
 
-  import Keys._
+  import autoImport._
 
-  val defaultSettings = Seq(
+  def buildUniqueString() = (System.currentTimeMillis / 1000).toString
 
-    // Dummy values that should be overriden somewhere.
-    productionMongoHost := "localhost",
+  override def projectSettings = Seq(
 
-    productionMongoPort := 27017,
+    mongoDumpBaseDirectory := "dump/mongo",
 
-    productionMongoDatabase := "dummy",
-
-    productionMongoUsername := "dummy",
-
-    productionMongoPassword := "secret",
-
-    dumpProductionMongo := {
-      val host = productionMongoHost.value
-      val port = productionMongoPort.value
-      val database = productionMongoDatabase.value
-      val username = productionMongoUsername.value
-      val password = productionMongoPassword.value
-      val subDirectory = System.currentTimeMillis / 1000
+    mongoDumpRemote := {
+      val directory = mongoDumpBaseDirectory.value + "/" + mongoRemoteHost.value + "/" + mongoRemoteDatabase.value
+      IO.createDirectory(file(directory))
+      val dumpFile = file(directory + "/" + buildUniqueString())
 
       List("mongodump",
-        "-h", s"${host}:${port}",
-        "-d", database,
-        "-u", username,
-        "-p", password,
-        "-o", s"${productionDumpDir}/${subDirectory}"
+        "--host", mongoRemoteHost.value,
+        "--username", mongoRemoteUsername.value,
+        "--password", mongoRemotePassword.value,
+        "--db", mongoRemoteDatabase.value,
+        "--out", dumpFile.getPath
       ).!
+
+      dumpFile
     },
 
-    restoreLastProductionMongoDump := {
-      s"mkdir -p ${productionDumpDir}".!
-      val cmd = s"ls ${productionDumpDir}" #| "sort -r" #| "head -n 1"
-      val latestDumpSubDirectory = cmd.lines_!.headOption
+    mongoRestoreFromRemote := {
+      val dumpFile = mongoDumpRemote.value
+      val localDatabase = mongoLocalDatabase.value
 
-      latestDumpSubDirectory.map { subDirectory =>
-        val database = productionMongoDatabase.value
+      List(
+        "mongo",
+        localDatabase,
+        "--eval", "db.dropDatabase()"
+      ).!
 
-        List("mongo", devDatabase, "--eval", "db.dropDatabase()").!
-
-        List(
-          "mongorestore",
-          "--db", devDatabase,
-          s"${productionDumpDir}/${subDirectory}/${database}"
-        ).!
-      }.getOrElse {
-        throw new RuntimeException(s"No dumps in '${productionDumpDir}'")
-      }
-    },
-
-    restoreMongoFromProduction <<= restoreLastProductionMongoDump.dependsOn(dumpProductionMongo)
+      List(
+        "mongorestore",
+        "--db", localDatabase,
+        dumpFile.getPath
+      ).!
+    }
 
   )
 

@@ -1,7 +1,5 @@
 Defaults.Settings.base
 
-Mongo.defaultSettings
-
 libraryDependencies ++= Seq(
   Defaults.Dependencies.reactiveMongo,
   Defaults.Dependencies.scalaTestPlay
