@@ -9,6 +9,10 @@ object Mongo extends AutoPlugin {
       "The host of the remote Mongo database."
     )
 
+    val mongoRemotePort = settingKey[Int](
+      "The port of the remote Mongo database."
+    )
+
     val mongoRemoteUsername = settingKey[String](
       "The username used to access the remote Mongo database."
     )
@@ -45,6 +49,8 @@ object Mongo extends AutoPlugin {
 
   override def projectSettings = Seq(
 
+    mongoRemotePort := 27017,
+
     mongoDumpBaseDirectory := "dump/mongo",
 
     mongoDumpRemote := {
@@ -54,6 +60,7 @@ object Mongo extends AutoPlugin {
 
       List("mongodump",
         "--host", mongoRemoteHost.value,
+        "--port", mongoRemotePort.value.toString,
         "--username", mongoRemoteUsername.value,
         "--password", mongoRemotePassword.value,
         "--db", mongoRemoteDatabase.value,
@@ -76,7 +83,7 @@ object Mongo extends AutoPlugin {
       List(
         "mongorestore",
         "--db", localDatabase,
-        dumpFile.getPath
+        dumpFile.getPath + "/" + mongoRemoteDatabase.value
       ).!
     }
 
