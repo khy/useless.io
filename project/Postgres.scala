@@ -29,6 +29,10 @@ object Postgres extends AutoPlugin {
       "Dumps the configured remote PostgreSQL database, returning the dump file."
     )
 
+    val postgresLocalUsername = settingKey[String](
+      "The local username used to load the database."
+    )
+
     val postgresLocalDatabase = settingKey[String](
       "The name of the local PostgreSQL database to be replaced."
     )
@@ -74,6 +78,8 @@ object Postgres extends AutoPlugin {
       dumpFile
     },
 
+    postgresLocalUsername := "useless",
+
     postgresLocalDatabase := "DUMMY",
 
     postgresRestoreFromRemote := {
@@ -87,7 +93,8 @@ object Postgres extends AutoPlugin {
       Seq(
         "psql",
         "--dbname", tmpDatabase,
-        "--file", dumpFile.getPath
+        "--file", dumpFile.getPath,
+        "--user", postgresLocalUsername.value
       ).!
 
       s"dropdb --if-exists ${backupDatabase}".!
