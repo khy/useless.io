@@ -45,6 +45,14 @@ object Postgres extends AutoPlugin {
 
   override def projectSettings = Seq(
 
+    postgresRemoteHost := "DUMMY",
+
+    postgresRemoteUsername := "DUMMY",
+
+    postgresRemotePassword := "DUMMY",
+
+    postgresRemoteDatabase := "DUMMY",
+
     postgresDumpBaseDirectory := "dump/postgres",
 
     postgresDumpRemote := {
@@ -65,6 +73,8 @@ object Postgres extends AutoPlugin {
 
       dumpFile
     },
+
+    postgresLocalDatabase := "DUMMY",
 
     postgresRestoreFromRemote := {
       val dumpFile = postgresDumpRemote.value

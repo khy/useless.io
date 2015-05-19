@@ -49,7 +49,15 @@ object Mongo extends AutoPlugin {
 
   override def projectSettings = Seq(
 
+    mongoRemoteHost := "DUMMY",
+
     mongoRemotePort := 27017,
+
+    mongoRemoteUsername := "DUMMY",
+
+    mongoRemotePassword := "DUMMY",
+
+    mongoRemoteDatabase := "DUMMY",
 
     mongoDumpBaseDirectory := "dump/mongo",
 
@@ -69,6 +77,8 @@ object Mongo extends AutoPlugin {
 
       dumpFile
     },
+
+    mongoLocalDatabase := "DUMMY",
 
     mongoRestoreFromRemote := {
       val dumpFile = mongoDumpRemote.value
