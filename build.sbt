@@ -14,7 +14,7 @@ lazy val books = (project in file("modules/apis/books")).enablePlugins(PlayScala
 lazy val haiku = (project in file("modules/apis/haiku")).enablePlugins(PlayScala, Mongo).dependsOn(lib)
 
 lazy val auth = (project in file("modules/apps/auth")).enablePlugins(PlayScala).dependsOn(lib)
-lazy val account = (project in file("modules/apps/account")).enablePlugins(PlayScala).dependsOn(lib)
+lazy val account = (project in file("modules/apps/account")).enablePlugins(PlayScala, Mongo).dependsOn(lib)
 
 lazy val root = (project in file(".")).
   enablePlugins(PlayScala).
