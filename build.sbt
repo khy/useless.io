@@ -17,6 +17,16 @@ lazy val auth = (project in file("modules/apps/auth")).enablePlugins(PlayScala, 
 lazy val account = (project in file("modules/apps/account")).enablePlugins(PlayScala, Mongo).dependsOn(lib)
 
 lazy val root = (project in file(".")).
-  enablePlugins(PlayScala).
+  enablePlugins(PlayScala, DockerPlugin).
   dependsOn(core, haiku, books, auth, account).
-  aggregate(lib, core, haiku, books, auth, account)
+  aggregate(lib, core, haiku, books, auth, account).
+  settings(
+    aggregate in stage := false,
+    aggregate in publishLocal := false,
+    aggregate in publish := false
+  )
+
+dockerBaseImage := "java:8"
+maintainer in Docker := "Kevin Hyland <khy@me.com>"
+dockerRepository := Some("khyland")
+dockerCmd := Seq("-Dconfig.file=conf/prod.conf")
