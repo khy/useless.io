@@ -1,5 +1,3 @@
-name := "useless"
-
 organization := "io.useless"
 
 version := "0.17.2"
