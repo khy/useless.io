@@ -17,7 +17,7 @@ lazy val auth = (project in file("modules/apps/auth")).enablePlugins(PlayScala, 
 lazy val account = (project in file("modules/apps/account")).enablePlugins(PlayScala, Mongo).dependsOn(lib)
 
 lazy val root = (project in file(".")).
-  enablePlugins(PlayScala, DockerPlugin).
+  enablePlugins(PlayScala, DockerPlugin, Release).
   dependsOn(core, haiku, books, auth, account).
   aggregate(lib, core, haiku, books, auth, account).
   settings(
