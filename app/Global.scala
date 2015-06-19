@@ -1,13 +1,14 @@
 import play.api.{Application, Logger}
 import play.api.mvc.WithFilters
 import com.typesafe.config.ConfigRenderOptions
-import io.useless.play.filter.{ AccessLogFilter, RequestTimeFilter }
+import io.useless.play.filter._
 
 import models.core.account.Account
 import daos.account.AuthorizationDao
 
 object Global
   extends WithFilters(
+    new HttpsRedirectFilter,
     new AccessLogFilter,
     new RequestTimeFilter
   )
