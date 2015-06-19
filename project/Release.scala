@@ -13,6 +13,17 @@ object Release extends AutoPlugin {
 
   object autoImport {
 
+    val publishStepTasks = settingKey[Seq[TaskKey[_]]](
+      "A sequence of sbt Tasks to be run as the 'publish' step of the release. " +
+      "By default, this is simply `publish`."
+    )
+
+    val publishSteps = settingKey[Seq[ReleaseStep]](
+      "A sequence of sbt-release ReleaseSteps to be run as the 'publish' step " +
+      "of the release. By default, this is the `publishStepTasks`, converted to " +
+      "ReleaseSteps."
+    )
+
     val ensureBoot2Docker = taskKey[Unit](
       "Ensure that boot2docker is running."
     )
@@ -22,6 +33,12 @@ object Release extends AutoPlugin {
   import autoImport._
 
   override def projectSettings = Seq(
+
+    publishStepTasks := Seq(publish),
+
+    publishSteps := publishStepTasks.value.map { taskKey =>
+      ReleaseStep(releaseStepTask(taskKey))
+    },
 
     ensureBoot2Docker := {
       "boot2docker up".!
@@ -33,10 +50,8 @@ object Release extends AutoPlugin {
       runTest,
       setReleaseVersion,
       commitReleaseVersion,
-      tagRelease,
-      releaseStepTask(publish in lib),
-      releaseStepTask(ensureBoot2Docker),
-      releaseStepTask(publish in Docker),
+      tagRelease
+    ) ++ publishSteps.value ++ Seq(
       setNextVersion,
       commitNextVersion,
       pushChanges
