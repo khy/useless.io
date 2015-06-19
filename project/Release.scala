@@ -34,6 +34,7 @@ object Release extends AutoPlugin {
       setReleaseVersion,
       commitReleaseVersion,
       tagRelease,
+      releaseStepTask(publish in lib),
       releaseStepTask(ensureBoot2Docker),
       releaseStepTask(publish in Docker),
       setNextVersion,
