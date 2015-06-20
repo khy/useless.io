@@ -1,3 +1,5 @@
+import com.typesafe.sbt.pgp.PgpKeys.publishSigned
+
 name := "useless"
 
 scalaVersion in ThisBuild := "2.11.6"
@@ -31,4 +33,4 @@ maintainer in Docker := "Kevin Hyland <khy@me.com>"
 dockerRepository := Some("khyland")
 dockerCmd := Seq("-Dconfig.file=conf/prod.conf")
 
-publishStepTasks := Seq((publish in lib), (ensureBoot2Docker), (publish in (root, Docker)))
+publishStepTasks := Seq((publishSigned in lib), (ensureBoot2Docker), (publish in (root, Docker)))
