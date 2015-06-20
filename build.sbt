@@ -33,4 +33,6 @@ maintainer in Docker := "Kevin Hyland <khy@me.com>"
 dockerRepository := Some("khyland")
 dockerCmd := Seq("-Dconfig.file=conf/prod.conf")
 
+useGpg := true
+
 publishStepTasks := Seq((publishSigned in lib), (ensureBoot2Docker), (publish in (root, Docker)))
