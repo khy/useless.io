@@ -1,7 +1,5 @@
 organization := "io.useless"
 
-version := "0.17.2"
-
 Defaults.Settings.base
 
 val playVersion = "2.3.9"
