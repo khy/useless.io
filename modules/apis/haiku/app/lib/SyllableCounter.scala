@@ -2,6 +2,7 @@ package lib.haiku
 
 import scala.io.Source
 import scala.util.matching.Regex
+import play.api.{Application, Play}
 
 trait SyllableCounter {
 
@@ -11,10 +12,12 @@ trait SyllableCounter {
 
 object TwoPhaseLineSyllableCounter {
 
-  lazy val default = new TwoPhaseLineSyllableCounter(
-    CmuDictSyllableCounter.default,
-    NaiveHeuristicSyllableCounter
-  )
+  def default()(implicit app: Application) = {
+    new TwoPhaseLineSyllableCounter(
+      CmuDictSyllableCounter.default(),
+      NaiveHeuristicSyllableCounter
+    )
+  }
 
 }
 
@@ -45,9 +48,9 @@ class TwoPhaseLineSyllableCounter(
 
 object CmuDictSyllableCounter {
 
-  lazy val default = {
-    val source = Source.fromFile("conf/cmudict.0.6d.txt")
-    new CmuDictSyllableCounter(source)
+  def default()(implicit app: Application) = {
+    val url = Play.application.classloader.getResource("cmudict.0.6d.txt")
+    new CmuDictSyllableCounter(Source.fromURL(url))
   }
 
 }

@@ -83,9 +83,9 @@ object Haiku extends Configuration {
 
   }
 
-  private def validate(lines: Seq[String]): Seq[Option[String]] = {
-    val counter = TwoPhaseLineSyllableCounter.default
+  lazy val counter = TwoPhaseLineSyllableCounter.default()
 
+  private def validate(lines: Seq[String]): Seq[Option[String]] = {
     lines.zip(Seq(5,7,5)).map { case (line, expectedSyllables) =>
       counter.count(line).map { syllables =>
         if ((syllables.min - 2) > expectedSyllables)
