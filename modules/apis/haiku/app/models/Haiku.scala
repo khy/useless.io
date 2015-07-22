@@ -1,17 +1,12 @@
 package models.haiku
 
+import java.util.UUID
+import org.joda.time.DateTime
 import io.useless.account.User
-import models.haiku.mongo.HaikuMongo.HaikuDocument
 
-class Haiku(
-  val createdBy: User,
-  document: HaikuDocument
-) {
-
-  val guid = document.guid
-
-  val lines = document.lines
-
-  val createdAt = document.createdAt
-
-}
+case class Haiku(
+  guid: UUID,
+  lines: Seq[String],
+  createdAt: DateTime,
+  createdBy: User
+)

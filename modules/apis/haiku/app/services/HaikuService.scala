@@ -30,6 +30,10 @@ object HaikuService extends Configuration {
     AccountClient.instance(authGuid)
   }
 
+  private def db2model(document: HaikuDocument, createdBy: User) = {
+    Haiku(document.guid, document.lines, document.createdAt, createdBy)
+  }
+
   def find(optUserHandle: Option[String], pagination: Pagination): Future[Seq[Haiku]] = {
     val count = pagination.count.getOrElse(30)
 
@@ -45,7 +49,7 @@ object HaikuService extends Configuration {
           val futures = documents.map { document =>
             accountClient.getAccount(document.createdByGuid).map { optAccount =>
               optAccount match {
-                case Some(user: User) => new Haiku(user, document)
+                case Some(user: User) => db2model(document, user)
                 case _ => throw new RuntimeException(s"Could not find User for createdByGuid [${document.createdByGuid}]")
               }
             }
@@ -75,7 +79,7 @@ object HaikuService extends Configuration {
 
       collection.insert(document).map { lastError =>
         if (lastError.ok) {
-          Right(new Haiku(user, document))
+          Right(db2model(document, user))
         } else {
           throw lastError
         }
