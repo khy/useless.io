@@ -9,7 +9,7 @@ import io.useless.play.authentication.Authenticated
 import io.useless.account.User
 
 import services.haiku.HaikuService
-import models.haiku.json.HaikuJson._
+import models.haiku.JsonImplicits._
 import lib.haiku.Pagination
 import controllers.haiku.auth.Auth
 

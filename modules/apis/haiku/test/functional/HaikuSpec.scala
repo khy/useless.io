@@ -14,7 +14,7 @@ import io.useless.client.account.{ AccountClient, MockAccountClient }
 import io.useless.util.mongo.MongoUtil
 
 import models.haiku.Haiku
-import models.haiku.json.HaikuJson._
+import models.haiku.JsonImplicits._
 
 class HaikuSpec extends PlaySpecification {
 
@@ -128,9 +128,9 @@ class HaikuSpec extends PlaySpecification {
 
       haikus.size must beEqualTo(2)
       (haikus(0) \ "lines")(0).as[String] must beEqualTo("even a horse")
-      (haikus(0) \ "created_by" \ "handle").as[String] must beEqualTo("khy")
+      (haikus(0) \ "createdBy" \ "handle").as[String] must beEqualTo("khy")
       (haikus(1) \ "lines")(0).as[String] must beEqualTo("by my new banana plant")
-      (haikus(1) \ "created_by" \ "handle").as[String] must beEqualTo("khy")
+      (haikus(1) \ "createdBy" \ "handle").as[String] must beEqualTo("khy")
     }
 
     "return haikus that are before the specified 'until' paramter" in new Context {
@@ -166,8 +166,8 @@ class HaikuSpec extends PlaySpecification {
       val haikus = Json.parse(response.body).as[Seq[JsValue]]
 
       haikus.size must beEqualTo(2)
-      (haikus(0) \ "created_by" \ "handle").as[String] must beEqualTo("khy")
-      (haikus(1) \ "created_by" \ "handle").as[String] must beEqualTo("khy")
+      (haikus(0) \ "createdBy" \ "handle").as[String] must beEqualTo("khy")
+      (haikus(1) \ "createdBy" \ "handle").as[String] must beEqualTo("khy")
     }
 
   }
