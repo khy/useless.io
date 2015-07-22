@@ -8,7 +8,7 @@ import play.api.libs.concurrent.Execution.Implicits._
 import io.useless.play.authentication.Authenticated
 import io.useless.account.User
 
-import models.haiku.Haiku
+import services.haiku.HaikuService
 import models.haiku.json.HaikuJson._
 import lib.haiku.Pagination
 import controllers.haiku.auth.Auth
@@ -19,7 +19,7 @@ object HaikuController extends Controller {
     val userHandle = request.getQueryString("user")
     val pagination = Pagination(request)
 
-    Haiku.find(userHandle, pagination).map { haikus =>
+    HaikuService.find(userHandle, pagination).map { haikus =>
       Ok(Json.toJson(haikus))
     }
   }
@@ -28,7 +28,7 @@ object HaikuController extends Controller {
     val lines = (request.body \ "lines").as[Seq[String]]
 
     request.accessToken.resourceOwner match {
-      case user: User => Haiku.create(user, lines).map { result =>
+      case user: User => HaikuService.create(user, lines).map { result =>
         result.fold (
           errors => UnprocessableEntity(Json.toJson(errors)),
           haiku => Created(Json.toJson(haiku))
