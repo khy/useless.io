@@ -1,7 +1,8 @@
 package test.functional
 
 import java.util.UUID
-import org.specs2.mutable._
+import org.scalatestplus.play.{PlaySpec, OneServerPerSuite}
+import org.scalatest.BeforeAndAfterEach
 import play.api.Application
 import play.api.test._
 import play.api.test.Helpers._
@@ -16,12 +17,17 @@ import io.useless.util.mongo.MongoUtil
 import models.haiku.Haiku
 import models.haiku.JsonImplicits._
 
-class HaikuSpec extends PlaySpecification {
+class HaikuSpec
+  extends PlaySpec
+  with BeforeAndAfterEach
+  with OneServerPerSuite
+{
 
-  trait Context extends WithServer {
+  override def beforeEach {
     MongoUtil.clearDb("haiku.mongo.uri")
-    implicit val url = s"http://localhost:$port/haikus"
   }
+
+  implicit val url = s"http://localhost:$port/haikus"
 
   val khy = AccessToken(
     guid = UUID.fromString("00000000-0000-0000-0000-000000000000"),
@@ -51,24 +57,24 @@ class HaikuSpec extends PlaySpecification {
   val mockAccountClient = new MockAccountClient(Seq(khy.resourceOwner, bob.resourceOwner))
   AccountClient.setMock(mockAccountClient)
 
-  "POST /haikus" should {
+  "POST /haikus" must {
 
-    "reject requests without authentication" in new Context {
+    "reject requests without authentication" in {
       val response = await { WS.url(url).post(Json.obj()) }
-      response.status must beEqualTo(UNAUTHORIZED)
+      response.status mustBe UNAUTHORIZED
     }
 
-    "reject requests with invalid authentication" in new Context {
+    "reject requests with invalid authentication" in {
       val response = await {
         WS.url(url).
           withHeaders(("Authorization" -> UUID.randomUUID.toString)).
           post(Json.obj())
       }
 
-      response.status must beEqualTo(UNAUTHORIZED)
+      response.status mustBe UNAUTHORIZED
     }
 
-    "respond with a 201 Created for an authenticated requests with a valid haiku" in new Context {
+    "respond with a 201 Created for an authenticated requests with a valid haiku" in  {
       val response = await { WS.url(url).
         withHeaders(("Authorization" -> "00000000-0000-0000-0000-000000000000")).
         post(Json.obj(
@@ -80,10 +86,10 @@ class HaikuSpec extends PlaySpecification {
         ))
       }
 
-      response.status must beEqualTo(CREATED)
+      response.status mustBe CREATED
     }
 
-    "respond with a 422 Unprocessable Entity for an authenticated request with an invalid haiku" in new Context {
+    "respond with a 422 Unprocessable Entity for an authenticated request with an invalid haiku" in {
       val response = await { WS.url(url).
         withHeaders(("Authorization" -> "00000000-0000-0000-0000-000000000000")).
         post(Json.obj(
@@ -95,45 +101,45 @@ class HaikuSpec extends PlaySpecification {
         ))
       }
 
-      response.status must beEqualTo(UNPROCESSABLE_ENTITY)
-      (response.json)(0).as[String] must beEqualTo("useless.haiku.error.too_few_syllables")
-      (response.json)(1).as[String] must beEqualTo("useless.haiku.error.too_many_syllables")
-      (response.json)(2) must beEqualTo(JsNull)
+      response.status mustBe UNPROCESSABLE_ENTITY
+      (response.json)(0).as[String] mustBe "useless.haiku.error.too_few_syllables"
+      (response.json)(1).as[String] mustBe "useless.haiku.error.too_many_syllables"
+      (response.json)(2) mustBe JsNull
     }
   }
 
-  "GET /haikus" should {
+  "GET /haikus" must {
 
-    "accept requests without authentication" in new Context {
+    "accept requests without authentication" in {
       val response = await { WS.url(url).get() }
-      response.status must beEqualTo(OK)
+      response.status mustBe OK
     }
 
-    "accept requests with invalid authentication" in new Context {
+    "accept requests with invalid authentication" in {
       val response = await {
         WS.url(url).
           withHeaders(("Authorization" -> UUID.randomUUID.toString)).
           get()
       }
 
-      response.status must beEqualTo(OK)
+      response.status mustBe OK
     }
 
-    "return a list of haikus, most recent first" in new Context {
+    "return a list of haikus, most recent first" in {
       createHaiku1
       createHaiku2
 
       val response = await { WS.url(url).get() }
       val haikus = Json.parse(response.body).as[Seq[JsValue]]
 
-      haikus.size must beEqualTo(2)
-      (haikus(0) \ "lines")(0).as[String] must beEqualTo("even a horse")
-      (haikus(0) \ "createdBy" \ "handle").as[String] must beEqualTo("khy")
-      (haikus(1) \ "lines")(0).as[String] must beEqualTo("by my new banana plant")
-      (haikus(1) \ "createdBy" \ "handle").as[String] must beEqualTo("khy")
+      haikus.size mustBe 2
+      (haikus(0) \ "lines")(0).as[String] mustBe "even a horse"
+      (haikus(0) \ "createdBy" \ "handle").as[String] mustBe "khy"
+      (haikus(1) \ "lines")(0).as[String] mustBe "by my new banana plant"
+      (haikus(1) \ "createdBy" \ "handle").as[String] mustBe "khy"
     }
 
-    "return haikus that are before the specified 'until' paramter" in new Context {
+    "return haikus that are before the specified 'until' paramter" in {
       val createResponse1 = createHaiku1
       val createResponse2 = createHaiku2
       val latestHaiku = Json.parse(createResponse2.body)
@@ -144,11 +150,11 @@ class HaikuSpec extends PlaySpecification {
       val response = await { WS.url(url).withQueryString("until" -> latestGuid).get() }
       val haikus = Json.parse(response.body).as[Seq[JsValue]]
 
-      haikus.size must beEqualTo(1)
-      (haikus(0) \ "guid").as[String] must beEqualTo(nextLatestGuid)
+      haikus.size mustBe 1
+      (haikus(0) \ "guid").as[String] mustBe nextLatestGuid
     }
 
-    "return haikus that belong to the user specified by the 'user' parameter" in new Context {
+    "return haikus that belong to the user specified by the 'user' parameter" in {
       createHaiku1
       createHaiku2
       await { WS.url(url).
@@ -165,9 +171,9 @@ class HaikuSpec extends PlaySpecification {
       val response = await { WS.url(url).withQueryString("user" -> "khy").get() }
       val haikus = Json.parse(response.body).as[Seq[JsValue]]
 
-      haikus.size must beEqualTo(2)
-      (haikus(0) \ "createdBy" \ "handle").as[String] must beEqualTo("khy")
-      (haikus(1) \ "createdBy" \ "handle").as[String] must beEqualTo("khy")
+      haikus.size mustBe 2
+      (haikus(0) \ "createdBy" \ "handle").as[String] mustBe "khy"
+      (haikus(1) \ "createdBy" \ "handle").as[String] mustBe "khy"
     }
 
   }
