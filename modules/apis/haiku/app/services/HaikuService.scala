@@ -7,6 +7,7 @@ import play.api.libs.concurrent.Execution.Implicits._
 import scala.collection.mutable
 import org.joda.time.DateTime
 import reactivemongo.bson.BSONDocument
+import io.useless.ClientError
 import io.useless.account.User
 import io.useless.reactivemongo.MongoAccessor
 import io.useless.client.account.AccountClient
@@ -14,10 +15,11 @@ import io.useless.reactivemongo.bson.UuidBson._
 import io.useless.reactivemongo.bson.DateTimeBson._
 import io.useless.util.configuration.Configuration
 import io.useless.util.configuration.RichConfiguration._
+import io.useless.pagination._
 
 import models.haiku.Haiku
 import models.haiku.mongo.HaikuMongo._
-import lib.haiku.{ Pagination, TwoPhaseLineSyllableCounter }
+import lib.haiku.TwoPhaseLineSyllableCounter
 
 object HaikuService extends Configuration {
 
@@ -34,31 +36,46 @@ object HaikuService extends Configuration {
     Haiku(document.guid, document.lines, document.createdAt, createdBy)
   }
 
-  def find(optUserHandle: Option[String], pagination: Pagination): Future[Seq[Haiku]] = {
-    val count = pagination.count.getOrElse(30)
+  private val paginationConfig = PaginationConfig(
+    defaultStyle = PrecedenceBasedPagination,
+    maxLimit = 100,
+    defaultLimit = 20,
+    defaultOffset = 0,
+    validOrders = Seq("created_at"),
+    defaultOrder = "created_at"
+  )
 
-    userQuery(optUserHandle).flatMap { userQuery =>
-      paginationQuery(pagination).flatMap { paginationQuery =>
-        val query = userQuery.add(paginationQuery)
+  def find(
+    optUserHandle: Option[String],
+    rawPaginationParams: RawPaginationParams
+  ): Future[Either[ClientError, PaginatedResult[Haiku]]] = {
+    PaginationParams.build(rawPaginationParams, paginationConfig).fold(
+      error => Future.successful(Left(error)),
+      paginationParams => userQuery(optUserHandle).flatMap { userQuery =>
+        paginationQuery(paginationParams).flatMap { paginationQuery =>
+          val query = userQuery.add(paginationQuery)
 
-        val futureDocuments = collection.find(query).
-          sort(BSONDocument("created_at" -> -1)).
-          cursor[HaikuDocument].collect[Seq](count)
+          val futureDocuments = collection.find(query).
+            sort(BSONDocument("created_at" -> -1)).
+            cursor[HaikuDocument].collect[Seq](paginationParams.limit)
 
-        futureDocuments.flatMap { documents =>
-          val futures = documents.map { document =>
-            accountClient.getAccount(document.createdByGuid).map { optAccount =>
-              optAccount match {
-                case Some(user: User) => db2model(document, user)
-                case _ => throw new RuntimeException(s"Could not find User for createdByGuid [${document.createdByGuid}]")
+          futureDocuments.flatMap { documents =>
+            val futures = documents.map { document =>
+              accountClient.getAccount(document.createdByGuid).map { optAccount =>
+                optAccount match {
+                  case Some(user: User) => db2model(document, user)
+                  case _ => throw new RuntimeException(s"Could not find User for createdByGuid [${document.createdByGuid}]")
+                }
               }
             }
-          }
 
-          Future.sequence(futures)
+            Future.sequence(futures).map { haikus =>
+              Right(PaginatedResult.build(haikus, paginationParams))
+            }
+          }
         }
       }
-    }
+    )
   }
 
   def create(
@@ -103,35 +120,26 @@ object HaikuService extends Configuration {
     }
   }
 
-  private def paginationQuery(pagination: Pagination): Future[BSONDocument] = {
-    val futureSinceQuery = pagination.since.map { guid =>
-      forGuid(guid).map { optDocument =>
-        optDocument.map { document =>
-          BSONDocument("created_at" -> BSONDocument("$gt" -> document.createdAt))
+  private def paginationQuery(paginationParams: PaginationParams): Future[BSONDocument] = {
+    paginationParams match {
+      case precedenceParams: PrecedenceBasedPaginationParams => {
+        precedenceParams.after.map { guid =>
+          forGuid(guid).map { optDocument =>
+            optDocument.map { document =>
+              BSONDocument("created_at" -> BSONDocument("$lt" -> document.createdAt))
+            }.getOrElse {
+              BSONDocument()
+            }
+          }
         }.getOrElse {
-          BSONDocument()
+          Future.successful(BSONDocument())
         }
       }
-    }.getOrElse {
-      Future.successful(BSONDocument())
-    }
 
-    val futureUntilQuery = pagination.until.map { guid =>
-      forGuid(guid).map { optDocument =>
-        optDocument.map { document =>
-          BSONDocument("created_at" -> BSONDocument("$lt" -> document.createdAt))
-        }.getOrElse {
-          BSONDocument()
-        }
+      case offsetParams: OffsetBasedPaginationParams => {
+        Future.successful(BSONDocument())
       }
-    }.getOrElse {
-      Future.successful(BSONDocument())
     }
-
-    for {
-      sinceQuery <- futureSinceQuery
-      untilQuery <- futureUntilQuery
-    } yield sinceQuery.add(untilQuery)
   }
 
   private def userQuery(optUserHandle: Option[String]): Future[BSONDocument] = {

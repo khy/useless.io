@@ -5,22 +5,26 @@ import play.api._
 import play.api.mvc._
 import play.api.libs.json.Json
 import play.api.libs.concurrent.Execution.Implicits._
-import io.useless.play.authentication.Authenticated
+import io.useless.play.json.ClientErrorJson.format
+import io.useless.play.pagination.PaginationController
 import io.useless.account.User
 
 import services.haiku.HaikuService
 import models.haiku.JsonImplicits._
-import lib.haiku.Pagination
 import controllers.haiku.auth.Auth
 
-object HaikuController extends Controller {
+object HaikuController extends Controller with PaginationController {
 
-  def index = Action.async { request =>
-    val userHandle = request.getQueryString("user")
-    val pagination = Pagination(request)
+  def index = Action.async { implicit request =>
+    withRawPaginationParams { pagination =>
+      val userHandle = request.getQueryString("user")
 
-    HaikuService.find(userHandle, pagination).map { haikus =>
-      Ok(Json.toJson(haikus))
+      HaikuService.find(userHandle, pagination).map { result =>
+        result.fold(
+          error => Conflict(Json.toJson(error)),
+          haikus => paginatedResult(routes.HaikuController.index(), haikus)
+        )
+      }
     }
   }
 

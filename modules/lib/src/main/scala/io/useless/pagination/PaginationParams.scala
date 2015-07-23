@@ -71,7 +71,10 @@ object PaginationParams {
     defaultOrder = "created_at"
   )
 
-  def calculateStyle(raw: RawPaginationParams): PaginationStyle = {
+  def calculateStyle(
+    raw: RawPaginationParams,
+    config: PaginationConfig = defaultPaginationConfig
+  ): PaginationStyle = {
     raw.style.getOrElse {
       if (raw.page.isDefined) {
         PageBasedPagination
@@ -80,7 +83,7 @@ object PaginationParams {
       } else if (raw.after.isDefined) {
         PrecedenceBasedPagination
       } else {
-        defaultPaginationConfig.defaultStyle
+        config.defaultStyle
       }
     }
   }
@@ -124,7 +127,7 @@ object PaginationParams {
       }
     }
 
-    calculateStyle(raw) match {
+    calculateStyle(raw, config) match {
       case PrecedenceBasedPagination => Right(new PrecedenceBasedPaginationParams(raw, config))
       case _ => Right(new OffsetBasedPaginationParams(raw, config))
     }

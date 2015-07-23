@@ -147,7 +147,8 @@ class HaikuSpec
       val nextLatestHaiku = Json.parse(createResponse1.body)
       val nextLatestGuid = (nextLatestHaiku \ "guid").as[String]
 
-      val response = await { WS.url(url).withQueryString("until" -> latestGuid).get() }
+      val response = await { WS.url(url).withQueryString("p.after" -> latestGuid).get() }
+      response.header("Link").get must endWith ("rel=\"next\"")
       val haikus = Json.parse(response.body).as[Seq[JsValue]]
 
       haikus.size mustBe 1
