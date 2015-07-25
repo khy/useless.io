@@ -8,6 +8,7 @@ import scala.collection.mutable
 import org.joda.time.DateTime
 import reactivemongo.bson.BSONDocument
 import reactivemongo.api.QueryOpts
+import reactivemongo.core.commands.Count
 import io.useless.ClientError
 import io.useless.account.User
 import io.useless.reactivemongo.MongoAccessor
@@ -24,8 +25,10 @@ import lib.haiku.TwoPhaseLineSyllableCounter
 
 object HaikuService extends Configuration {
 
+  private val CollectionName = "haikus"
+
   private lazy val collection = {
-    MongoAccessor("haiku.mongo.uri").collection("haikus")
+    MongoAccessor("haiku.mongo.uri").collection(CollectionName)
   }
 
   lazy val accountClient = {
@@ -66,23 +69,15 @@ object HaikuService extends Configuration {
             case _ => queryBuilder
           }
 
-          val futureDocuments = queryBuilder.
-            cursor[HaikuDocument].
-            collect[Seq](paginationParams.limit)
+          val futCount = collection.db.command(Count(CollectionName, Some(query)))
+          val futDocuments = queryBuilder.cursor[HaikuDocument].collect[Seq](paginationParams.limit)
 
-          futureDocuments.flatMap { documents =>
-            val futures = documents.map { document =>
-              accountClient.getAccount(document.createdByGuid).map { optAccount =>
-                optAccount match {
-                  case Some(user: User) => db2model(document, user)
-                  case _ => throw new RuntimeException(s"Could not find User for createdByGuid [${document.createdByGuid}]")
-                }
-              }
-            }
-
-            Future.sequence(futures).map { haikus =>
-              Right(PaginatedResult.build(haikus, paginationParams))
-            }
+          for {
+            count <- futCount
+            documents <- futDocuments
+            haikus <- buildHaikus(documents)
+          } yield {
+            Right(PaginatedResult.build(haikus, paginationParams, Some(count)))
           }
         }
       }
@@ -114,6 +109,19 @@ object HaikuService extends Configuration {
       }
     }
 
+  }
+
+  private def buildHaikus(documents: Seq[HaikuDocument]): Future[Seq[Haiku]] = {
+    val futures = documents.map { document =>
+      accountClient.getAccount(document.createdByGuid).map { optAccount =>
+        optAccount match {
+          case Some(user: User) => db2model(document, user)
+          case _ => throw new RuntimeException(s"Could not find User for createdByGuid [${document.createdByGuid}]")
+        }
+      }
+    }
+
+    Future.sequence(futures)
   }
 
   lazy val counter = TwoPhaseLineSyllableCounter.default()

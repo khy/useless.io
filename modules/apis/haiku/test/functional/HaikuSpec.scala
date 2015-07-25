@@ -139,7 +139,7 @@ class HaikuSpec
       (haikus(1) \ "createdBy" \ "handle").as[String] mustBe "khy"
     }
 
-    "return haikus that are after the specified 'p.after' paramter" in {
+    "return paginated haikus that are after the specified 'p.after' paramter" in {
       val createResponse1 = createHaiku1
       val createResponse2 = createHaiku2
       val latestHaiku = Json.parse(createResponse2.body)
@@ -155,26 +155,32 @@ class HaikuSpec
       (haikus(0) \ "guid").as[String] mustBe nextLatestGuid
     }
 
-    "return haikus for the specified page" in {
-      val nextLatestHaiku = Json.parse(createHaiku1.body)
-      val latestHaiku = Json.parse(createHaiku2.body)
+    "return paginated haikus for the specified page" in {
+      val haiku1 = Json.parse(createHaiku1.body)
+      val haiku2 = Json.parse(createHaiku2.body)
+      val haiku3 = Json.parse(createHaiku3.body)
 
       val response = await { WS.url(url).withQueryString("p.page" -> "2", "p.limit" -> "1").get() }
+      response.header("Link").get must include ("rel=\"next\"")
+      response.header("Link").get must include ("rel=\"last\"")
       val haikus = Json.parse(response.body).as[Seq[JsValue]]
 
       haikus.size mustBe 1
-      (haikus(0) \ "guid").as[String] mustBe (nextLatestHaiku \ "guid").as[String]
+      (haikus(0) \ "guid").as[String] mustBe (haiku2 \ "guid").as[String]
     }
 
-    "return haikus after the specified offset" in {
-      val nextLatestHaiku = Json.parse(createHaiku1.body)
-      val latestHaiku = Json.parse(createHaiku2.body)
+    "return paginated haikus after the specified offset" in {
+      val haiku1 = Json.parse(createHaiku1.body)
+      val haiku2 = Json.parse(createHaiku2.body)
+      val haiku3 = Json.parse(createHaiku3.body)
 
       val response = await { WS.url(url).withQueryString("p.offset" -> "1", "p.limit" -> "1").get() }
+      response.header("Link").get must include ("rel=\"next\"")
+      response.header("Link").get must include ("rel=\"last\"")
       val haikus = Json.parse(response.body).as[Seq[JsValue]]
 
       haikus.size mustBe 1
-      (haikus(0) \ "guid").as[String] mustBe (nextLatestHaiku \ "guid").as[String]
+      (haikus(0) \ "guid").as[String] mustBe (haiku2 \ "guid").as[String]
     }
 
     "return haikus that belong to the user specified by the 'user' parameter" in {
