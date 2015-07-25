@@ -139,7 +139,7 @@ class HaikuSpec
       (haikus(1) \ "createdBy" \ "handle").as[String] mustBe "khy"
     }
 
-    "return haikus that are before the specified 'until' paramter" in {
+    "return haikus that are after the specified 'p.after' paramter" in {
       val createResponse1 = createHaiku1
       val createResponse2 = createHaiku2
       val latestHaiku = Json.parse(createResponse2.body)
@@ -153,6 +153,28 @@ class HaikuSpec
 
       haikus.size mustBe 1
       (haikus(0) \ "guid").as[String] mustBe nextLatestGuid
+    }
+
+    "return haikus for the specified page" in {
+      val nextLatestHaiku = Json.parse(createHaiku1.body)
+      val latestHaiku = Json.parse(createHaiku2.body)
+
+      val response = await { WS.url(url).withQueryString("p.page" -> "2", "p.limit" -> "1").get() }
+      val haikus = Json.parse(response.body).as[Seq[JsValue]]
+
+      haikus.size mustBe 1
+      (haikus(0) \ "guid").as[String] mustBe (nextLatestHaiku \ "guid").as[String]
+    }
+
+    "return haikus after the specified offset" in {
+      val nextLatestHaiku = Json.parse(createHaiku1.body)
+      val latestHaiku = Json.parse(createHaiku2.body)
+
+      val response = await { WS.url(url).withQueryString("p.offset" -> "1", "p.limit" -> "1").get() }
+      val haikus = Json.parse(response.body).as[Seq[JsValue]]
+
+      haikus.size mustBe 1
+      (haikus(0) \ "guid").as[String] mustBe (nextLatestHaiku \ "guid").as[String]
     }
 
     "return haikus that belong to the user specified by the 'user' parameter" in {

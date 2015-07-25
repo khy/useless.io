@@ -7,6 +7,7 @@ import play.api.libs.concurrent.Execution.Implicits._
 import scala.collection.mutable
 import org.joda.time.DateTime
 import reactivemongo.bson.BSONDocument
+import reactivemongo.api.QueryOpts
 import io.useless.ClientError
 import io.useless.account.User
 import io.useless.reactivemongo.MongoAccessor
@@ -55,9 +56,19 @@ object HaikuService extends Configuration {
         paginationQuery(paginationParams).flatMap { paginationQuery =>
           val query = userQuery.add(paginationQuery)
 
-          val futureDocuments = collection.find(query).
-            sort(BSONDocument("created_at" -> -1)).
-            cursor[HaikuDocument].collect[Seq](paginationParams.limit)
+          var queryBuilder = collection.find(query).
+            sort(BSONDocument(paginationParams.order -> -1))
+
+          queryBuilder = paginationParams match {
+            case obpParams: OffsetBasedPaginationParams => {
+              queryBuilder.options(QueryOpts(skipN = obpParams.offset))
+            }
+            case _ => queryBuilder
+          }
+
+          val futureDocuments = queryBuilder.
+            cursor[HaikuDocument].
+            collect[Seq](paginationParams.limit)
 
           futureDocuments.flatMap { documents =>
             val futures = documents.map { document =>
