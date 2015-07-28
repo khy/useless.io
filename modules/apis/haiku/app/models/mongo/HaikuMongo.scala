@@ -10,6 +10,7 @@ object HaikuMongo {
 
   class HaikuDocument(
     val guid: UUID,
+    val inResponseToGuid: Option[UUID],
     val lines: Seq[String],
     val createdByGuid: UUID,
     val createdAt: DateTime
@@ -19,6 +20,7 @@ object HaikuMongo {
     def read(haiku: BSONDocument): HaikuDocument = {
       new HaikuDocument(
         haiku.getAs[UUID]("_id").get,
+        haiku.getAs[UUID]("in_response_to_guid"),
         haiku.getAs[Seq[String]]("lines").get,
         haiku.getAs[UUID]("created_by_guid").get,
         haiku.getAs[DateTime]("created_at").get
@@ -30,6 +32,7 @@ object HaikuMongo {
     def write(haiku: HaikuDocument): BSONDocument = {
       BSONDocument(
         "_id" -> haiku.guid,
+        "in_response_to_guid" -> haiku.inResponseToGuid,
         "lines" -> haiku.lines,
         "created_by_guid" -> haiku.createdByGuid,
         "created_at" -> haiku.createdAt

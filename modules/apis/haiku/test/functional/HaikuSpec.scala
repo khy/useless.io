@@ -8,10 +8,12 @@ import play.api.test._
 import play.api.test.Helpers._
 import play.api.libs.ws.WS
 import play.api.libs.json.{ Json, JsValue, JsArray, JsNull }
+import io.useless.ClientError
 import io.useless.accesstoken.AccessToken
 import io.useless.account.User
 import io.useless.client.accesstoken.{ AccessTokenClient, MockAccessTokenClient }
 import io.useless.client.account.{ AccountClient, MockAccountClient }
+import io.useless.play.json.ClientErrorJson.format
 import io.useless.util.mongo.MongoUtil
 
 import models.haiku.Haiku
@@ -102,9 +104,46 @@ class HaikuSpec
       }
 
       response.status mustBe UNPROCESSABLE_ENTITY
-      (response.json)(0).as[String] mustBe "useless.haiku.error.too_few_syllables"
-      (response.json)(1).as[String] mustBe "useless.haiku.error.too_many_syllables"
-      (response.json)(2) mustBe JsNull
+
+      val clientErrors = response.json.as[Seq[ClientError]]
+
+      val line1Error = clientErrors.find { clientError => clientError.details("line") == "1" }
+      line1Error.get.key mustBe "useless.haiku.error.tooFewSyllables"
+
+      val line2Error = clientErrors.find { clientError => clientError.details("line") == "2" }
+      line2Error.get.key mustBe "useless.haiku.error.tooManySyllables"
+
+      val line3Error = clientErrors.find { clientError => clientError.details("line") == "3" }
+      line3Error mustBe None
+    }
+
+    "accept the UUID of a haiku that the haiku is in response to" in {
+      val request = WS.url(url).withHeaders(("Authorization" -> "00000000-0000-0000-0000-000000000000"))
+      val response1 = await { request.
+        post(Json.obj(
+          "lines" -> Json.arr(
+            "the Dutchmen, too,",
+            "kneel before His Lordship—",
+            "spring under His reign"
+          )
+        ))
+      }
+
+      val inResponseToGuid = (response1.json \ "guid").as[String]
+      val response2 = await { request.
+        post(Json.obj(
+          "inResponseToGuid" -> inResponseToGuid,
+          "lines" -> Json.arr(
+            "From time to time",
+            "The clouds give rest sometimes",
+            "To the moon-beholders."
+          )
+        ))
+      }
+
+      response2.status mustBe CREATED
+      (response2.json \ "inResponseTo" \ "guid").as[String] mustBe inResponseToGuid
+      (response2.json \ "inResponseTo" \ "lines")(0).as[String] mustBe "the Dutchmen, too,"
     }
   }
 

@@ -4,9 +4,9 @@ import java.util.UUID
 import org.joda.time.DateTime
 import io.useless.account.User
 
-case class Haiku(
+case class ShallowHaiku(
   guid: UUID,
-  inResponseTo: Option[ShallowHaiku],
+  inResponseToGuid: Option[UUID], 
   lines: Seq[String],
   createdAt: DateTime,
   createdBy: User

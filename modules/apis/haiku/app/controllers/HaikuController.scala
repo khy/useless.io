@@ -1,5 +1,6 @@
 package controllers.haiku
 
+import java.util.UUID
 import scala.concurrent.Future
 import play.api._
 import play.api.mvc._
@@ -29,10 +30,11 @@ object HaikuController extends Controller with PaginationController {
   }
 
   def create = Auth.async(parse.json) { request =>
+    val inResponseToGuid = (request.body \ "inResponseToGuid").as[Option[UUID]]
     val lines = (request.body \ "lines").as[Seq[String]]
 
     request.accessToken.resourceOwner match {
-      case user: User => HaikuService.create(user, lines).map { result =>
+      case user: User => HaikuService.create(inResponseToGuid, lines, user).map { result =>
         result.fold (
           errors => UnprocessableEntity(Json.toJson(errors)),
           haiku => Created(Json.toJson(haiku))

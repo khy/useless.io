@@ -15,6 +15,7 @@ object JsonImplicits {
     )
   }
 
+  implicit val shallowHaikuWrites = Json.writes[ShallowHaiku]
   implicit val haikuWrites = Json.writes[Haiku]
 
 }

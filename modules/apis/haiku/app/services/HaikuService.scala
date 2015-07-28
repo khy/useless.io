@@ -10,7 +10,7 @@ import reactivemongo.bson.BSONDocument
 import reactivemongo.api.QueryOpts
 import reactivemongo.core.commands.Count
 import io.useless.ClientError
-import io.useless.account.User
+import io.useless.account.{User, PublicUser}
 import io.useless.reactivemongo.MongoAccessor
 import io.useless.client.account.AccountClient
 import io.useless.reactivemongo.bson.UuidBson._
@@ -19,7 +19,7 @@ import io.useless.util.configuration.Configuration
 import io.useless.util.configuration.RichConfiguration._
 import io.useless.pagination._
 
-import models.haiku.Haiku
+import models.haiku._
 import models.haiku.mongo.HaikuMongo._
 import lib.haiku.TwoPhaseLineSyllableCounter
 
@@ -34,10 +34,6 @@ object HaikuService extends Configuration {
   lazy val accountClient = {
     val authGuid = configuration.underlying.getUuid("haiku.accessTokenGuid")
     AccountClient.instance(authGuid)
-  }
-
-  private def db2model(document: HaikuDocument, createdBy: User) = {
-    Haiku(document.guid, document.lines, document.createdAt, createdBy)
   }
 
   private val paginationConfig = PaginationConfig(
@@ -85,58 +81,144 @@ object HaikuService extends Configuration {
   }
 
   def create(
-    user: User,
-    lines: Seq[String]
-  ): Future[Either[Seq[Option[String]], Haiku]] = {
+    inResponseToGuid: Option[UUID],
+    lines: Seq[String],
+    createdBy: User
+  ): Future[Either[Seq[ClientError], Haiku]] = {
     val errors = validate(lines)
 
-    if (errors.filter(_.isDefined).length > 0) {
+    if (!errors.isEmpty) {
       Future.successful(Left(errors))
     } else {
-      val document = new HaikuDocument(
-        guid = UUID.randomUUID,
-        lines = lines,
-        createdByGuid = user.guid,
-        createdAt = DateTime.now
-      )
-
-      collection.insert(document).map { lastError =>
-        if (lastError.ok) {
-          Right(db2model(document, user))
-        } else {
-          throw lastError
+      inResponseToGuid.map { inResponseToGuid =>
+        getShallowHaikus(Seq(inResponseToGuid)).map { shallowHaikus =>
+          shallowHaikus.headOption.map { shallowHaiku =>
+            Right(Some(shallowHaiku))
+          }.getOrElse {
+            Left(Seq(ClientError("useless.haiku.error.nonExistantHaikuGuid", "guid" -> inResponseToGuid.toString)))
+          }
         }
+      }.getOrElse {
+        Future.successful(Right(None))
+      }.flatMap { result =>
+        result.fold(
+          error => Future.successful(Left(error)),
+          optInResponseTo => {
+            val document = new HaikuDocument(
+              guid = UUID.randomUUID,
+              inResponseToGuid = inResponseToGuid,
+              lines = lines,
+              createdByGuid = createdBy.guid,
+              createdAt = DateTime.now
+            )
+
+            collection.insert(document).map { lastError =>
+              if (lastError.ok) {
+                Right(Haiku(document.guid, optInResponseTo, document.lines, document.createdAt, createdBy))
+              } else {
+                throw lastError
+              }
+            }
+          }
+        )
       }
     }
 
   }
 
+  private val AnonUser: User = new PublicUser(
+    guid = UUID.fromString("00000000-0000-0000-0000-000000000000"),
+    handle = "anon",
+    name = None
+  )
+
   private def buildHaikus(documents: Seq[HaikuDocument]): Future[Seq[Haiku]] = {
-    val futures = documents.map { document =>
-      accountClient.getAccount(document.createdByGuid).map { optAccount =>
+    val inResponseToGuids = documents.map(_.inResponseToGuid).filter(_.isDefined).map(_.get)
+    val createdByGuids = documents.map(_.createdByGuid)
+
+    val futShallowHaikus = getShallowHaikus(inResponseToGuids)
+    val futUsers = getUsers(createdByGuids)
+
+    for {
+      shallowHaikus <- futShallowHaikus
+      users <- futUsers
+    } yield {
+      documents.map { document =>
+        val inResponseTo = document.inResponseToGuid.flatMap { inResponseToGuid =>
+          shallowHaikus.find { shallowHaiku =>
+            shallowHaiku.guid == inResponseToGuid
+          }
+        }
+
+        val createdBy = users.find { user =>
+          user.guid == document.createdByGuid
+        }.getOrElse(AnonUser)
+
+        Haiku(document.guid, inResponseTo, document.lines, document.createdAt, createdBy)
+      }
+    }
+  }
+
+  private def getShallowHaikus(guids: Seq[UUID]): Future[Seq[ShallowHaiku]] = {
+    val query = BSONDocument("_id" -> BSONDocument("$in" -> guids))
+    collection.find(query).cursor[HaikuDocument].collect[Seq]().flatMap { documents =>
+      val createdByGuids = documents.map(_.createdByGuid)
+
+      getUsers(createdByGuids).map { users =>
+        documents.map { document =>
+          val createdBy = users.find { user =>
+            user.guid == document.createdByGuid
+          }.getOrElse(AnonUser)
+
+          ShallowHaiku(document.guid, document.inResponseToGuid, document.lines, document.createdAt, createdBy)
+        }
+      }
+    }
+  }
+
+  private def getUsers(guids: Seq[UUID]): Future[Seq[User]] = {
+    val userOptFuts = guids.map { guid =>
+      accountClient.getAccount(guid).map { optAccount =>
         optAccount match {
-          case Some(user: User) => db2model(document, user)
-          case _ => throw new RuntimeException(s"Could not find User for createdByGuid [${document.createdByGuid}]")
+          case Some(user: User) => Some(user)
+          case _ => None
         }
       }
     }
 
-    Future.sequence(futures)
+    Future.sequence(userOptFuts).map { userOpts =>
+      userOpts.filter(_.isDefined).map(_.get)
+    }
   }
 
   lazy val counter = TwoPhaseLineSyllableCounter.default()
 
-  private def validate(lines: Seq[String]): Seq[Option[String]] = {
-    lines.zip(Seq(5,7,5)).map { case (line, expectedSyllables) =>
-      counter.count(line).map { syllables =>
-        if ((syllables.min - 2) > expectedSyllables)
-          Some("useless.haiku.error.too_many_syllables")
-        else if ((syllables.max + 1) < expectedSyllables)
-          Some("useless.haiku.error.too_few_syllables")
-        else
-          None
-      }.getOrElse(None)
+  private def validate(lines: Seq[String]): Seq[ClientError] = {
+    var errors = Seq.empty[ClientError]
+
+    def validateLine(index: Int, expectedSyllables: Int) {
+      val line = (index + 1).toString
+
+      if (lines.isDefinedAt(index)) {
+        counter.count(lines(index)).foreach { syllables =>
+          if ((syllables.min - 2) > expectedSyllables) {
+            errors = errors :+ ClientError("useless.haiku.error.tooManySyllables",
+              "line" -> line, "expected" -> expectedSyllables.toString, "actualLow" -> syllables.min.toString, "actualHigh" -> syllables.max.toString)
+          } else if ((syllables.max + 1) < expectedSyllables) {
+            errors = errors :+ ClientError("useless.haiku.error.tooFewSyllables",
+              "line" -> line, "expected" -> expectedSyllables.toString, "actualLow" -> syllables.min.toString, "actualHigh" -> syllables.max.toString)
+          }
+        }
+      } else {
+        errors = errors :+ ClientError("useless.haiku.error.missingLine", "line" -> line)
+      }
     }
+
+    validateLine(0, 5)
+    validateLine(1, 7)
+    validateLine(2, 5)
+
+    errors
   }
 
   private def paginationQuery(paginationParams: PaginationParams): Future[BSONDocument] = {
