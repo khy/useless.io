@@ -2,7 +2,7 @@ package io.useless.pagination
 
 import java.util.UUID
 
-import io.useless.ClientError
+import io.useless.Message
 
 /*
  * Minimally-parsed pagination specifications.
@@ -91,13 +91,13 @@ object PaginationParams {
   def build(
     raw: RawPaginationParams,
     config: PaginationConfig = defaultPaginationConfig
-  ): Either[ClientError, PaginationParams] = {
+  ): Either[Message, PaginationParams] = {
     raw.limit.foreach { limit =>
       if (limit <= 0) {
-        return Left(ClientError("pagination.non-positive-limit",
+        return Left(Message("pagination.non-positive-limit",
           "specified" -> limit.toString))
       } else if (limit > config.maxLimit) {
-        return Left(ClientError("pagination.limit-exceeds-maximum",
+        return Left(Message("pagination.limit-exceeds-maximum",
           "specified" -> limit.toString, "maximum" -> config.maxLimit.toString))
       }
     }
@@ -108,21 +108,21 @@ object PaginationParams {
           sortWith(_.toLowerCase < _.toLowerCase).
           map("'" + _ + "'").mkString(", ")
 
-        return Left(ClientError("pagination.invalid-order",
+        return Left(Message("pagination.invalid-order",
           "specified" -> order, "valid" -> formattedValidOptions))
       }
     }
 
     raw.page.foreach { page =>
       if (page <= 0) {
-        return Left(ClientError("pagination.non-positive-page",
+        return Left(Message("pagination.non-positive-page",
           "specified" -> page.toString))
       }
     }
 
     raw.offset.foreach { offset =>
       if (offset < 0) {
-        return Left(ClientError("pagination.negative-offset",
+        return Left(Message("pagination.negative-offset",
           "specified" -> offset.toString))
       }
     }

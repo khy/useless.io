@@ -9,7 +9,7 @@ import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import io.useless.util.Uuid
 import io.useless.pagination._
 import io.useless.play.pagination.PaginationController
-import io.useless.play.json.ClientErrorJson
+import io.useless.play.json.MessageJson
 import io.useless.http.LinkHeader
 
 import services.books.NoteService
@@ -18,7 +18,7 @@ import controllers.books.auth.Auth
 
 object Notes extends Controller with PaginationController {
 
-  import ClientErrorJson.format
+  import MessageJson.format
 
   def get(guid: UUID) = Auth.async {
     NoteService.getNote(guid).map { optNote =>

@@ -5,7 +5,7 @@ import scala.util.{ Try, Success, Failure }
 import play.api.mvc.Request
 import io.useless.util.Uuid
 
-import io.useless.ClientError
+import io.useless.Message
 import io.useless.http.UrlUtil
 import io.useless.pagination._
 
@@ -17,7 +17,7 @@ object RawPaginationParamsBinding {
 
 trait RawPaginationParamsBinding {
 
-  def bind(request: Request[_]): Either[ClientError, RawPaginationParams]
+  def bind(request: Request[_]): Either[Message, RawPaginationParams]
 
   def unbind(params: RawPaginationParams): Map[String, Seq[String]]
 
@@ -47,21 +47,21 @@ class PrefixedRawPaginationParamsBinding(
 
   def bind(
     request: Request[_]
-  ): Either[ClientError, RawPaginationParams] = {
+  ): Either[Message, RawPaginationParams] = {
     Right(RawPaginationParams(
       style = request.stringParam("style").map { result =>
         result match {
           case "page" => PageBasedPagination
           case "precedence" => PrecedenceBasedPagination
           case "offset" => OffsetBasedPagination
-          case other => return Left(ClientError("pagination.invalid-style",
+          case other => return Left(Message("pagination.invalid-style",
             "specified" -> other, "required" -> "page, precedence, offset"))
         }
       },
       limit = request.intParam("limit").map { result =>
         result match {
           case Success(value) => value
-          case Failure(_) => return Left(ClientError("pagination.non-numeric-limit",
+          case Failure(_) => return Left(Message("pagination.non-numeric-limit",
             "specified" -> request.stringParam("limit").get))
         }
       },
@@ -69,21 +69,21 @@ class PrefixedRawPaginationParamsBinding(
       offset = request.intParam("offset").map { result =>
         result match {
           case Success(value) => value
-          case Failure(_) => return Left(ClientError("pagination.non-numeric-offset",
+          case Failure(_) => return Left(Message("pagination.non-numeric-offset",
             "specified" -> request.stringParam("offset").get))
         }
       },
       page = request.intParam("page").map { result =>
         result match {
           case Success(value) => value
-          case Failure(_) => return Left(ClientError("pagination.non-numeric-page",
+          case Failure(_) => return Left(Message("pagination.non-numeric-page",
             "specified" -> request.stringParam("page").get))
         }
       },
       after = request.guidParam("after").map { result =>
         result match {
           case Success(value) => value
-          case Failure(_) => return Left(ClientError("pagination.non-uuid-after",
+          case Failure(_) => return Left(Message("pagination.non-uuid-after",
             "specified" -> request.stringParam("after").get))
         }
       }

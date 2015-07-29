@@ -7,7 +7,7 @@ import play.api.libs.json.{ Json, Writes }
 import io.useless.http.UrlUtil
 import io.useless.http.LinkHeader
 import io.useless.pagination._
-import io.useless.play.json.ClientErrorJson._
+import io.useless.play.json.MessageJson._
 
 trait PaginationController {
 

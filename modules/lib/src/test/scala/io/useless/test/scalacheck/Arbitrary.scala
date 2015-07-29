@@ -6,7 +6,7 @@ import sc.Arbitrary.arbitrary
 
 import java.util.UUID
 
-import io.useless.ClientError
+import io.useless.Message
 import io.useless.accesstoken._
 import io.useless.account._
 import io.useless.util.Validator
@@ -15,11 +15,11 @@ object Arbitrary {
 
   implicit val arbUuid: sc.Arbitrary[UUID] = sc.Arbitrary(const(UUID.randomUUID))
 
-  implicit val arbClientError: sc.Arbitrary[ClientError] = sc.Arbitrary {
+  implicit val arbMessage: sc.Arbitrary[Message] = sc.Arbitrary {
     for {
       key <- alphaStr
       details <- sc.Gen.containerOf[List,(String, String)](arbitrary[(String, String)])
-    } yield ClientError(key, details:_*)
+    } yield Message(key, details:_*)
   }
 
   implicit val arbPublicApi: sc.Arbitrary[Api] = sc.Arbitrary {

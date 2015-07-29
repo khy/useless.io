@@ -3,13 +3,13 @@ package io.useless.play.json
 import play.api.libs.json._
 import play.api.libs.functional.syntax._
 
-import io.useless.ClientError
+import io.useless.Message
 
-object ClientErrorJson {
+object MessageJson {
 
-  implicit lazy val format: Format[ClientError] = Format(reads, writes)
+  implicit lazy val format: Format[Message] = Format(reads, writes)
 
-  private val reads: Reads[ClientError] = (
+  private val reads: Reads[Message] = (
     (__ \ "key").read[String] ~
     (__ \ "details").read[JsObject]
   ) { (key: String, details: JsObject) =>
@@ -17,11 +17,11 @@ object ClientErrorJson {
       (key, jsonValue.as[String])
     }
 
-    new ClientError(key, Map(_details:_*))
+    new Message(key, Map(_details:_*))
   }
 
-  private val writes = new Writes[ClientError] {
-    def writes(error: ClientError): JsValue = {
+  private val writes = new Writes[Message] {
+    def writes(error: Message): JsValue = {
       val _details = error.details.map { case (key, value) =>
         (key, Json.toJsFieldJsValueWrapper(value))
       }

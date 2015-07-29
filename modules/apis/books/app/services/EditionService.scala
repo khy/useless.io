@@ -4,7 +4,7 @@ import java.util.UUID
 import scala.concurrent.Future
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import io.useless.accesstoken.AccessToken
-import io.useless.ClientError
+import io.useless.Message
 
 import db.Driver.simple._
 import db.Editions
@@ -32,7 +32,7 @@ object EditionService extends BaseService {
     bookGuid: UUID,
     pageCount: Int,
     accessToken: AccessToken
-  ): Future[Either[ClientError, Edition]] = {
+  ): Future[Either[Message, Edition]] = {
     BookService.getBook(bookGuid).flatMap { optBook =>
       optBook.map { book =>
         findEditions(bookGuid).flatMap { editions =>
@@ -43,7 +43,7 @@ object EditionService extends BaseService {
           }.getOrElse {
             if (pageCount < 1) {
               Future.successful {
-                Left(ClientError("invalid-page-count",
+                Left(Message("invalid-page-count",
                   "specified-page-count" -> pageCount.toString,
                   "minimum-page-count" -> "1"
                 ))
@@ -63,7 +63,7 @@ object EditionService extends BaseService {
         }
       }.getOrElse {
         Future.successful {
-          Left(ClientError("unknown-book", "guid" -> bookGuid.toString))
+          Left(Message("unknown-book", "guid" -> bookGuid.toString))
         }
       }
     }

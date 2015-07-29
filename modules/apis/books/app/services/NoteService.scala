@@ -6,7 +6,7 @@ import scala.concurrent.Future
 import play.api.Play.current
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import org.joda.time.DateTime
-import io.useless.ClientError
+import io.useless.Message
 import io.useless.account.Account
 import io.useless.accesstoken.AccessToken
 import io.useless.client.account.AccountClient
@@ -35,7 +35,7 @@ object NoteService extends BaseService with Configuration {
   def findNotes(
     accountGuids: Seq[UUID],
     rawPaginationParams: RawPaginationParams
-  ): Future[Either[ClientError, PaginatedResult[Note]]] = {
+  ): Future[Either[Message, PaginatedResult[Note]]] = {
     PaginationParams.build(rawPaginationParams, paginationConfig).fold(
       error => Future.successful(Left(error)),
       paginationParams => {
@@ -126,7 +126,7 @@ object NoteService extends BaseService with Configuration {
     pageNumber: Int,
     content: String,
     accessToken: AccessToken
-  ): Future[Either[ClientError, Note]] = {
+  ): Future[Either[Message, Note]] = {
     BookService.getBookForEdition(editionGuid).flatMap { optBook =>
       optBook.map { book =>
         val edition = book.editions.find(_.guid == editionGuid).getOrElse {
@@ -135,14 +135,14 @@ object NoteService extends BaseService with Configuration {
 
         if (pageNumber < 1) {
           Future.successful {
-            Left(ClientError("invalid-page-number",
+            Left(Message("invalid-page-number",
               "specified-page-number" -> pageNumber.toString,
               "minimum-page-number" -> "1"
             ))
           }
         } else if (pageNumber > edition.page_count) {
           Future.successful {
-            Left(ClientError("invalid-page-number",
+            Left(Message("invalid-page-number",
               "specified-page-number" -> pageNumber.toString,
               "maximum-page-number" -> edition.page_count.toString
             ))
@@ -155,7 +155,7 @@ object NoteService extends BaseService with Configuration {
         }
       }.getOrElse {
         Future.successful {
-          Left(ClientError("unknown-edition", "guid" -> editionGuid.toString))
+          Left(Message("unknown-edition", "guid" -> editionGuid.toString))
         }
       }
     }

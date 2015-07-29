@@ -8,12 +8,12 @@ import play.api.test._
 import play.api.test.Helpers._
 import play.api.libs.ws.WS
 import play.api.libs.json.{ Json, JsValue, JsArray, JsNull }
-import io.useless.ClientError
+import io.useless.Message
 import io.useless.accesstoken.AccessToken
 import io.useless.account.User
 import io.useless.client.accesstoken.{ AccessTokenClient, MockAccessTokenClient }
 import io.useless.client.account.{ AccountClient, MockAccountClient }
-import io.useless.play.json.ClientErrorJson.format
+import io.useless.play.json.MessageJson.format
 import io.useless.util.mongo.MongoUtil
 
 import models.haiku.Haiku
@@ -105,15 +105,15 @@ class HaikuSpec
 
       response.status mustBe UNPROCESSABLE_ENTITY
 
-      val clientErrors = response.json.as[Seq[ClientError]]
+      val messages = response.json.as[Seq[Message]]
 
-      val line1Error = clientErrors.find { clientError => clientError.details("line") == "1" }
+      val line1Error = messages.find { message => message.details("line") == "1" }
       line1Error.get.key mustBe "useless.haiku.error.tooFewSyllables"
 
-      val line2Error = clientErrors.find { clientError => clientError.details("line") == "2" }
+      val line2Error = messages.find { message => message.details("line") == "2" }
       line2Error.get.key mustBe "useless.haiku.error.tooManySyllables"
 
-      val line3Error = clientErrors.find { clientError => clientError.details("line") == "3" }
+      val line3Error = messages.find { message => message.details("line") == "3" }
       line3Error mustBe None
     }
 

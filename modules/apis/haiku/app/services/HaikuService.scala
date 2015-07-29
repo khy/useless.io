@@ -9,7 +9,7 @@ import org.joda.time.DateTime
 import reactivemongo.bson.BSONDocument
 import reactivemongo.api.QueryOpts
 import reactivemongo.core.commands.Count
-import io.useless.ClientError
+import io.useless.Message
 import io.useless.account.{User, PublicUser}
 import io.useless.reactivemongo.MongoAccessor
 import io.useless.client.account.AccountClient
@@ -48,7 +48,7 @@ object HaikuService extends Configuration {
   def find(
     optUserHandle: Option[String],
     rawPaginationParams: RawPaginationParams
-  ): Future[Either[ClientError, PaginatedResult[Haiku]]] = {
+  ): Future[Either[Message, PaginatedResult[Haiku]]] = {
     PaginationParams.build(rawPaginationParams, paginationConfig).fold(
       error => Future.successful(Left(error)),
       paginationParams => userQuery(optUserHandle).flatMap { userQuery =>
@@ -84,7 +84,7 @@ object HaikuService extends Configuration {
     inResponseToGuid: Option[UUID],
     lines: Seq[String],
     createdBy: User
-  ): Future[Either[Seq[ClientError], Haiku]] = {
+  ): Future[Either[Seq[Message], Haiku]] = {
     val errors = validate(lines)
 
     if (!errors.isEmpty) {
@@ -95,7 +95,7 @@ object HaikuService extends Configuration {
           shallowHaikus.headOption.map { shallowHaiku =>
             Right(Some(shallowHaiku))
           }.getOrElse {
-            Left(Seq(ClientError("useless.haiku.error.nonExistantHaikuGuid", "guid" -> inResponseToGuid.toString)))
+            Left(Seq(Message("useless.haiku.error.nonExistantHaikuGuid", "guid" -> inResponseToGuid.toString)))
           }
         }
       }.getOrElse {
@@ -193,8 +193,8 @@ object HaikuService extends Configuration {
 
   lazy val counter = TwoPhaseLineSyllableCounter.default()
 
-  private def validate(lines: Seq[String]): Seq[ClientError] = {
-    var errors = Seq.empty[ClientError]
+  private def validate(lines: Seq[String]): Seq[Message] = {
+    var errors = Seq.empty[Message]
 
     def validateLine(index: Int, expectedSyllables: Int) {
       val line = (index + 1).toString
@@ -202,15 +202,15 @@ object HaikuService extends Configuration {
       if (lines.isDefinedAt(index)) {
         counter.count(lines(index)).foreach { syllables =>
           if ((syllables.min - 2) > expectedSyllables) {
-            errors = errors :+ ClientError("useless.haiku.error.tooManySyllables",
+            errors = errors :+ Message("useless.haiku.error.tooManySyllables",
               "line" -> line, "expected" -> expectedSyllables.toString, "actualLow" -> syllables.min.toString, "actualHigh" -> syllables.max.toString)
           } else if ((syllables.max + 1) < expectedSyllables) {
-            errors = errors :+ ClientError("useless.haiku.error.tooFewSyllables",
+            errors = errors :+ Message("useless.haiku.error.tooFewSyllables",
               "line" -> line, "expected" -> expectedSyllables.toString, "actualLow" -> syllables.min.toString, "actualHigh" -> syllables.max.toString)
           }
         }
       } else {
-        errors = errors :+ ClientError("useless.haiku.error.missingLine", "line" -> line)
+        errors = errors :+ Message("useless.haiku.error.missingLine", "line" -> line)
       }
     }
 

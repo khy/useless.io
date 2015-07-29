@@ -1,14 +1,14 @@
 package io.useless
 
-object ClientError {
+object Message {
 
   def apply(key: String, details: (String, String)*) = {
-    new ClientError(key, Map(details:_*))
+    new Message(key, Map(details:_*))
   }
 
 }
 
-class ClientError(
+class Message(
   val key: String,
   val details: Map[String, String]
 )
