@@ -4,7 +4,6 @@ import java.util.UUID
 import scala.concurrent.Future
 import play.api.Play.current
 import play.api.libs.concurrent.Execution.Implicits._
-import scala.collection.mutable
 import org.joda.time.DateTime
 import reactivemongo.bson.BSONDocument
 import reactivemongo.api.QueryOpts
@@ -185,80 +184,87 @@ object HaikuService extends Configuration {
     collection.find(BSONDocument("_id" -> guid)).one[HaikuDocument]
   }
 
+  import scalaz._
+  import syntax.apply._, syntax.std.option._, syntax.validation._
+
   def create(
     inResponseToGuid: Option[UUID],
     lines: Seq[String],
     createdBy: User
-  ): Future[Either[Seq[Message], Haiku]] = {
-    val errors = validate(lines)
+  ): Future[ValidationNel[Message, Haiku]] = {
+    val valLines = validate(lines)
 
-    if (!errors.isEmpty) {
-      Future.successful(Left(errors))
-    } else {
-      inResponseToGuid.map { inResponseToGuid =>
-        getShallowHaikus(Seq(inResponseToGuid)).map { shallowHaikus =>
-          shallowHaikus.headOption.map { shallowHaiku =>
-            Right(Some(shallowHaiku))
-          }.getOrElse {
-            Left(Seq(Message("useless.haiku.error.nonExistantHaikuGuid", "guid" -> inResponseToGuid.toString)))
-          }
+    val futValOptInResponseTo: Future[ValidationNel[Message, Option[ShallowHaiku]]] = inResponseToGuid.map { inResponseToGuid =>
+      getShallowHaikus(Seq(inResponseToGuid)).map { shallowHaikus =>
+        shallowHaikus.headOption.map { shallowHaiku =>
+          Validation.success(Some(shallowHaiku))
+        }.getOrElse {
+          val message = Message("useless.haiku.error.nonExistantHaikuGuid", "guid" -> inResponseToGuid.toString)
+          Validation.failureNel(message)
         }
-      }.getOrElse {
-        Future.successful(Right(None))
-      }.flatMap { result =>
-        result.fold(
-          error => Future.successful(Left(error)),
-          optInResponseTo => {
-            val document = new HaikuDocument(
-              guid = UUID.randomUUID,
-              inResponseToGuid = inResponseToGuid,
-              lines = lines,
-              createdByGuid = createdBy.guid,
-              createdAt = DateTime.now
-            )
-
-            collection.insert(document).map { lastError =>
-              if (lastError.ok) {
-                Right(Haiku(document.guid, optInResponseTo, document.lines, document.createdAt, createdBy))
-              } else {
-                throw lastError
-              }
-            }
-          }
-        )
       }
+    }.getOrElse {
+      Future.successful(Validation.success(None))
     }
 
+    futValOptInResponseTo.flatMap { valOptInResponseTo =>
+      (valLines |@| valOptInResponseTo) { case (lines, optInResponseTo) =>
+        val document = new HaikuDocument(
+          guid = UUID.randomUUID,
+          inResponseToGuid = inResponseToGuid,
+          lines = lines,
+          createdByGuid = createdBy.guid,
+          createdAt = DateTime.now
+        )
+
+        collection.insert(document).map { lastError =>
+          if (lastError.ok) {
+            val haiku = Haiku(document.guid, optInResponseTo, document.lines, document.createdAt, createdBy)
+            Validation.success(haiku)
+          } else {
+            throw lastError
+          }
+        }
+      }.fold(
+        e => Future.successful(Validation.failure(e)),
+        futHaiku => futHaiku
+      )
+    }
   }
 
   lazy val counter = TwoPhaseLineSyllableCounter.default()
 
-  private def validate(lines: Seq[String]): Seq[Message] = {
-    var errors = Seq.empty[Message]
+  private def validate(lines: Seq[String]): ValidationNel[Message, Seq[String]] = {
+    def validateLine(index: Int, expectedSyllables: Int): ValidationNel[Message, String] = {
+      val lineNumber = (index + 1).toString
 
-    def validateLine(index: Int, expectedSyllables: Int) {
-      val line = (index + 1).toString
-
-      if (lines.isDefinedAt(index)) {
-        counter.count(lines(index)).foreach { syllables =>
+      lines.lift(index).map { line =>
+        counter.count(line).map { syllables =>
           if ((syllables.min - 2) > expectedSyllables) {
-            errors = errors :+ Message("useless.haiku.error.tooManySyllables",
-              "line" -> line, "expected" -> expectedSyllables.toString, "actualLow" -> syllables.min.toString, "actualHigh" -> syllables.max.toString)
+            val message = Message("useless.haiku.error.tooManySyllables",
+              "line" -> lineNumber, "expected" -> expectedSyllables.toString, "actualLow" -> syllables.min.toString, "actualHigh" -> syllables.max.toString)
+            Validation.failureNel(message)
           } else if ((syllables.max + 1) < expectedSyllables) {
-            errors = errors :+ Message("useless.haiku.error.tooFewSyllables",
-              "line" -> line, "expected" -> expectedSyllables.toString, "actualLow" -> syllables.min.toString, "actualHigh" -> syllables.max.toString)
+            val message = Message("useless.haiku.error.tooFewSyllables",
+              "line" -> lineNumber, "expected" -> expectedSyllables.toString, "actualLow" -> syllables.min.toString, "actualHigh" -> syllables.max.toString)
+            Validation.failureNel(message)
+          } else {
+            Validation.success(line)
           }
+        }.getOrElse {
+          Validation.success(line)
         }
-      } else {
-        errors = errors :+ Message("useless.haiku.error.missingLine", "line" -> line)
+      }.getOrElse {
+        val message = Message("useless.haiku.error.missingLine", "line" -> lineNumber)
+        Validation.failureNel(message)
       }
     }
 
-    validateLine(0, 5)
-    validateLine(1, 7)
-    validateLine(2, 5)
+    val lineOne = validateLine(0, 5)
+    val lineTwo = validateLine(1, 7)
+    val lineThree = validateLine(2, 5)
 
-    errors
+    (lineOne |@| lineTwo |@| lineThree)(Seq(_, _,_))
   }
 
 }

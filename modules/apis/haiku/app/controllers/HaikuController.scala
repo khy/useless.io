@@ -36,7 +36,7 @@ object HaikuController extends Controller with PaginationController {
     request.accessToken.resourceOwner match {
       case user: User => HaikuService.create(inResponseToGuid, lines, user).map { result =>
         result.fold (
-          errors => UnprocessableEntity(Json.toJson(errors)),
+          errors => UnprocessableEntity(Json.toJson(errors.list.toSeq)),
           haiku => Created(Json.toJson(haiku))
         )
       }
