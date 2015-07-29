@@ -80,52 +80,6 @@ object HaikuService extends Configuration {
     )
   }
 
-  def create(
-    inResponseToGuid: Option[UUID],
-    lines: Seq[String],
-    createdBy: User
-  ): Future[Either[Seq[Message], Haiku]] = {
-    val errors = validate(lines)
-
-    if (!errors.isEmpty) {
-      Future.successful(Left(errors))
-    } else {
-      inResponseToGuid.map { inResponseToGuid =>
-        getShallowHaikus(Seq(inResponseToGuid)).map { shallowHaikus =>
-          shallowHaikus.headOption.map { shallowHaiku =>
-            Right(Some(shallowHaiku))
-          }.getOrElse {
-            Left(Seq(Message("useless.haiku.error.nonExistantHaikuGuid", "guid" -> inResponseToGuid.toString)))
-          }
-        }
-      }.getOrElse {
-        Future.successful(Right(None))
-      }.flatMap { result =>
-        result.fold(
-          error => Future.successful(Left(error)),
-          optInResponseTo => {
-            val document = new HaikuDocument(
-              guid = UUID.randomUUID,
-              inResponseToGuid = inResponseToGuid,
-              lines = lines,
-              createdByGuid = createdBy.guid,
-              createdAt = DateTime.now
-            )
-
-            collection.insert(document).map { lastError =>
-              if (lastError.ok) {
-                Right(Haiku(document.guid, optInResponseTo, document.lines, document.createdAt, createdBy))
-              } else {
-                throw lastError
-              }
-            }
-          }
-        )
-      }
-    }
-
-  }
-
   private val AnonUser: User = new PublicUser(
     guid = UUID.fromString("00000000-0000-0000-0000-000000000000"),
     handle = "anon",
@@ -191,36 +145,6 @@ object HaikuService extends Configuration {
     }
   }
 
-  lazy val counter = TwoPhaseLineSyllableCounter.default()
-
-  private def validate(lines: Seq[String]): Seq[Message] = {
-    var errors = Seq.empty[Message]
-
-    def validateLine(index: Int, expectedSyllables: Int) {
-      val line = (index + 1).toString
-
-      if (lines.isDefinedAt(index)) {
-        counter.count(lines(index)).foreach { syllables =>
-          if ((syllables.min - 2) > expectedSyllables) {
-            errors = errors :+ Message("useless.haiku.error.tooManySyllables",
-              "line" -> line, "expected" -> expectedSyllables.toString, "actualLow" -> syllables.min.toString, "actualHigh" -> syllables.max.toString)
-          } else if ((syllables.max + 1) < expectedSyllables) {
-            errors = errors :+ Message("useless.haiku.error.tooFewSyllables",
-              "line" -> line, "expected" -> expectedSyllables.toString, "actualLow" -> syllables.min.toString, "actualHigh" -> syllables.max.toString)
-          }
-        }
-      } else {
-        errors = errors :+ Message("useless.haiku.error.missingLine", "line" -> line)
-      }
-    }
-
-    validateLine(0, 5)
-    validateLine(1, 7)
-    validateLine(2, 5)
-
-    errors
-  }
-
   private def paginationQuery(paginationParams: PaginationParams): Future[BSONDocument] = {
     paginationParams match {
       case precedenceParams: PrecedenceBasedPaginationParams => {
@@ -259,6 +183,82 @@ object HaikuService extends Configuration {
 
   private def forGuid(guid: UUID): Future[Option[HaikuDocument]] = {
     collection.find(BSONDocument("_id" -> guid)).one[HaikuDocument]
+  }
+
+  def create(
+    inResponseToGuid: Option[UUID],
+    lines: Seq[String],
+    createdBy: User
+  ): Future[Either[Seq[Message], Haiku]] = {
+    val errors = validate(lines)
+
+    if (!errors.isEmpty) {
+      Future.successful(Left(errors))
+    } else {
+      inResponseToGuid.map { inResponseToGuid =>
+        getShallowHaikus(Seq(inResponseToGuid)).map { shallowHaikus =>
+          shallowHaikus.headOption.map { shallowHaiku =>
+            Right(Some(shallowHaiku))
+          }.getOrElse {
+            Left(Seq(Message("useless.haiku.error.nonExistantHaikuGuid", "guid" -> inResponseToGuid.toString)))
+          }
+        }
+      }.getOrElse {
+        Future.successful(Right(None))
+      }.flatMap { result =>
+        result.fold(
+          error => Future.successful(Left(error)),
+          optInResponseTo => {
+            val document = new HaikuDocument(
+              guid = UUID.randomUUID,
+              inResponseToGuid = inResponseToGuid,
+              lines = lines,
+              createdByGuid = createdBy.guid,
+              createdAt = DateTime.now
+            )
+
+            collection.insert(document).map { lastError =>
+              if (lastError.ok) {
+                Right(Haiku(document.guid, optInResponseTo, document.lines, document.createdAt, createdBy))
+              } else {
+                throw lastError
+              }
+            }
+          }
+        )
+      }
+    }
+
+  }
+
+  lazy val counter = TwoPhaseLineSyllableCounter.default()
+
+  private def validate(lines: Seq[String]): Seq[Message] = {
+    var errors = Seq.empty[Message]
+
+    def validateLine(index: Int, expectedSyllables: Int) {
+      val line = (index + 1).toString
+
+      if (lines.isDefinedAt(index)) {
+        counter.count(lines(index)).foreach { syllables =>
+          if ((syllables.min - 2) > expectedSyllables) {
+            errors = errors :+ Message("useless.haiku.error.tooManySyllables",
+              "line" -> line, "expected" -> expectedSyllables.toString, "actualLow" -> syllables.min.toString, "actualHigh" -> syllables.max.toString)
+          } else if ((syllables.max + 1) < expectedSyllables) {
+            errors = errors :+ Message("useless.haiku.error.tooFewSyllables",
+              "line" -> line, "expected" -> expectedSyllables.toString, "actualLow" -> syllables.min.toString, "actualHigh" -> syllables.max.toString)
+          }
+        }
+      } else {
+        errors = errors :+ Message("useless.haiku.error.missingLine", "line" -> line)
+      }
+    }
+
+    validateLine(0, 5)
+    validateLine(1, 7)
+    validateLine(2, 5)
+
+    errors
   }
 
 }
