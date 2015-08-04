@@ -104,7 +104,7 @@ class HaikuSpec
         ))
       }
 
-      response.status mustBe UNPROCESSABLE_ENTITY
+      response.status mustBe CONFLICT
       val failure = response.json.as[Validation.FailureResult]
 
       failure("line1").head.key mustBe "useless.haiku.error.tooFewSyllables"
