@@ -204,7 +204,7 @@ object HaikuService extends Configuration {
     }
 
     futValOptInResponseTo.flatMap { valOptInResponseTo =>
-      Validation.combine(valLines, valOptInResponseTo) { case (lines, optInResponseTo) =>
+      (valLines ++ valOptInResponseTo).map { case (lines, optInResponseTo) =>
         val document = new HaikuDocument(
           guid = UUID.randomUUID,
           inResponseToGuid = inResponseToGuid,
@@ -259,7 +259,9 @@ object HaikuService extends Configuration {
     val lineTwo = validateLine(1, 7)
     val lineThree = validateLine(2, 5)
 
-    Validation.combine(lineOne, lineTwo, lineThree)(Seq(_, _, _))
+    (lineOne ++ lineTwo ++ lineThree).map { case ((one, two), three) =>
+      Seq(one, two, three)
+    }
   }
 
 }

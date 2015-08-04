@@ -32,46 +32,6 @@ class ValidationSpec extends PlaySpec {
 
   }
 
-  "Validation.combine" must {
-
-    "return a Validation.success for value returned from the block if all validations are successful" in {
-      case class Resource(id: Long, note: String, optNum: Option[Long])
-      val success1 = Validation.success(1)
-      val success2 = Validation.success("success")
-      val success3 = Validation.success(Some(4L))
-      val combined = Validation.combine(success1, success2, success3) { case (id, note, optNum) =>
-        Resource(id, note, optNum)
-      }
-      val resource = combined.toSuccess.get.value
-      resource.id  mustBe 1
-      resource.note mustBe "success"
-      resource.optNum mustBe Some(4)
-    }
-
-    "return a Validation.Failure if one of the validations is a failure" in {
-      val failure = Validation.failure[String]("resourceKey", "is.invalid")
-      val success = Validation.success("success")
-      val combined = Validation.combine(failure, success) { case (first, second) =>
-        first + second
-      }
-      val result = combined.toFailure.get
-      result.failureResult("resourceKey").head.key mustBe "is.invalid"
-    }
-
-    "combine failure for the same key" in {
-      val failure1 = Validation.failure[String]("resourceKey", "is.invalid")
-      val failure2 = Validation.failure[String]("resourceKey", "is.just.wrong", "id" -> "1")
-      val combined = Validation.combine(failure1, failure2) { case (first, second) =>
-        first + second
-      }
-      val failureResult = combined.toFailure.get.failureResult
-      failureResult("resourceKey")(0).key mustBe "is.invalid"
-      failureResult("resourceKey")(1).key mustBe "is.just.wrong"
-      failureResult("resourceKey")(1).details mustBe Map("id" -> "1")
-    }
-
-  }
-
   "Validation#fold" must {
 
     "execute the first function if the validation is a failure" in {
@@ -90,6 +50,46 @@ class ValidationSpec extends PlaySpec {
         resource => "success"
       )
       result mustBe "success"
+    }
+
+  }
+
+  "Validation#++" must {
+
+    "return a Validation.Success if both validations are successful" in {
+      case class Resource(one: Long, two: String, three: Option[Long])
+      val success1 = Validation.success(1)
+      val success2 = Validation.success("2")
+      val success3 = Validation.success(Some(3L))
+      val combined = (success1 ++ success2 ++ success3) map { case ((one, two), three) =>
+        Resource(one, two, three)
+      }
+      val resource = combined.toSuccess.get.value
+      resource.one mustBe 1
+      resource.two mustBe "2"
+      resource.three mustBe Some(3)
+    }
+
+    "return a Validation.Failure if one of the validations is a failure" in {
+      val failure = Validation.failure[String]("resourceKey", "is.invalid")
+      val success = Validation.success("success")
+      val combined = (failure ++ success).map { case (first, second) =>
+        first + second
+      }
+      val result = combined.toFailure.get
+      result.failureResult("resourceKey").head.key mustBe "is.invalid"
+    }
+
+    "combine failure for the same key" in {
+      val failure1 = Validation.failure[String]("resourceKey", "is.invalid")
+      val failure2 = Validation.failure[String]("resourceKey", "is.just.wrong", "id" -> "1")
+      val combined = (failure1 ++ failure2).map { case (first, second) =>
+        first + second
+      }
+      val failureResult = combined.toFailure.get.failureResult
+      failureResult("resourceKey")(0).key mustBe "is.invalid"
+      failureResult("resourceKey")(1).key mustBe "is.just.wrong"
+      failureResult("resourceKey")(1).details mustBe Map("id" -> "1")
     }
 
   }
