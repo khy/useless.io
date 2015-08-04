@@ -20,7 +20,7 @@ import io.useless.pagination._
 
 import models.haiku._
 import models.haiku.mongo.HaikuMongo._
-import lib.haiku.TwoPhaseLineSyllableCounter
+import lib.haiku.{TwoPhaseLineSyllableCounter, Validation}
 
 object HaikuService extends Configuration {
 
@@ -184,23 +184,19 @@ object HaikuService extends Configuration {
     collection.find(BSONDocument("_id" -> guid)).one[HaikuDocument]
   }
 
-  import scalaz._
-  import syntax.apply._, syntax.std.option._, syntax.validation._
-
   def create(
     inResponseToGuid: Option[UUID],
     lines: Seq[String],
     createdBy: User
-  ): Future[ValidationNel[Message, Haiku]] = {
+  ): Future[Validation[Haiku]] = {
     val valLines = validate(lines)
 
-    val futValOptInResponseTo: Future[ValidationNel[Message, Option[ShallowHaiku]]] = inResponseToGuid.map { inResponseToGuid =>
+    val futValOptInResponseTo: Future[Validation[Option[ShallowHaiku]]] = inResponseToGuid.map { inResponseToGuid =>
       getShallowHaikus(Seq(inResponseToGuid)).map { shallowHaikus =>
         shallowHaikus.headOption.map { shallowHaiku =>
           Validation.success(Some(shallowHaiku))
         }.getOrElse {
-          val message = Message("useless.haiku.error.nonExistantHaikuGuid", "guid" -> inResponseToGuid.toString)
-          Validation.failureNel(message)
+          Validation.failure("inResponseToGuid", "useless.haiku.error.nonExistantHaikuGuid", "guid" -> inResponseToGuid.toString)
         }
       }
     }.getOrElse {
@@ -208,7 +204,7 @@ object HaikuService extends Configuration {
     }
 
     futValOptInResponseTo.flatMap { valOptInResponseTo =>
-      (valLines |@| valOptInResponseTo) { case (lines, optInResponseTo) =>
+      Validation.combine(valLines, valOptInResponseTo) { case (lines, optInResponseTo) =>
         val document = new HaikuDocument(
           guid = UUID.randomUUID,
           inResponseToGuid = inResponseToGuid,
@@ -234,20 +230,20 @@ object HaikuService extends Configuration {
 
   lazy val counter = TwoPhaseLineSyllableCounter.default()
 
-  private def validate(lines: Seq[String]): ValidationNel[Message, Seq[String]] = {
-    def validateLine(index: Int, expectedSyllables: Int): ValidationNel[Message, String] = {
-      val lineNumber = (index + 1).toString
+  private def validate(lines: Seq[String]): Validation[Seq[String]] = {
+    def validateLine(index: Int, expectedSyllables: Int): Validation[String] = {
+      val lineKey = "line" + (index + 1).toString
 
       lines.lift(index).map { line =>
         counter.count(line).map { syllables =>
           if ((syllables.min - 2) > expectedSyllables) {
-            val message = Message("useless.haiku.error.tooManySyllables",
-              "line" -> lineNumber, "expected" -> expectedSyllables.toString, "actualLow" -> syllables.min.toString, "actualHigh" -> syllables.max.toString)
-            Validation.failureNel(message)
+            Validation.failure(lineKey, "useless.haiku.error.tooManySyllables",
+              "expected" -> expectedSyllables.toString, "actualLow" -> syllables.min.toString, "actualHigh" -> syllables.max.toString
+            )
           } else if ((syllables.max + 1) < expectedSyllables) {
-            val message = Message("useless.haiku.error.tooFewSyllables",
-              "line" -> lineNumber, "expected" -> expectedSyllables.toString, "actualLow" -> syllables.min.toString, "actualHigh" -> syllables.max.toString)
-            Validation.failureNel(message)
+            Validation.failure(lineKey, "useless.haiku.error.tooFewSyllables",
+              "expected" -> expectedSyllables.toString, "actualLow" -> syllables.min.toString, "actualHigh" -> syllables.max.toString
+            )
           } else {
             Validation.success(line)
           }
@@ -255,8 +251,7 @@ object HaikuService extends Configuration {
           Validation.success(line)
         }
       }.getOrElse {
-        val message = Message("useless.haiku.error.missingLine", "line" -> lineNumber)
-        Validation.failureNel(message)
+        Validation.failure(lineKey, "useless.haiku.error.missingLine")
       }
     }
 
@@ -264,7 +259,7 @@ object HaikuService extends Configuration {
     val lineTwo = validateLine(1, 7)
     val lineThree = validateLine(2, 5)
 
-    (lineOne |@| lineTwo |@| lineThree)(Seq(_, _,_))
+    Validation.combine(lineOne, lineTwo, lineThree)(Seq(_, _, _))
   }
 
 }

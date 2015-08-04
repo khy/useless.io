@@ -6,8 +6,8 @@ object Validation {
 
   type FailureResult = Map[String, Seq[Message]]
 
-  final case class Success[T](value: T) extends Validation[T]
-  final case class Failure[T](failureResult: FailureResult) extends Validation[T]
+  final case class Success[+T](value: T) extends Validation[T]
+  final case class Failure[+T](failureResult: FailureResult) extends Validation[T]
 
   def success[T](value: T) = {
     new Success(value)
@@ -19,7 +19,11 @@ object Validation {
     messageDetails: (String, String)*
   ): Validation[T] = {
     val message = Message(messageKey, messageDetails:_*)
-    new Failure[T](Map(key -> Seq(message)))
+    failure(Map(key -> Seq(message)))
+  }
+
+  def failure[T](failureResult: FailureResult): Validation[T] = {
+    new Failure[T](failureResult)
   }
 
   def combine[T1, T2, R](v1: Validation[T1], v2: Validation[T2])(f: (T1, T2) => R) = {
@@ -54,7 +58,7 @@ object Validation {
 
 }
 
-sealed trait Validation[T] {
+sealed trait Validation[+T] {
 
   import Validation._
 

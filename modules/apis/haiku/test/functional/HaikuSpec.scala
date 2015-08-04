@@ -18,6 +18,7 @@ import io.useless.util.mongo.MongoUtil
 
 import models.haiku.Haiku
 import models.haiku.JsonImplicits._
+import lib.haiku.Validation
 
 class HaikuSpec
   extends PlaySpec
@@ -104,17 +105,11 @@ class HaikuSpec
       }
 
       response.status mustBe UNPROCESSABLE_ENTITY
+      val failure = response.json.as[Validation.FailureResult]
 
-      val messages = response.json.as[Seq[Message]]
-
-      val line1Error = messages.find { message => message.details("line") == "1" }
-      line1Error.get.key mustBe "useless.haiku.error.tooFewSyllables"
-
-      val line2Error = messages.find { message => message.details("line") == "2" }
-      line2Error.get.key mustBe "useless.haiku.error.tooManySyllables"
-
-      val line3Error = messages.find { message => message.details("line") == "3" }
-      line3Error mustBe None
+      failure("line1").head.key mustBe "useless.haiku.error.tooFewSyllables"
+      failure("line2").head.key mustBe "useless.haiku.error.tooManySyllables"
+      failure.get("line3") mustBe None
     }
 
     "accept the UUID of a haiku that the haiku is in response to" in {
