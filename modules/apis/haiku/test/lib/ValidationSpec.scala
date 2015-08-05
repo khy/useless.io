@@ -94,4 +94,20 @@ class ValidationSpec extends PlaySpec {
 
   }
 
+  "Validation#map" must {
+
+    "return Validation.Success with the new mapped value if the validation is successful" in {
+      val validation = Validation.success(1)
+      val _validation = validation.map(_.toString)
+      _validation.toSuccess.get.value mustBe "1"
+    }
+
+    "return the existing validation if it is a a Validation.Failure" in {
+      val validation = Validation.failure[Long]("resourceKey", "is.invalid")
+      val _validation = validation.map(_.toString)
+      _validation.toFailure.get.failureResult("resourceKey").head.key mustBe "is.invalid"
+    }
+
+  }
+
 }
