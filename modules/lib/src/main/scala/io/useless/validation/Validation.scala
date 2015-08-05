@@ -1,4 +1,4 @@
-package lib.haiku
+package io.useless.validation
 
 import scala.concurrent.{Future, ExecutionContext}
 

@@ -17,10 +17,11 @@ import io.useless.reactivemongo.bson.DateTimeBson._
 import io.useless.util.configuration.Configuration
 import io.useless.util.configuration.RichConfiguration._
 import io.useless.pagination._
+import io.useless.validation.Validation
 
 import models.haiku._
 import models.haiku.mongo.HaikuMongo._
-import lib.haiku.{TwoPhaseLineSyllableCounter, Validation}
+import lib.haiku.TwoPhaseLineSyllableCounter
 
 object HaikuService extends Configuration {
 

@@ -18,7 +18,7 @@ import io.useless.util.mongo.MongoUtil
 
 import models.haiku.Haiku
 import models.haiku.JsonImplicits._
-import lib.haiku.Validation
+import io.useless.validation.Validation
 
 class HaikuSpec
   extends PlaySpec

@@ -1,12 +1,16 @@
-package lib.haiku
+package io.useless.validation
 
 import scala.concurrent.Future
+import org.scalatest.WordSpec
+import org.scalatest.MustMatchers
 import play.api.libs.concurrent.Execution.Implicits._
 import play.api.test._
 import play.api.test.Helpers._
-import org.scalatestplus.play.PlaySpec
 
-class ValidationSpec extends PlaySpec {
+class ValidationSpec
+  extends WordSpec
+  with MustMatchers
+{
 
   "Validation.success" must {
 
