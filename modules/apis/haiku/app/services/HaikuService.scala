@@ -204,7 +204,7 @@ object HaikuService extends Configuration {
     }
 
     futValOptInResponseTo.flatMap { valOptInResponseTo =>
-      (valLines ++ valOptInResponseTo).map { case (lines, optInResponseTo) =>
+      Validation.future(valLines ++ valOptInResponseTo) { case (lines, optInResponseTo) =>
         val document = new HaikuDocument(
           guid = UUID.randomUUID,
           inResponseToGuid = inResponseToGuid,
@@ -215,16 +215,12 @@ object HaikuService extends Configuration {
 
         collection.insert(document).map { lastError =>
           if (lastError.ok) {
-            val haiku = Haiku(document.guid, optInResponseTo, document.lines, document.createdAt, createdBy)
-            Validation.success(haiku)
+            Haiku(document.guid, optInResponseTo, document.lines, document.createdAt, createdBy)
           } else {
             throw lastError
           }
         }
-      }.fold(
-        e => Future.successful(Validation.failure(e)),
-        futHaiku => futHaiku
-      )
+      }
     }
   }
 

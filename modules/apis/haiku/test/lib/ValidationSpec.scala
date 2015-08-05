@@ -1,5 +1,7 @@
 package lib.haiku
 
+import scala.concurrent.Future
+import play.api.libs.concurrent.Execution.Implicits._
 import play.api.test._
 import play.api.test.Helpers._
 import org.scalatestplus.play.PlaySpec
@@ -28,6 +30,26 @@ class ValidationSpec extends PlaySpec {
       )
 
       validation mustBe 'failure
+    }
+
+  }
+
+  "Validation.future" must {
+
+    "return a future validation of the block result, if the validation is successful" in {
+      val validation = Validation.success(1)
+      val result = Validation.future(validation) { case (num) =>
+        Future.successful(num.toString)
+      }
+      await { result }.toSuccess.get.value mustBe "1"
+    }
+
+    "return a future of the validation, if it is a failure" in {
+      val validation = Validation.failure("resourceKey", "is.invalid")
+      val result = Validation.future(validation) { case (num) =>
+        Future.successful(num.toString)
+      }
+      await { result }.toFailure.get.failureResult("resourceKey").head.key mustBe "is.invalid"
     }
 
   }
