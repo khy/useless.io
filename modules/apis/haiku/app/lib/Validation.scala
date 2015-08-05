@@ -9,7 +9,7 @@ object Validation {
   type FailureResult = Map[String, Seq[Message]]
 
   final case class Success[+T](value: T) extends Validation[T]
-  final case class Failure[+T](failureResult: FailureResult) extends Validation[T]
+  final case class Failure[+T](result: FailureResult) extends Validation[T]
 
   def success[T](value: T) = {
     new Success(value)
@@ -24,13 +24,13 @@ object Validation {
     failure(Map(key -> Seq(message)))
   }
 
-  def failure[T](failureResult: FailureResult): Validation[T] = {
-    new Failure[T](failureResult)
+  def failure[T](result: FailureResult): Validation[T] = {
+    new Failure[T](result)
   }
 
   def future[T, S](validation: Validation[T])(f: T => Future[S])(implicit ec: ExecutionContext): Future[Validation[S]] = validation match {
     case Success(value) => f(value).map(success)
-    case Failure(failureResult) => Future.successful(failure(failureResult))
+    case Failure(result) => Future.successful(failure(result))
   }
 
 }
@@ -63,7 +63,7 @@ sealed trait Validation[+T] {
     onFailure: FailureResult => S,
     onSuccess: T => S
   ): S = this match {
-    case Failure(failureResult) => onFailure(failureResult)
+    case Failure(result) => onFailure(result)
     case Success(value) => onSuccess(value)
   }
 
@@ -80,7 +80,7 @@ sealed trait Validation[+T] {
 
   def map[S](f: T => S): Validation[S] = this match {
     case Success(value) => success(f(value))
-    case Failure(failureResult) => failure(failureResult)
+    case Failure(result) => failure(result)
   }
 
 }

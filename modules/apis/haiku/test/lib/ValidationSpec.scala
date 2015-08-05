@@ -49,7 +49,7 @@ class ValidationSpec extends PlaySpec {
       val result = Validation.future(validation) { case (num) =>
         Future.successful(num.toString)
       }
-      await { result }.toFailure.get.failureResult("resourceKey").head.key mustBe "is.invalid"
+      await { result }.toFailure.get.result("resourceKey").head.key mustBe "is.invalid"
     }
 
   }
@@ -99,7 +99,7 @@ class ValidationSpec extends PlaySpec {
         first + second
       }
       val result = combined.toFailure.get
-      result.failureResult("resourceKey").head.key mustBe "is.invalid"
+      result.result("resourceKey").head.key mustBe "is.invalid"
     }
 
     "combine failure for the same key" in {
@@ -108,10 +108,10 @@ class ValidationSpec extends PlaySpec {
       val combined = (failure1 ++ failure2).map { case (first, second) =>
         first + second
       }
-      val failureResult = combined.toFailure.get.failureResult
-      failureResult("resourceKey")(0).key mustBe "is.invalid"
-      failureResult("resourceKey")(1).key mustBe "is.just.wrong"
-      failureResult("resourceKey")(1).details mustBe Map("id" -> "1")
+      val result = combined.toFailure.get.result
+      result("resourceKey")(0).key mustBe "is.invalid"
+      result("resourceKey")(1).key mustBe "is.just.wrong"
+      result("resourceKey")(1).details mustBe Map("id" -> "1")
     }
 
   }
@@ -127,7 +127,7 @@ class ValidationSpec extends PlaySpec {
     "return the existing validation if it is a a Validation.Failure" in {
       val validation = Validation.failure[Long]("resourceKey", "is.invalid")
       val _validation = validation.map(_.toString)
-      _validation.toFailure.get.failureResult("resourceKey").head.key mustBe "is.invalid"
+      _validation.toFailure.get.result("resourceKey").head.key mustBe "is.invalid"
     }
 
   }
