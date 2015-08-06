@@ -59,6 +59,11 @@ sealed trait Validation[+T] {
     case _ => None
   }
 
+  def map[S](f: T => S): Validation[S] = this match {
+    case Success(value) => success(f(value))
+    case Failure(errors) => failure(errors)
+  }
+
   def fold[S](
     onFailure: Errors => S,
     onSuccess: T => S
@@ -76,11 +81,6 @@ sealed trait Validation[+T] {
         key -> (messages ++ b.get(key).getOrElse(Seq.empty))
       })
     }
-  }
-
-  def map[S](f: T => S): Validation[S] = this match {
-    case Success(value) => success(f(value))
-    case Failure(errors) => failure(errors)
   }
 
 }

@@ -50,6 +50,22 @@ class ValidationSpec
 
   }
 
+  "Validation#map" must {
+
+    "return Validation.Success with the result of the function, if the specified validation is a Validation.Success" in {
+      val validation = Validation.success(1)
+      val _validation = validation.map(_.toString)
+      _validation.toSuccess.get.value mustBe "1"
+    }
+
+    "return the specified validation if it is a Validation.Failure" in {
+      val validation = Validation.failure[Long]("resourceKey", "is.invalid")
+      val _validation = validation.map(_.toString)
+      _validation.toFailure.get.errors("resourceKey").head.key mustBe "is.invalid"
+    }
+
+  }
+
   "Validation#fold" must {
 
     "return the result of the first function if the validation is a Validation.Failure" in {
@@ -116,22 +132,6 @@ class ValidationSpec
       errors("resourceKey")(1).details mustBe Map("id" -> "1")
       errors("otherResourceKey")(0).key mustBe "is.also.wrong"
       errors("otherResourceKey")(0).details mustBe Map("id" -> "2")
-    }
-
-  }
-
-  "Validation#map" must {
-
-    "return Validation.Success with the result of the function, if the specified validation is a Validation.Success" in {
-      val validation = Validation.success(1)
-      val _validation = validation.map(_.toString)
-      _validation.toSuccess.get.value mustBe "1"
-    }
-
-    "return the specified validation if it is a Validation.Failure" in {
-      val validation = Validation.failure[Long]("resourceKey", "is.invalid")
-      val _validation = validation.map(_.toString)
-      _validation.toFailure.get.errors("resourceKey").head.key mustBe "is.invalid"
     }
 
   }
