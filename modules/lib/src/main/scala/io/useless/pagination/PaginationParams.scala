@@ -2,7 +2,7 @@ package io.useless.pagination
 
 import java.util.UUID
 
-import io.useless.Message
+import io.useless.validation.Validation
 
 /*
  * Minimally-parsed pagination specifications.
@@ -91,45 +91,55 @@ object PaginationParams {
   def build(
     raw: RawPaginationParams,
     config: PaginationConfig = defaultPaginationConfig
-  ): Either[Message, PaginationParams] = {
-    raw.limit.foreach { limit =>
+  ): Validation[PaginationParams] = {
+    val limitVal = raw.limit.map { limit =>
       if (limit <= 0) {
-        return Left(Message("pagination.non-positive-limit",
-          "specified" -> limit.toString))
+        Validation.failure("pagination.limit", "useless.error.non-positive",
+          "specified" -> limit.toString)
       } else if (limit > config.maxLimit) {
-        return Left(Message("pagination.limit-exceeds-maximum",
-          "specified" -> limit.toString, "maximum" -> config.maxLimit.toString))
+        Validation.failure("pagination.limit", "useless.error.exceeds-maximum",
+          "specified" -> limit.toString, "maximum" -> config.maxLimit.toString)
+      } else {
+        Validation.success(Some(limit))
       }
-    }
+    }.getOrElse(Validation.success(None))
 
-    raw.order.foreach { order =>
+    val orderVal = raw.order.map { order =>
       if (!config.validOrders.contains(order)) {
         val formattedValidOptions = config.validOrders.
           sortWith(_.toLowerCase < _.toLowerCase).
           map("'" + _ + "'").mkString(", ")
 
-        return Left(Message("pagination.invalid-order",
-          "specified" -> order, "valid" -> formattedValidOptions))
+        Validation.failure("pagination.order", "useless.error.invalid-value",
+         "specified" -> order, "valid" -> formattedValidOptions)
+      } else {
+        Validation.success(Some(order))
       }
-    }
+    }.getOrElse(Validation.success(None))
 
-    raw.page.foreach { page =>
+    val pageVal = raw.page.map { page =>
       if (page <= 0) {
-        return Left(Message("pagination.non-positive-page",
-          "specified" -> page.toString))
+        Validation.failure("pagination.page", "useless.error.non-positive",
+          "specified" -> page.toString)
+      } else {
+        Validation.success(Some(page))
       }
-    }
+    }.getOrElse(Validation.success(None))
 
-    raw.offset.foreach { offset =>
+    val offsetVal = raw.offset.map { offset =>
       if (offset < 0) {
-        return Left(Message("pagination.negative-offset",
-          "specified" -> offset.toString))
+        Validation.failure("pagination.offset", "useless.error.negative",
+          "specified" -> offset.toString)
+      } else {
+        Validation.success(Some(offset))
       }
-    }
+    }.getOrElse(Validation.success(None))
 
-    calculateStyle(raw, config) match {
-      case PrecedenceBasedPagination => Right(new PrecedenceBasedPaginationParams(raw, config))
-      case _ => Right(new OffsetBasedPaginationParams(raw, config))
+    (limitVal ++ orderVal ++ pageVal ++ offsetVal).map { _ =>
+      calculateStyle(raw, config) match {
+        case PrecedenceBasedPagination => new PrecedenceBasedPaginationParams(raw, config)
+        case _ => new OffsetBasedPaginationParams(raw, config)
+      }
     }
   }
 

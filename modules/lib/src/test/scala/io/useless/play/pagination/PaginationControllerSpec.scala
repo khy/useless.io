@@ -37,7 +37,7 @@ class PaginationControllerSpec
     private val call = Call("GET", "test.useless.io/things")
 
     private def result(rawPaginationParams: RawPaginationParams) = {
-      val paginationParams = PaginationParams.build(rawPaginationParams).right.get
+      val paginationParams = PaginationParams.build(rawPaginationParams).toSuccess.value
       val result = Seq(Api(UUID.randomUUID, "books"), Api(UUID.randomUUID, "haikus"))
       PaginatedResult.build(result, paginationParams, totalItems = Some(200))
     }

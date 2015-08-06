@@ -15,7 +15,7 @@ class PaginatedResultSpec
 
     def buildPrecedenceParams(after: UUID = UUID.randomUUID) = {
       val raw = RawPaginationParams(after = Some(after))
-      PaginationParams.build(raw).right.get
+      PaginationParams.build(raw).toSuccess.value
     }
 
     "use the specified items for after params" in {
@@ -38,7 +38,7 @@ class PaginatedResultSpec
 
     "use precedence-based pagination, if explicitly specified" in {
       val raw = RawPaginationParams(style = Some(PrecedenceBasedPagination))
-      val params = PaginationParams.build(raw).right.get
+      val params = PaginationParams.build(raw).toSuccess.value
       val result = PaginatedResult.build(items, params)
       result.next.get.after.get mustBe items(2).guid
       result.next.get.style mustBe(None)
@@ -47,7 +47,7 @@ class PaginatedResultSpec
 
     "use offset-based pagination, if explicitly specified" in {
       val raw = RawPaginationParams(style = Some(OffsetBasedPagination))
-      val params = PaginationParams.build(raw).right.get
+      val params = PaginationParams.build(raw).toSuccess.value
       val result = PaginatedResult.build(items, params)
       result.first.get.offset.get mustBe(0)
       result.next.get.offset.get mustBe(20)
