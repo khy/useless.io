@@ -1,11 +1,7 @@
 package io.useless.validation
 
-import scala.concurrent.Future
 import org.scalatest.WordSpec
 import org.scalatest.MustMatchers
-import play.api.libs.concurrent.Execution.Implicits._
-import play.api.test._
-import play.api.test.Helpers._
 import io.useless.Message
 
 class ValidationSpec
@@ -46,26 +42,6 @@ class ValidationSpec
       val errors = validation.toFailure.errors
       errors("resourceKey").head.key mustBe "is.invalid"
       errors("resourceKey").head.details("id") mustBe "1"
-    }
-
-  }
-
-  "Validation.future" must {
-
-    "return a Future of a Validation.Success of the function's result, if the specified validation is a Validation.Success" in {
-      val validation = Validation.success(1)
-      val result = Validation.future(validation) { case (num) =>
-        Future.successful(num.toString)
-      }
-      await { result }.toSuccess.value mustBe "1"
-    }
-
-    "return a Future of the Validation itself, if it is a Validation.Failure" in {
-      val validation = Validation.failure("resourceKey", "is.invalid")
-      val result = Validation.future(validation) { case (num) =>
-        Future.successful(num.toString)
-      }
-      await { result }.toFailure.errors("resourceKey").head.key mustBe "is.invalid"
     }
 
   }

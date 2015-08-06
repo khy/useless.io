@@ -1,7 +1,5 @@
 package io.useless.validation
 
-import scala.concurrent.{Future, ExecutionContext}
-
 import io.useless.Message
 
 object Validation {
@@ -25,11 +23,6 @@ object Validation {
 
   def failure[T](errors: Errors): Validation[T] = {
     new Failure[T](errors)
-  }
-
-  def future[T, S](validation: Validation[T])(f: T => Future[S])(implicit ec: ExecutionContext): Future[Validation[S]] = validation match {
-    case Success(value) => f(value).map(success)
-    case Failure(errors) => Future.successful(failure(errors))
   }
 
 }
