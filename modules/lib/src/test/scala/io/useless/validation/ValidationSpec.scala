@@ -37,7 +37,7 @@ class ValidationSpec
       val result = Validation.future(validation) { case (num) =>
         Future.successful(num.toString)
       }
-      await { result }.toSuccess.get.value mustBe "1"
+      await { result }.toSuccess.value mustBe "1"
     }
 
     "return a Future of the Validation itself, if it is a Validation.Failure" in {
@@ -45,7 +45,35 @@ class ValidationSpec
       val result = Validation.future(validation) { case (num) =>
         Future.successful(num.toString)
       }
-      await { result }.toFailure.get.errors("resourceKey").head.key mustBe "is.invalid"
+      await { result }.toFailure.errors("resourceKey").head.key mustBe "is.invalid"
+    }
+
+  }
+
+  "Validation#toSuccess" must {
+
+    "return a Validation.Success if the validation is a Validation.Success" in {
+      val validation = Validation.success(1)
+      validation.toSuccess.value mustBe 1
+    }
+
+    "throw a NoSuchElementException if the validation is a Validation.Failure" in {
+      val validation = Validation.failure("resourceKey", "is.invalid")
+      a [NoSuchElementException] must be thrownBy validation.toSuccess
+    }
+
+  }
+
+  "Validation#toFailure" must {
+
+    "return a Validation.Failure if the validation is a Validation.Failure" in {
+      val validation = Validation.failure("resourceKey", "is.invalid")
+      validation.toFailure.errors("resourceKey").head.key mustBe "is.invalid"
+    }
+
+    "throw a NoSuchElementException if the validation is a Validation.Success" in {
+      val validation = Validation.success(1)
+      a [NoSuchElementException] must be thrownBy validation.toFailure
     }
 
   }
@@ -55,13 +83,13 @@ class ValidationSpec
     "return Validation.Success with the result of the function, if the specified validation is a Validation.Success" in {
       val validation = Validation.success(1)
       val _validation = validation.map(_.toString)
-      _validation.toSuccess.get.value mustBe "1"
+      _validation.toSuccess.value mustBe "1"
     }
 
     "return the specified validation if it is a Validation.Failure" in {
       val validation = Validation.failure[Long]("resourceKey", "is.invalid")
       val _validation = validation.map(_.toString)
-      _validation.toFailure.get.errors("resourceKey").head.key mustBe "is.invalid"
+      _validation.toFailure.errors("resourceKey").head.key mustBe "is.invalid"
     }
 
   }
@@ -100,7 +128,7 @@ class ValidationSpec
         Resource(one, two, three)
       }
 
-      val resource = combined.toSuccess.get.value
+      val resource = combined.toSuccess.value
       resource.one mustBe 1
       resource.two mustBe "2"
       resource.three mustBe Some(3)
@@ -113,7 +141,7 @@ class ValidationSpec
         first + second
       }
 
-      val errors = combined.toFailure.get.errors
+      val errors = combined.toFailure.errors
       errors("resourceKey").head.key mustBe "is.invalid"
     }
 
@@ -126,7 +154,7 @@ class ValidationSpec
         first + second + third + fourth
       }
 
-      val errors = combined.toFailure.get.errors
+      val errors = combined.toFailure.errors
       errors("resourceKey")(0).key mustBe "is.invalid"
       errors("resourceKey")(1).key mustBe "is.just.wrong"
       errors("resourceKey")(1).details mustBe Map("id" -> "1")
