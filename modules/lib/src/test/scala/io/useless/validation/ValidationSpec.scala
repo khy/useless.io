@@ -45,7 +45,7 @@ class ValidationSpec
       val result = Validation.future(validation) { case (num) =>
         Future.successful(num.toString)
       }
-      await { result }.toFailure.get.result("resourceKey").head.key mustBe "is.invalid"
+      await { result }.toFailure.get.errors("resourceKey").head.key mustBe "is.invalid"
     }
 
   }
@@ -97,11 +97,11 @@ class ValidationSpec
         first + second
       }
 
-      val result = combined.toFailure.get.result
-      result("resourceKey").head.key mustBe "is.invalid"
+      val errors = combined.toFailure.get.errors
+      errors("resourceKey").head.key mustBe "is.invalid"
     }
 
-    "return a Validation.Failure that combines the results of any specified Validation.Failure" in {
+    "return a Validation.Failure that combines the errors of any specified Validation.Failure" in {
       val success = Validation.success(1)
       val failure1 = Validation.failure[Long]("resourceKey", "is.invalid")
       val failure2 = Validation.failure[Long]("resourceKey", "is.just.wrong", "id" -> "1")
@@ -110,12 +110,12 @@ class ValidationSpec
         first + second + third + fourth
       }
 
-      val result = combined.toFailure.get.result
-      result("resourceKey")(0).key mustBe "is.invalid"
-      result("resourceKey")(1).key mustBe "is.just.wrong"
-      result("resourceKey")(1).details mustBe Map("id" -> "1")
-      result("otherResourceKey")(0).key mustBe "is.also.wrong"
-      result("otherResourceKey")(0).details mustBe Map("id" -> "2")
+      val errors = combined.toFailure.get.errors
+      errors("resourceKey")(0).key mustBe "is.invalid"
+      errors("resourceKey")(1).key mustBe "is.just.wrong"
+      errors("resourceKey")(1).details mustBe Map("id" -> "1")
+      errors("otherResourceKey")(0).key mustBe "is.also.wrong"
+      errors("otherResourceKey")(0).details mustBe Map("id" -> "2")
     }
 
   }
@@ -131,7 +131,7 @@ class ValidationSpec
     "return the specified validation if it is a Validation.Failure" in {
       val validation = Validation.failure[Long]("resourceKey", "is.invalid")
       val _validation = validation.map(_.toString)
-      _validation.toFailure.get.result("resourceKey").head.key mustBe "is.invalid"
+      _validation.toFailure.get.errors("resourceKey").head.key mustBe "is.invalid"
     }
 
   }
