@@ -8,6 +8,7 @@ import io.useless.util.Uuid
 import io.useless.Message
 import io.useless.http.UrlUtil
 import io.useless.pagination._
+import io.useless.validation._
 
 object RawPaginationParamsBinding {
 
@@ -17,7 +18,7 @@ object RawPaginationParamsBinding {
 
 trait RawPaginationParamsBinding {
 
-  def bind(request: Request[_]): Either[Message, RawPaginationParams]
+  def bind(request: Request[_]): Validation[RawPaginationParams]
 
   def unbind(params: RawPaginationParams): Map[String, Seq[String]]
 
@@ -47,47 +48,53 @@ class PrefixedRawPaginationParamsBinding(
 
   def bind(
     request: Request[_]
-  ): Either[Message, RawPaginationParams] = {
-    Right(RawPaginationParams(
-      style = request.stringParam("style").map { result =>
-        result match {
-          case "page" => PageBasedPagination
-          case "precedence" => PrecedenceBasedPagination
-          case "offset" => OffsetBasedPagination
-          case other => return Left(Message("pagination.invalid-style",
-            "specified" -> other, "required" -> "page, precedence, offset"))
-        }
-      },
-      limit = request.intParam("limit").map { result =>
-        result match {
-          case Success(value) => value
-          case Failure(_) => return Left(Message("pagination.non-numeric-limit",
-            "specified" -> request.stringParam("limit").get))
-        }
-      },
-      order = request.stringParam("order"),
-      offset = request.intParam("offset").map { result =>
-        result match {
-          case Success(value) => value
-          case Failure(_) => return Left(Message("pagination.non-numeric-offset",
-            "specified" -> request.stringParam("offset").get))
-        }
-      },
-      page = request.intParam("page").map { result =>
-        result match {
-          case Success(value) => value
-          case Failure(_) => return Left(Message("pagination.non-numeric-page",
-            "specified" -> request.stringParam("page").get))
-        }
-      },
-      after = request.guidParam("after").map { result =>
-        result match {
-          case Success(value) => value
-          case Failure(_) => return Left(Message("pagination.non-uuid-after",
-            "specified" -> request.stringParam("after").get))
-        }
+  ): Validation[RawPaginationParams] = {
+    val style: Validation[Option[PaginationStyle]] = request.stringParam("style").map { style =>
+      style match {
+        case "page" => Validation.success(Some(PageBasedPagination))
+        case "precedence" => Validation.success(Some(PrecedenceBasedPagination))
+        case "offset" => Validation.success(Some(OffsetBasedPagination))
+        case other => Validation.failure("pagination.style", "useless.error.invalid-value",
+          "specified" -> other, "valid" -> "'page', 'precedence', 'offset'")
       }
-    ))
+    }.getOrElse(Validation.success(None))
+
+    val limit = request.intParam("limit").map { result =>
+      result match {
+        case Success(value) => Validation.success(Some(value))
+        case Failure(_) => Validation.failure("pagination.limit", "useless.error.non-numeric",
+          "specified" -> request.stringParam("limit").get)
+      }
+    }.getOrElse(Validation.success(None))
+
+    val offset = request.intParam("offset").map { result =>
+      result match {
+        case Success(value) => Validation.success(Some(value))
+        case Failure(_) => Validation.failure("pagination.offset", "useless.error.non-numeric",
+          "specified" -> request.stringParam("offset").get)
+      }
+    }.getOrElse(Validation.success(None))
+
+    val page = request.intParam("page").map { result =>
+      result match {
+        case Success(value) => Validation.success(Some(value))
+        case Failure(_) => Validation.failure("pagination.page", "useless.error.non-numeric",
+          "specified" -> request.stringParam("page").get)
+      }
+    }.getOrElse(Validation.success(None))
+
+    val after = request.guidParam("after").map { result =>
+      result match {
+        case Success(value) => Validation.success(Some(value))
+        case Failure(_) => Validation.failure("pagination.after", "useless.error.non-uuid",
+          "specified" -> request.stringParam("after").get)
+      }
+    }.getOrElse(Validation.success(None))
+
+    (style ++ limit ++ offset ++ page ++ after).map { case ((((style, limit), offset), page), after) =>
+      val order = request.stringParam("order")
+      RawPaginationParams(style, limit, order, offset, page, after)
+    }
   }
 
   def unbind(params: RawPaginationParams): Map[String, Seq[String]] = {
