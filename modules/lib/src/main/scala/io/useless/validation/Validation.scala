@@ -15,12 +15,11 @@ object Validation {
     new Success(value)
   }
 
-  def failure[T](
-    key: String,
-    messageKey: String,
-    messageDetails: (String, String)*
-  ): Validation[T] = {
-    val message = Message(messageKey, messageDetails:_*)
+  def failure[T](key: String, messageKey: String, messageDetails: (String, String)*): Validation[T] = {
+    failure(key, Message(messageKey, messageDetails:_*))
+  }
+
+  def failure[T](key: String, message: Message): Validation[T] = {
     failure(Map(key -> Seq(message)))
   }
 

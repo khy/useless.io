@@ -6,6 +6,7 @@ import org.scalatest.MustMatchers
 import play.api.libs.concurrent.Execution.Implicits._
 import play.api.test._
 import play.api.test.Helpers._
+import io.useless.Message
 
 class ValidationSpec
   extends WordSpec
@@ -14,18 +15,37 @@ class ValidationSpec
 
   "Validation.success" must {
 
-    "return a Validation.Success" in {
+    "return a Validation.Success with the specified value" in {
       val validation = Validation.success(1)
-      validation.isSuccess mustBe true
+      validation.toSuccess.value mustBe 1
     }
 
   }
 
   "Validation.failure" must {
 
-    "return a Validation.Failure" in {
-      val validation = Validation.failure("resourceKey", "is.invalid")
-      validation.isFailure mustBe true
+    "return a Validation.Failure with the specified errors, using the low-level signature" in {
+      val validation = Validation.failure("resourceKey", "is.invalid", "id" -> "1")
+      val errors = validation.toFailure.errors
+      errors("resourceKey").head.key mustBe "is.invalid"
+      errors("resourceKey").head.details("id") mustBe "1"
+    }
+
+    "return a Validation.Failure with the specified errors, using Message signature" in {
+      val message = Message("is.invalid", "id" -> "1")
+      val validation = Validation.failure("resourceKey", message)
+      val errors = validation.toFailure.errors
+      errors("resourceKey").head.key mustBe "is.invalid"
+      errors("resourceKey").head.details("id") mustBe "1"
+    }
+
+    "return a Validation.Failure with the specified errors, using Error signature" in {
+      val message = Message("is.invalid", "id" -> "1")
+      val error = Map("resourceKey" -> Seq(message))
+      val validation = Validation.failure(error)
+      val errors = validation.toFailure.errors
+      errors("resourceKey").head.key mustBe "is.invalid"
+      errors("resourceKey").head.details("id") mustBe "1"
     }
 
   }
