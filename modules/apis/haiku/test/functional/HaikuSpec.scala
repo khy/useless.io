@@ -105,11 +105,11 @@ class HaikuSpec
       }
 
       response.status mustBe CONFLICT
-      val failure = response.json.as[Validation.FailureResult]
+      val errors = response.json.as[Validation.Errors]
 
-      failure("line1").head.key mustBe "useless.haiku.error.tooFewSyllables"
-      failure("line2").head.key mustBe "useless.haiku.error.tooManySyllables"
-      failure.get("line3") mustBe None
+      errors("line1").head.key mustBe "useless.haiku.error.tooFewSyllables"
+      errors("line2").head.key mustBe "useless.haiku.error.tooManySyllables"
+      errors.get("line3") mustBe None
     }
 
     "accept the UUID of a haiku that the haiku is in response to" in {
