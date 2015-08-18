@@ -1,1 +1,1 @@
-# Moofin routes
+POST    /meetings   controllers.moofin.MeetingsController.create
