@@ -20,7 +20,7 @@ class RawPaginationParamsBindingSpec
       val request = FakeRequest("GET", "/notes?p.limit=invalid")
       val errors = RawPaginationParamsBinding.default.bind(request).toFailure.errors
       val limitError = errors("pagination.limit").head
-      limitError.key mustBe ("useless.error.non-numeric")
+      limitError.key mustBe ("useless.error.nonInt")
       limitError.details("specified") mustBe ("invalid")
     }
 
@@ -38,7 +38,7 @@ class RawPaginationParamsBindingSpec
       val request = FakeRequest("GET", "/notes?p.offset=invalid")
       val errors = RawPaginationParamsBinding.default.bind(request).toFailure.errors
       val offsetError = errors("pagination.offset").head
-      offsetError.key mustBe ("useless.error.non-numeric")
+      offsetError.key mustBe ("useless.error.nonInt")
       offsetError.details("specified") mustBe("invalid")
     }
 

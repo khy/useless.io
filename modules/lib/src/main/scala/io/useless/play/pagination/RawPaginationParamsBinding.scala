@@ -59,20 +59,12 @@ class PrefixedRawPaginationParamsBinding(
       }
     }.getOrElse(Validation.success(None))
 
-    val limit = request.intParam("limit").map { result =>
-      result match {
-        case Success(value) => Validation.success(Some(value))
-        case Failure(_) => Validation.failure("pagination.limit", "useless.error.non-numeric",
-          "specified" -> request.stringParam("limit").get)
-      }
+    val limit = request.stringParam("limit").map { limit =>
+      Validator.int("pagination.limit", limit).map(Some(_))
     }.getOrElse(Validation.success(None))
 
-    val offset = request.intParam("offset").map { result =>
-      result match {
-        case Success(value) => Validation.success(Some(value))
-        case Failure(_) => Validation.failure("pagination.offset", "useless.error.non-numeric",
-          "specified" -> request.stringParam("offset").get)
-      }
+    val offset = request.stringParam("offset").map { offset =>
+      Validator.int("pagination.offset", offset).map(Some(_))
     }.getOrElse(Validation.success(None))
 
     val page = request.intParam("page").map { result =>
