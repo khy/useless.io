@@ -11,6 +11,7 @@ import io.useless.account.Account
 import io.useless.accesstoken.AccessToken
 import io.useless.client.account.AccountClient
 import io.useless.pagination._
+import io.useless.validation._
 import io.useless.util.configuration.Configuration
 import io.useless.util.configuration.RichConfiguration._
 
@@ -35,50 +36,48 @@ object NoteService extends BaseService with Configuration {
   def findNotes(
     accountGuids: Seq[UUID],
     rawPaginationParams: RawPaginationParams
-  ): Future[Either[Message, PaginatedResult[Note]]] = {
-    PaginationParams.build(rawPaginationParams, paginationConfig).fold(
-      error => Future.successful(Left(error)),
-      paginationParams => {
+  ): Future[Validation[PaginatedResult[Note]]] = {
+    val valPaginationParams = PaginationParams.build(rawPaginationParams, paginationConfig)
 
-        val futureDbNotes = withDbSession { implicit session =>
-          // It's unclear to me why, but sortBy needs to go first.
-          var query = Notes.sortBy { sort =>
-            val base = paginationParams.order match {
-              case "page_number" => sort.pageNumber
-              case _ => sort.createdAt
-            }
-
-            base.desc
+    ValidationUtil.future(valPaginationParams) { paginationParams =>
+      val futureDbNotes = withDbSession { implicit session =>
+        // It's unclear to me why, but sortBy needs to go first.
+        var query = Notes.sortBy { sort =>
+          val base = paginationParams.order match {
+            case "page_number" => sort.pageNumber
+            case _ => sort.createdAt
           }
 
-          if (accountGuids.nonEmpty) {
-            query = query.filter { note =>
-              note.createdByAccount inSet accountGuids
-            }
-          }
-
-          paginationParams match {
-            case params: OffsetBasedPaginationParams => {
-              query = query.drop(params.offset)
-            }
-            case params: PrecedenceBasedPaginationParams => {
-              params.after.foreach { after =>
-                val maxCreatedAt = Notes.filter(_.guid === after).
-                  map(_.createdAt).min.asColumnOf[Timestamp]
-
-                query = query.filter(_.createdAt < maxCreatedAt)
-              }
-            }
-          }
-
-          query.take(paginationParams.limit).list
+          base.desc
         }
 
-        futureDbNotes.flatMap(buildNotes(_)).map { notes =>
-          Right(PaginatedResult.build(notes, paginationParams))
+        if (accountGuids.nonEmpty) {
+          query = query.filter { note =>
+            note.createdByAccount inSet accountGuids
+          }
         }
+
+        paginationParams match {
+          case params: OffsetBasedPaginationParams => {
+            query = query.drop(params.offset)
+          }
+          case params: PrecedenceBasedPaginationParams => {
+            params.after.foreach { after =>
+              val maxCreatedAt = Notes.filter(_.guid === after).
+                map(_.createdAt).min.asColumnOf[Timestamp]
+
+              query = query.filter(_.createdAt < maxCreatedAt)
+            }
+          }
+        }
+
+        query.take(paginationParams.limit).list
       }
-    )
+
+      futureDbNotes.flatMap(buildNotes(_)).map { notes =>
+        PaginatedResult.build(notes, paginationParams)
+      }
+    }
   }
 
   lazy val accountClient = {

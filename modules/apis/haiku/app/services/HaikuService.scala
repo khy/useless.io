@@ -48,10 +48,11 @@ object HaikuService extends Configuration {
   def find(
     optUserHandle: Option[String],
     rawPaginationParams: RawPaginationParams
-  ): Future[Either[Message, PaginatedResult[Haiku]]] = {
-    PaginationParams.build(rawPaginationParams, paginationConfig).fold(
-      error => Future.successful(Left(error)),
-      paginationParams => userQuery(optUserHandle).flatMap { userQuery =>
+  ): Future[Validation[PaginatedResult[Haiku]]] = {
+    val valPaginationParams = PaginationParams.build(rawPaginationParams, paginationConfig)
+
+    ValidationUtil.future(valPaginationParams) { paginationParams =>
+      userQuery(optUserHandle).flatMap { userQuery =>
         paginationQuery(paginationParams).flatMap { paginationQuery =>
           val query = userQuery.add(paginationQuery)
 
@@ -73,11 +74,11 @@ object HaikuService extends Configuration {
             documents <- futDocuments
             haikus <- buildHaikus(documents)
           } yield {
-            Right(PaginatedResult.build(haikus, paginationParams, Some(count)))
+            PaginatedResult.build(haikus, paginationParams, Some(count))
           }
         }
       }
-    )
+    }
   }
 
   private val AnonUser: User = new PublicUser(
