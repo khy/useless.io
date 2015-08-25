@@ -1,4 +1,4 @@
-package models.moofin
+package models.budget
 
 import play.api.libs.json._
 import io.useless.account.User

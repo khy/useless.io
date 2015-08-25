@@ -1,4 +1,4 @@
-package models.moofin
+package models.budget
 
 import java.util.UUID
 import org.joda.time.DateTime

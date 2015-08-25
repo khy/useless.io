@@ -1,1 +1,0 @@
-POST    /meetings   controllers.moofin.MeetingsController.create

@@ -9,4 +9,4 @@ libraryDependencies ++= Seq(
   Defaults.Dependencies.scalaTestPlay
 )
 
-javaOptions in Test += "-Dconfig.file=conf/moofin.test.conf"
+javaOptions in Test += "-Dconfig.file=conf/budget.test.conf"

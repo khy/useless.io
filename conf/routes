@@ -2,7 +2,7 @@
 
 ->  /books    books.Routes
 ->  /haiku    haiku.Routes
-->  /moofin   moofin.Routes
+->  /budget   budget.Routes
 
 ->  /auth     auth.Routes
 ->  /account  account.Routes

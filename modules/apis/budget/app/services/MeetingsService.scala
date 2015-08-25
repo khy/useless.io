@@ -1,11 +1,11 @@
-package services.moofin
+package services.budget
 
 import scala.concurrent.Future
 import org.joda.time.DateTime
 import io.useless.validation._
 
-import models.moofin.Meeting
-import models.moofin.JsonImplicits._
+import models.budget.Meeting
+import models.budget.JsonImplicits._
 
 class MeetingsService {
 

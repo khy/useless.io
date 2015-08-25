@@ -14,15 +14,15 @@ lazy val core = (project in file("modules/apis/core")).enablePlugins(PlayScala, 
 
 lazy val books = (project in file("modules/apis/books")).enablePlugins(PlayScala, Postgres).dependsOn(lib)
 lazy val haiku = (project in file("modules/apis/haiku")).enablePlugins(PlayScala, Mongo).dependsOn(lib)
-lazy val moofin = (project in file("modules/apis/moofin")).enablePlugins(PlayScala, Postgres).dependsOn(lib)
+lazy val budget = (project in file("modules/apis/budget")).enablePlugins(PlayScala, Postgres).dependsOn(lib)
 
 lazy val auth = (project in file("modules/apps/auth")).enablePlugins(PlayScala, Mongo).dependsOn(lib)
 lazy val account = (project in file("modules/apps/account")).enablePlugins(PlayScala, Mongo).dependsOn(lib)
 
 lazy val root = (project in file(".")).
   enablePlugins(PlayScala, DockerPlugin, Release).
-  dependsOn(core, books, haiku, moofin, auth, account).
-  aggregate(lib, core, books, haiku, moofin, auth, account).
+  dependsOn(core, books, haiku, budget, auth, account).
+  aggregate(lib, core, books, haiku, budget, auth, account).
   settings(
     aggregate in stage := false,
     aggregate in publishLocal := false,
