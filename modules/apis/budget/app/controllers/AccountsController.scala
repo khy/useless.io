@@ -9,23 +9,27 @@ import org.joda.time.DateTime
 import io.useless.play.json.MessageJson.format
 
 import controllers.budget.auth.Auth
-import services.budget.MeetingsService
+import services.budget.AccountsService
+import models.budget.AccountType
 import models.budget.JsonImplicits._
 
-object MeetingsController extends Controller {
+object AccountsController extends Controller {
 
-  val meetingsService = new MeetingsService
+  val accountsService = new AccountsService
 
-  case class NewMeeting(date: DateTime)
-  private implicit val nmReads = Json.reads[NewMeeting]
+  case class CreateData(accountType: AccountType, name: String)
+  private implicit val cdr = Json.reads[CreateData]
 
   def create = Auth.async(parse.json) { request =>
-    request.body.validate[NewMeeting].fold(
+    request.body.validate[CreateData].fold(
       error => Future.successful(Conflict),
-      data => meetingsService.createMeeting(date = data.date).map { valMeeting =>
-        valMeeting.fold(
+      data => accountsService.createAccount(
+        accountType = data.accountType,
+        name = data.name
+      ).map { result =>
+        result.fold(
           errors => Conflict(Json.toJson(errors)),
-          meeting => Created(Json.toJson(meeting))
+          account => Created(Json.toJson(account))
         )
       }
     )

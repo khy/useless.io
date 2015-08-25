@@ -1,1 +1,1 @@
-POST    /meetings   controllers.budget.MeetingsController.create
+POST    /accounts   controllers.budget.AccountsController.create

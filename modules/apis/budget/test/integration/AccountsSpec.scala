@@ -1,4 +1,4 @@
-package test.integration
+package test.budget.integration
 
 import java.util.UUID
 import org.scalatest._
@@ -14,38 +14,45 @@ import io.useless.account.{Account, User}
 import io.useless.client.accesstoken.{AccessTokenClient, MockAccessTokenClient}
 import io.useless.client.account.{AccountClient, MockAccountClient}
 
-class MeetingsSpec
+import models.budget.AccountType
+
+class AccountsSpec
   extends PlaySpec
   with OneServerPerSuite
 {
 
-  "POST /meetings" must {
+  "POST /accounts" must {
 
-    val meetingJson = Json.obj("date" -> DateTime.now)
+    val accountsJson = Json.obj(
+      "type" -> AccountType.Checking.key,
+      "name" -> "Shared Checking"
+    )
 
     "return a 401 Unauthorized if the request isn't authenticated" in {
       val response = await {
-        WS.url(s"http://localhost:$port/meetings").post(meetingJson)
+        WS.url(s"http://localhost:$port/accounts").post(accountsJson)
       }
 
       response.status mustBe UNAUTHORIZED
     }
 
-    "return a 409 Conflict if date isn't specified" in {
-      val response = await {
-        WS.url(s"http://localhost:$port/meetings").
-          withHeaders(("Authorization" -> accessToken.guid.toString)).
-          post(Json.obj())
-      }
+    "return a 409 Conflict any required fields aren't specified" in {
+      Seq("type", "name").foreach { field =>
+        val response = await {
+          WS.url(s"http://localhost:$port/accounts").
+            withHeaders(("Authorization" -> accessToken.guid.toString)).
+            post(accountsJson - field)
+        }
 
-      response.status mustBe CONFLICT
+        response.status mustBe CONFLICT
+      }
     }
 
-    "return a new Meeting if authorized and valid" ignore {
+    "return a new Account if authorized and valid" ignore {
       val response = await {
-        WS.url(s"http://localhost:$port/meetings").
+        WS.url(s"http://localhost:$port/accounts").
           withHeaders(("Authorization" -> accessToken.guid.toString)).
-          post(meetingJson)
+          post(accountsJson)
       }
 
       response.status mustBe CREATED

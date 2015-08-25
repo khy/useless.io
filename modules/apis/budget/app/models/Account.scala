@@ -4,9 +4,10 @@ import java.util.UUID
 import org.joda.time.DateTime
 import io.useless.account.User
 
-case class Meeting(
+case class Account(
   guid: UUID,
-  date: DateTime,
+  accountType: AccountType,
+  name: String,
   createdBy: User,
   createdAt: DateTime
 )
