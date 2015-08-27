@@ -8,6 +8,7 @@ case class Account(
   guid: UUID,
   accountType: AccountType,
   name: String,
+  initialBalance: Option[BigDecimal],
   createdBy: User,
   createdAt: DateTime
 )

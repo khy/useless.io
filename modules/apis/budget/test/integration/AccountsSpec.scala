@@ -10,11 +10,12 @@ import play.api.libs.json._
 import org.joda.time.DateTime
 
 import io.useless.accesstoken.AccessToken
-import io.useless.account.{Account, User}
+import io.useless.account.User
 import io.useless.client.accesstoken.{AccessTokenClient, MockAccessTokenClient}
 import io.useless.client.account.{AccountClient, MockAccountClient}
 
-import models.budget.AccountType
+import models.budget.{Account, AccountType}
+import models.budget.JsonImplicits._
 
 class AccountsSpec
   extends PlaySpec
@@ -24,8 +25,9 @@ class AccountsSpec
   "POST /accounts" must {
 
     val accountsJson = Json.obj(
-      "type" -> AccountType.Checking.key,
-      "name" -> "Shared Checking"
+      "accountType" -> AccountType.Checking.key,
+      "name" -> "Shared Checking",
+      "initialBalance" -> 100.75
     )
 
     "return a 401 Unauthorized if the request isn't authenticated" in {
@@ -37,7 +39,7 @@ class AccountsSpec
     }
 
     "return a 409 Conflict any required fields aren't specified" in {
-      Seq("type", "name").foreach { field =>
+      Seq("accountType", "name").foreach { field =>
         val response = await {
           WS.url(s"http://localhost:$port/accounts").
             withHeaders(("Authorization" -> accessToken.guid.toString)).
@@ -48,7 +50,7 @@ class AccountsSpec
       }
     }
 
-    "return a new Account if authorized and valid" ignore {
+    "return a new Account if authorized and valid" in {
       val response = await {
         WS.url(s"http://localhost:$port/accounts").
           withHeaders(("Authorization" -> accessToken.guid.toString)).
@@ -56,6 +58,10 @@ class AccountsSpec
       }
 
       response.status mustBe CREATED
+      val account = response.json.as[Account]
+      account.accountType mustBe AccountType.Checking
+      account.name mustBe "Shared Checking"
+      account.initialBalance mustBe Some(100.75)
     }
 
   }
