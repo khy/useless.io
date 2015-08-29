@@ -2,47 +2,38 @@ package services.budget
 
 import java.util.UUID
 import scala.concurrent.{Future, ExecutionContext}
-import play.api.{Play, Application}
-import org.joda.time.DateTime
+import play.api.Application
 import slick.driver.PostgresDriver.api._
+import org.joda.time.DateTime
 import io.useless.accesstoken.AccessToken
-import io.useless.account.{User, PublicUser}
-import io.useless.client.account.AccountClient
 import io.useless.validation._
-import io.useless.util.configuration.RichConfiguration._
 
 import models.budget.{Account, AccountType}
 import db.budget._
 import db.budget.util.DatabaseAccessor
-import services.budget.util.ResourceUnexpectedlyNotFound
+import services.budget.util.{UsersHelper, ResourceUnexpectedlyNotFound}
 
 object AccountsService {
 
-  def default()(implicit app: Application) = {
-    val authGuid = Play.configuration.underlying.getUuid("budget.accessTokenGuid")
-
-    new AccountsService(
-      accountClient = AccountClient.instance(authGuid)
-    )
-  }
+  def default()(implicit app: Application) = new AccountsService(UsersHelper.default())
 
 }
 
 class AccountsService(
-  accountClient: AccountClient
+  usersHelper: UsersHelper
 ) extends DatabaseAccessor {
 
   def records2models(records: Seq[AccountRecord])(implicit ec: ExecutionContext): Future[Seq[Account]] = {
     val userGuids = records.map(_.createdByAccount)
 
-    getUsers(userGuids).map { users =>
+    usersHelper.getUsers(userGuids).map { users =>
       records.map { record =>
         Account(
           guid = record.guid,
           accountType = AccountType(record.typeKey),
           name = record.name,
           initialBalance = record.initialBalance,
-          createdBy = users.find(_.guid == record.createdByAccount).getOrElse(AnonUser),
+          createdBy = users.find(_.guid == record.createdByAccount).getOrElse(UsersHelper.AnonUser),
           createdAt = new DateTime(record.createdAt)
         )
       }
@@ -83,26 +74,5 @@ class AccountsService(
       }
     }
   }
-
-  private def getUsers(guids: Seq[UUID])(implicit ec: ExecutionContext): Future[Seq[User]] = {
-    val userOptFuts = guids.map { guid =>
-      accountClient.getAccount(guid).map { optAccount =>
-        optAccount match {
-          case Some(user: User) => Some(user)
-          case _ => None
-        }
-      }
-    }
-
-    Future.sequence(userOptFuts).map { userOpts =>
-      userOpts.filter(_.isDefined).map(_.get)
-    }
-  }
-
-  private val AnonUser: User = new PublicUser(
-    guid = UUID.fromString("00000000-0000-0000-0000-000000000000"),
-    handle = "anon",
-    name = None
-  )
 
 }

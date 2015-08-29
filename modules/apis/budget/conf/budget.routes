@@ -1,1 +1,3 @@
 POST    /accounts   controllers.budget.AccountsController.create
+
+POST    /projections  controllers.budget.ProjectionsController.create

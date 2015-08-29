@@ -32,5 +32,6 @@ object JsonImplicits {
 
   implicit val accountTypeFormat = KeyedJson.format(AccountType)
   implicit val accountFormat = Json.format[Account]
+  implicit val projectionFormat = Json.format[Projection]
 
 }
