@@ -22,9 +22,10 @@ CREATE TABLE projections (
   deleted_by_account uuid
 );
 
-CREATE TABLE income_types (
+CREATE TABLE transaction_groups (
   id bigserial PRIMARY KEY,
   guid uuid NOT NULL,
+  transaction_type_key text NOT NULL,
   account_id bigint NOT NULL REFERENCES accounts,
   name text NOT NULL,
   created_at timestamp NOT NULL DEFAULT now(),
@@ -33,34 +34,10 @@ CREATE TABLE income_types (
   deleted_by_account uuid
 );
 
-CREATE TABLE incomes (
+CREATE TABLE transactions (
   id bigserial PRIMARY KEY,
   guid uuid NOT NULL,
-  income_type_id bigint NOT NULL REFERENCES income_types,
-  amount decimal NOT NULL,
-  timestamp timestamp NOT NULL,
-  projection_id bigint REFERENCES projections,
-  created_at timestamp NOT NULL DEFAULT now(),
-  created_by_account uuid NOT NULL,
-  deleted_at timestamp,
-  deleted_by_account uuid
-);
-
-CREATE TABLE expense_types (
-  id bigserial PRIMARY KEY,
-  guid uuid NOT NULL,
-  account_id bigint NOT NULL REFERENCES accounts,
-  name text NOT NULL,
-  created_at timestamp NOT NULL DEFAULT now(),
-  created_by_account uuid NOT NULL,
-  deleted_at timestamp,
-  deleted_by_account uuid
-);
-
-CREATE TABLE expenses (
-  id bigserial PRIMARY KEY,
-  guid uuid NOT NULL,
-  expense_type_id bigint NOT NULL REFERENCES expense_types,
+  transaction_group_id bigint NOT NULL REFERENCES transaction_groups,
   amount decimal NOT NULL,
   timestamp timestamp NOT NULL,
   projection_id bigint REFERENCES projections,

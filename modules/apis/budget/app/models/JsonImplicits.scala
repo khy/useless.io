@@ -31,7 +31,9 @@ object JsonImplicits {
   implicit val userFormats = Format(userReads, userWrites)
 
   implicit val accountTypeFormat = KeyedJson.format(AccountType)
+  implicit val transactionTypeFormat = KeyedJson.format(TransactionType)
   implicit val accountFormat = Json.format[Account]
   implicit val projectionFormat = Json.format[Projection]
+  implicit val transactionGroupFormat = Json.format[TransactionGroup]
 
 }
