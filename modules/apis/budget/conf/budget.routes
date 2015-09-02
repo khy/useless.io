@@ -3,3 +3,5 @@ POST    /accounts   controllers.budget.AccountsController.create
 POST    /projections  controllers.budget.ProjectionsController.create
 
 POST    /transactionGroups   controllers.budget.TransactionGroupsController.create
+
+POST    /transactions   controllers.budget.TransactionsController.create

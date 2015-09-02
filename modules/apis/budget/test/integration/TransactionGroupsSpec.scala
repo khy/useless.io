@@ -12,7 +12,7 @@ import models.budget.JsonImplicits._
 import services.budget.TestService
 import test.budget.integration.util.IntegrationHelper
 
-class IncomeGroupsSpec
+class TransactionGroupsSpec
   extends PlaySpec
   with OneServerPerSuite
   with IntegrationHelper
