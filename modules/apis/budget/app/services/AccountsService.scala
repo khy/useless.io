@@ -6,6 +6,7 @@ import play.api.Application
 import slick.driver.PostgresDriver.api._
 import org.joda.time.DateTime
 import io.useless.accesstoken.AccessToken
+import io.useless.pagination._
 import io.useless.validation._
 
 import models.budget.{Account, AccountType}
@@ -41,15 +42,29 @@ class AccountsService(
   }
 
   def findAccounts(
-    ids: Option[Seq[Long]] = None
-  )(implicit ec: ExecutionContext): Future[Seq[Account]] = {
-    var query = Accounts.filter { a => a.id === a.id }
+    ids: Option[Seq[Long]] = None,
+    createdByAccounts: Option[Seq[UUID]] = None,
+    rawPaginationParams: RawPaginationParams = RawPaginationParams()
+  )(implicit ec: ExecutionContext): Future[Validation[PaginatedResult[Account]]] = {
+    val valPaginationParams = PaginationParams.build(rawPaginationParams)
 
-    ids.foreach { ids =>
-      query = query.filter { _.id inSet ids }
+    ValidationUtil.future(valPaginationParams) { paginationParams =>
+      var query = Accounts.filter { a => a.id === a.id }
+
+      ids.foreach { ids =>
+        query = query.filter { _.id inSet ids }
+      }
+
+      createdByAccounts.foreach { createdByAccounts =>
+        query = query.filter { _.createdByAccount inSet createdByAccounts }
+      }
+
+      database.run(query.result).flatMap { records =>
+        records2models(records).map { accounts =>
+          PaginatedResult.build(accounts, paginationParams, None)
+        }
+      }
     }
-
-    database.run(query.result).flatMap(records2models)
   }
 
   def createAccount(
@@ -65,11 +80,10 @@ class AccountsService(
     val insert = accounts += (UUID.randomUUID, accountType.key, name, initialBalance, accessToken.resourceOwner.guid)
 
     database.run(insert).flatMap { id =>
-      findAccounts(ids = Some(Seq(id))).map { accounts =>
-        accounts.headOption.map { account =>
-          Validation.success(account)
-        }.getOrElse {
-          throw new ResourceUnexpectedlyNotFound("Account", id)
+      findAccounts(ids = Some(Seq(id))).map { result =>
+        result.map(_.items.headOption) match {
+          case Validation.Success(Some(account)) => Validation.success(account)
+          case _ => throw new ResourceUnexpectedlyNotFound("Account", id)
         }
       }
     }

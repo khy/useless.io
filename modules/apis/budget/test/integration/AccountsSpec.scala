@@ -10,6 +10,7 @@ import org.joda.time.DateTime
 
 import models.budget.{Account, AccountType}
 import models.budget.JsonImplicits._
+import services.budget.TestService
 import test.budget.integration.util.IntegrationHelper
 
 class AccountsSpec
@@ -17,6 +18,34 @@ class AccountsSpec
   with OneServerPerSuite
   with IntegrationHelper
 {
+
+  "GET /accounts" must {
+
+    "return a 401 Unauthorized if the request isn't authenticated" in {
+      val response = await { unauthentictedRequest("/accounts").get }
+      response.status mustBe UNAUTHORIZED
+    }
+
+    "return only Accounts belonging to the authenticated user" in {
+      TestService.deleteAccounts()
+
+      val includedAccount = TestService.createAccount(
+        name = "My Account",
+        accessToken = TestService.accessToken
+      )
+
+      val excludedAccount = TestService.createAccount(
+        name = "Another Account",
+        accessToken = TestService.otherAccessToken
+      )
+
+      val response = await { authenticatedRequest("/accounts").get }
+      val accounts = response.json.as[Seq[Account]]
+      accounts.length mustBe 1
+      accounts.head.guid mustBe includedAccount.guid
+    }
+
+  }
 
   "POST /accounts" must {
 

@@ -8,15 +8,30 @@ import play.api.Play.current
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import org.joda.time.DateTime
 import io.useless.play.json.MessageJson.format
+import io.useless.play.pagination.PaginationController
 
 import controllers.budget.auth.Auth
 import services.budget.AccountsService
 import models.budget.AccountType
 import models.budget.JsonImplicits._
 
-object AccountsController extends Controller {
+object AccountsController extends Controller with PaginationController {
 
   val accountsService = AccountsService.default()
+
+  def index = Auth.async { implicit request =>
+    withRawPaginationParams { rawPaginationParams =>
+      accountsService.findAccounts(
+        createdByAccounts = Some(Seq(request.accessToken.resourceOwner.guid)),
+        rawPaginationParams = rawPaginationParams
+      ).map { result =>
+        result.fold(
+          errors => Conflict(Json.toJson(errors)),
+          haikus => paginatedResult(routes.AccountsController.index, haikus)
+        )
+      }
+    }
+  }
 
   case class CreateData(
     accountType: AccountType,
