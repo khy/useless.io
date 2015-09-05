@@ -1,13 +1,10 @@
 package services.books
 
-import scala.concurrent.Future
-import play.api.Play
-import play.api.db.DB
-import play.api.libs.concurrent.Execution.Implicits.defaultContext
-import slick.driver.PostgresDriver.simple.Database
-import slick.driver.PostgresDriver.backend.Session
+import db.Driver.api._
 
 object BaseService {
+
+  private lazy val database = Database.forConfig("db.books")
 
   def scrubTsQuery(raw: String) = {
     raw.trim.
@@ -20,14 +17,6 @@ object BaseService {
 
 trait BaseService {
 
-  protected lazy val database = Database.forConfig("db.books", Play.current.configuration.underlying)
-
-  protected def withDbSession[T](query: Session => T): Future[T] = Future {
-    database.withSession(query(_))
-  }
-
-  protected def withDynamicDbSession[T](query: => T): Future[T] = Future {
-    database.withDynSession(query)
-  }
+  protected lazy val database = BaseService.database
 
 }

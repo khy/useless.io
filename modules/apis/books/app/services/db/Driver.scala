@@ -1,23 +1,19 @@
 package services.books.db
 
-import slick.driver.PostgresDriver
 import com.github.tminglei.slickpg._
 
-private [services] object Driver
-  extends PostgresDriver
+trait Driver
+  extends ExPostgresDriver
   with PgSearchSupport
 {
 
-  override lazy val Implicit = new ImplicitsPlus {}
-  override val simple = new SimpleQLPlus
-
-  trait ImplicitsPlus
-    extends Implicits
+  object Api
+    extends API
     with SearchImplicits
-
-  class SimpleQLPlus
-    extends SimpleQL
-    with ImplicitsPlus
     with SearchAssistants
 
+  override val api = Api
+
 }
+
+object Driver extends Driver

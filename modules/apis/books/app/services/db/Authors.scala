@@ -5,7 +5,7 @@ import java.sql.Timestamp
 
 import Driver.simple._
 
-private [services] case class Author(
+case class Author(
   guid: UUID,
   name: String,
   createdAt: Timestamp,
@@ -16,7 +16,7 @@ private [services] case class Author(
   deletedByAccessToken: Option[UUID]
 )
 
-private [services] class Authors(tag: Tag)
+class Authors(tag: Tag)
   extends Table[Author](tag, "authors")
   with AuditData[Author]
 {
@@ -27,4 +27,4 @@ private [services] class Authors(tag: Tag)
     deletedByAccount, deletedByAccessToken) <> (Author.tupled, Author.unapply)
 }
 
-private [services] object Authors extends TableQuery(new Authors(_))
+object Authors extends TableQuery(new Authors(_))

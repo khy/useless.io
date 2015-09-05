@@ -6,23 +6,27 @@ import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import io.useless.accesstoken.AccessToken
 import io.useless.Message
 
-import db.Driver.simple._
+import db.Driver.api._
 import db.Editions
 import models.books.Edition
 
 object EditionService extends BaseService {
 
   def getEdition(guid: UUID): Future[Option[Edition]] = {
-    withDbSession { implicit session =>
-      Editions.filter(_.guid === guid).firstOption.map { edition =>
+    val query = Editions.filter(_.guid === guid)
+
+    database.run(query.result).map { records =>
+      records.headOption.map { edition =>
         Edition(edition.guid, edition.pageCount)
       }
     }
   }
 
   def findEditions(bookGuid: UUID): Future[Seq[Edition]] = {
-    withDbSession { implicit session =>
-      Editions.filter(_.bookGuid === bookGuid).list.map { edition =>
+    val query = Editions.filter(_.bookGuid === bookGuid)
+
+    database.run(query.result).map { records =>
+      records.map { edition =>
         Edition(edition.guid, edition.pageCount)
       }
     }
@@ -73,12 +77,14 @@ object EditionService extends BaseService {
     bookGuid: UUID,
     pageCount: Int,
     accessToken: AccessToken
-  ): Future[UUID] = withDbSession { implicit session =>
+  ): Future[UUID] = {
     val projection = Editions.map { edition =>
       (edition.guid, edition.bookGuid, edition.pageCount, edition.createdByAccount, edition.createdByAccessToken)
     }.returning(Editions.map(_.guid))
 
-    projection += (UUID.randomUUID, bookGuid, pageCount, accessToken.resourceOwner.guid, accessToken.guid)
+    val insertEdition = projection += (UUID.randomUUID, bookGuid, pageCount, accessToken.resourceOwner.guid, accessToken.guid)
+
+    database.run(insertEdition)
   }
 
 }

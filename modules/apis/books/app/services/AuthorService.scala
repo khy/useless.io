@@ -5,25 +5,29 @@ import scala.concurrent.Future
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import io.useless.accesstoken.AccessToken
 
-import db.Driver.simple._
+import db.Driver.api._
 import db.Authors
 import models.books.Author
 
 object AuthorService extends BaseService {
 
   def getAuthor(guid: UUID): Future[Option[Author]] = {
-    withDbSession { implicit session =>
-      Authors.filter(_.guid === guid).firstOption.map { author =>
+    val query = Authors.filter(_.guid === guid)
+
+    database.run(query.result).map { results =>
+      results.headOption.map { author =>
         Author(author.guid, author.name)
       }
     }
   }
 
   def findAuthors(name: String): Future[Seq[Author]] =  {
-    withDbSession { implicit session =>
-      Authors.filter { author =>
-        tsVector(author.name) @@ tsQuery(BaseService.scrubTsQuery(name).bind)
-      }.list.map { author =>
+    val query = Authors.filter { author =>
+      tsVector(author.name) @@ tsQuery(BaseService.scrubTsQuery(name).bind)
+    }
+
+    database.run(query.result).map { results =>
+      results.map { author =>
         Author(author.guid, author.name)
       }
     }
@@ -51,12 +55,14 @@ object AuthorService extends BaseService {
   private def insertAuthor(
     name: String,
     accessToken: AccessToken
-  ): Future[UUID] = withDbSession { implicit session =>
+  ): Future[UUID] = {
     val projection = Authors.map { author =>
       (author.guid, author.name, author.createdByAccount, author.createdByAccessToken)
     }.returning(Authors.map(_.guid))
 
-    projection += (UUID.randomUUID, name, accessToken.resourceOwner.guid, accessToken.guid)
+    val insert = projection += (UUID.randomUUID, name, accessToken.resourceOwner.guid, accessToken.guid)
+
+    database.run(insert)
   }
 
 }
