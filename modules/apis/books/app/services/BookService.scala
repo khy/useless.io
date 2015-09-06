@@ -31,7 +31,7 @@ object BookService extends BaseService {
 
   def findBooks(title: String): Future[Seq[Book]] = {
     queryBooks { case ((book, _), _) =>
-      (tsVector(book.title) @@ tsQuery(BaseService.scrubTsQuery(title).bind)).?
+      (toTsVector(book.title) @@ toTsQuery(BaseService.scrubTsQuery(title))).?
     }
   }
 
@@ -40,7 +40,9 @@ object BookService extends BaseService {
     authorGuid: UUID,
     accessToken: AccessToken
   ): Future[Book] = {
-    findBooks(title).flatMap { books =>
+    queryBooks { case ((book, _), _) =>
+      (book.title === title).?
+    }.flatMap { books =>
       books.headOption.map { book =>
         Future.successful(book)
       }.getOrElse {
@@ -90,10 +92,7 @@ object BookService extends BaseService {
     }
 
     database.run(query.result).map { records =>
-      val bookRecords = records.map {
-        case (bookGuid, bookTitle, authorGuid, authorName, editionGuid, editionPageCount) =>
-        BookRecord(bookGuid, bookTitle, authorGuid, authorName, editionGuid, editionPageCount)
-      }
+      val bookRecords = records.map(BookRecord.tupled)
 
       val editionsMap = bookRecords.groupBy(_.bookGuid).map { case (bookGuid, bookRecords) =>
         val editions = bookRecords.map { bookRecord =>

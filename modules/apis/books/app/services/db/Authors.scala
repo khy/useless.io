@@ -3,7 +3,7 @@ package services.books.db
 import java.util.UUID
 import java.sql.Timestamp
 
-import Driver.simple._
+import Driver.api._
 
 case class Author(
   guid: UUID,

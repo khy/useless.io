@@ -3,9 +3,9 @@ package services.books.db
 import java.util.UUID
 import java.sql.Timestamp
 
-import Driver.simple._
+import Driver.api._
 
-private [services] case class Note(
+case class Note(
   guid: UUID,
   editionGuid: UUID,
   pageNumber: Int,
@@ -18,7 +18,7 @@ private [services] case class Note(
   deletedByAccessToken: Option[UUID]
 )
 
-private [services] class Notes(tag: Tag)
+class Notes(tag: Tag)
   extends Table[Note](tag, "notes")
   with AuditData[Note]
 {
@@ -32,4 +32,4 @@ private [services] class Notes(tag: Tag)
     deletedByAccessToken) <> (Note.tupled, Note.unapply)
 }
 
-private [services] object Notes extends TableQuery(new Notes(_))
+object Notes extends TableQuery(new Notes(_))

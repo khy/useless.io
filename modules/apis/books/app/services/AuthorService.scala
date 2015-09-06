@@ -23,7 +23,7 @@ object AuthorService extends BaseService {
 
   def findAuthors(name: String): Future[Seq[Author]] =  {
     val query = Authors.filter { author =>
-      tsVector(author.name) @@ tsQuery(BaseService.scrubTsQuery(name).bind)
+      toTsVector(author.name) @@ toTsQuery(BaseService.scrubTsQuery(name))
     }
 
     database.run(query.result).map { results =>
@@ -37,16 +37,17 @@ object AuthorService extends BaseService {
     name: String,
     accessToken: AccessToken
   ): Future[Author] = {
-    findAuthors(name).flatMap { authors =>
+    val authorQuery = Authors.filter(_.name === name)
+    database.run(authorQuery.result).flatMap { authors =>
       authors.headOption.map { author =>
-        Future.successful(author)
+        Future.successful(author.guid)
       }.getOrElse {
-        insertAuthor(name, accessToken).flatMap { newAuthorGuid =>
-          getAuthor(newAuthorGuid).map { optAuthor =>
-            optAuthor.getOrElse {
-              throw new ResourceUnexpectedlyNotFound("Author", newAuthorGuid)
-            }
-          }
+        insertAuthor(name, accessToken)
+      }
+    }.flatMap { guid =>
+      getAuthor(guid).map { optAuthor =>
+        optAuthor.getOrElse {
+          throw new ResourceUnexpectedlyNotFound("Author", guid)
         }
       }
     }
