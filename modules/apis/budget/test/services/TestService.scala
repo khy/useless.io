@@ -63,6 +63,11 @@ object TestService extends DatabaseAccessor {
     projectionsService.createProjection(name, accessToken)
   }.toSuccess.value
 
+  def deleteProjections() {
+    val query = Projections.filter { a => a.id === a.id }
+    await { database.run(query.delete) }
+  }
+
   def createTransactionGroup(
     transactionType: TransactionType = TransactionType.Credit,
     accountGuid: UUID = createAccount().guid,

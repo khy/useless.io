@@ -9,6 +9,7 @@ import play.api.libs.json._
 
 import models.budget.Projection
 import models.budget.JsonImplicits._
+import services.budget.TestService
 import test.budget.integration.util.IntegrationHelper
 
 class ProjectionsSpec
@@ -16,6 +17,34 @@ class ProjectionsSpec
   with OneServerPerSuite
   with IntegrationHelper
 {
+
+  "GET /projections" must {
+
+    "return a 401 Unauthorized if the request isn't authenticated" in {
+      val response = await { unauthentictedRequest("/projections").get }
+      response.status mustBe UNAUTHORIZED
+    }
+
+    "return only Accounts belonging to the authenticated user" in {
+      TestService.deleteProjections()
+
+      val includedProjection = TestService.createProjection(
+        name = "My Projection",
+        accessToken = TestService.accessToken
+      )
+
+      val excludedProjection = TestService.createProjection(
+        name = "Another Projection",
+        accessToken = TestService.otherAccessToken
+      )
+
+      val response = await { authenticatedRequest("/projections").get }
+      val projections = response.json.as[Seq[Projection]]
+      projections.length mustBe 1
+      projections.head.guid mustBe includedProjection.guid
+    }
+
+  }
 
   "POST /projections" must {
 
