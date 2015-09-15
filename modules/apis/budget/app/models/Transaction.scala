@@ -6,7 +6,7 @@ import io.useless.account.User
 
 case class Transaction(
   guid: UUID,
-  transactionGroupGuid: UUID,
+  transactionTypeGuid: UUID,
   amount: BigDecimal,
   timestamp: DateTime,
   projectionGuid: Option[UUID],

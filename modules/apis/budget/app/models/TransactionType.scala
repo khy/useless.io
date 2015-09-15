@@ -1,14 +1,14 @@
 package models.budget
 
-import models.budget.util._
+import java.util.UUID
+import org.joda.time.DateTime
+import io.useless.account.User
 
-sealed trait TransactionType extends Keyed
-
-object TransactionType extends KeyedResolver[TransactionType] {
-  case object Credit extends TransactionType { val key = "credit" }
-  case object Debit extends TransactionType { val key = "checking" }
-  case class Unknown(key: String) extends TransactionType
-
-  val values = Seq(Credit, Debit)
-  def unknown(key: String) = Unknown(key)
-}
+case class TransactionType(
+  guid: UUID,
+  accountGuid: UUID,
+  transactionClass: TransactionClass,
+  name: String,
+  createdBy: User,
+  createdAt: DateTime
+)

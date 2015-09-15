@@ -22,10 +22,10 @@ CREATE TABLE projections (
   deleted_by_account uuid
 );
 
-CREATE TABLE transaction_groups (
+CREATE TABLE transaction_types (
   id bigserial PRIMARY KEY,
   guid uuid NOT NULL,
-  transaction_type_key text NOT NULL,
+  transaction_class_key text NOT NULL,
   account_id bigint NOT NULL REFERENCES accounts,
   name text NOT NULL,
   created_at timestamp NOT NULL DEFAULT now(),
@@ -37,7 +37,7 @@ CREATE TABLE transaction_groups (
 CREATE TABLE transactions (
   id bigserial PRIMARY KEY,
   guid uuid NOT NULL,
-  transaction_group_id bigint NOT NULL REFERENCES transaction_groups,
+  transaction_type_id bigint NOT NULL REFERENCES transaction_types,
   amount decimal NOT NULL,
   timestamp timestamp NOT NULL,
   projection_id bigint REFERENCES projections,

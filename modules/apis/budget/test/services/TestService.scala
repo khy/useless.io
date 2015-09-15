@@ -17,7 +17,7 @@ object TestService extends DatabaseAccessor {
 
   lazy val accountsService = AccountsService.default()
   lazy val projectionsService = ProjectionsService.default()
-  lazy val transactionGroupsService = TransactionGroupsService.default()
+  lazy val transactionTypesService = TransactionTypesService.default()
 
   val accessToken = AccessToken(
     guid = UUID.fromString("00000000-0000-0000-0000-000000000000"),
@@ -51,7 +51,7 @@ object TestService extends DatabaseAccessor {
   }.toSuccess.value
 
   def deleteAccounts() {
-    deleteTransactionGroups()
+    deleteTransactionTypes()
     val query = Accounts.filter { a => a.id === a.id }
     await { database.run(query.delete) }
   }
@@ -68,17 +68,17 @@ object TestService extends DatabaseAccessor {
     await { database.run(query.delete) }
   }
 
-  def createTransactionGroup(
-    transactionType: TransactionType = TransactionType.Credit,
+  def createTransactionType(
+    transactionType: TransactionClass = TransactionClass.Credit,
     accountGuid: UUID = createAccount().guid,
     name: String =  "Rent"
-  ): TransactionGroup = await {
-    transactionGroupsService.createTransactionGroups(accountGuid, transactionType, name, accessToken)
+  ): TransactionType = await {
+    transactionTypesService.createTransactionType(accountGuid, transactionType, name, accessToken)
   }.toSuccess.value
 
-  def deleteTransactionGroups() {
+  def deleteTransactionTypes() {
     deleteTransactions()
-    val query = TransactionGroups.filter { a => a.id === a.id }
+    val query = TransactionTypes.filter { a => a.id === a.id }
     await { database.run(query.delete) }
   }
 

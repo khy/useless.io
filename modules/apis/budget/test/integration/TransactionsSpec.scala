@@ -22,12 +22,12 @@ class TransactionsSpec
 
   "POST /transactions" must {
 
-    lazy val transactionGroup = TestService.createTransactionGroup()
+    lazy val transactionType = TestService.createTransactionType()
     lazy val projection = TestService.createProjection()
     val timestamp = DateTime.now.toDateTime(DateTimeZone.UTC)
 
     lazy val json = Json.obj(
-      "transactionGroupGuid" -> transactionGroup.guid,
+      "transactionTypeGuid" -> transactionType.guid,
       "amount" -> 100.0,
       "timestamp" -> timestamp,
       "projectionGuid" -> projection.guid
@@ -39,7 +39,7 @@ class TransactionsSpec
     }
 
     "return a 409 Conflict any required fields aren't specified" in {
-      Seq("transactionGroupGuid", "amount", "timestamp").foreach { field =>
+      Seq("transactionTypeGuid", "amount", "timestamp").foreach { field =>
         val response = await { authenticatedRequest("/transactions").post(json - field) }
         response.status mustBe CONFLICT
       }
@@ -50,7 +50,7 @@ class TransactionsSpec
       response.status mustBe CREATED
 
       val transaction = response.json.as[Transaction]
-      transaction.transactionGroupGuid mustBe transactionGroup.guid
+      transaction.transactionTypeGuid mustBe transactionType.guid
       transaction.amount mustBe 100.0
       transaction.timestamp mustBe timestamp
       transaction.projectionGuid mustBe Some(projection.guid)

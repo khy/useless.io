@@ -10,16 +10,16 @@ import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import io.useless.play.json.MessageJson.format
 
 import controllers.budget.auth.Auth
-import services.budget.TransactionGroupsService
-import models.budget.TransactionType
+import services.budget.TransactionTypesService
+import models.budget.TransactionClass
 import models.budget.JsonImplicits._
 
-object TransactionGroupsController extends Controller {
+object TransactionTypesController extends Controller {
 
-  val transactionGroupsService = TransactionGroupsService.default()
+  val transactionTypesService = TransactionTypesService.default()
 
   case class CreateData(
-    transactionType: TransactionType,
+    transactionClass: TransactionClass,
     accountGuid: UUID,
     name: String
   )
@@ -28,15 +28,15 @@ object TransactionGroupsController extends Controller {
   def create = Auth.async(parse.json) { request =>
     request.body.validate[CreateData].fold(
       error => Future.successful(Conflict(error.toString)),
-      data => transactionGroupsService.createTransactionGroups(
-        transactionType = data.transactionType,
+      data => transactionTypesService.createTransactionType(
+        transactionClass = data.transactionClass,
         accountGuid = data.accountGuid,
         name = data.name,
         accessToken = request.accessToken
       ).map { result =>
         result.fold(
           errors => Conflict(Json.toJson(errors)),
-          transactionGroup => Created(Json.toJson(transactionGroup))
+          transactionType => Created(Json.toJson(transactionType))
         )
       }
     )

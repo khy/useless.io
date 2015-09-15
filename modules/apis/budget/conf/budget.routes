@@ -4,6 +4,6 @@ POST    /accounts   controllers.budget.AccountsController.create
 GET     /projections  controllers.budget.ProjectionsController.index
 POST    /projections  controllers.budget.ProjectionsController.create
 
-POST    /transactionGroups   controllers.budget.TransactionGroupsController.create
+POST    /transactionTypes   controllers.budget.TransactionTypesController.create
 
 POST    /transactions   controllers.budget.TransactionsController.create

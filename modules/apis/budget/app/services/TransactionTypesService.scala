@@ -8,22 +8,22 @@ import org.joda.time.DateTime
 import io.useless.accesstoken.AccessToken
 import io.useless.validation._
 
-import models.budget.{TransactionGroup, TransactionType}
+import models.budget.{TransactionType, TransactionClass}
 import db.budget._
 import db.budget.util.DatabaseAccessor
 import services.budget.util.{UsersHelper, ResourceUnexpectedlyNotFound}
 
-object TransactionGroupsService {
+object TransactionTypesService {
 
-  def default()(implicit app: Application) = new TransactionGroupsService(UsersHelper.default())
+  def default()(implicit app: Application) = new TransactionTypesService(UsersHelper.default())
 
 }
 
-class TransactionGroupsService(
+class TransactionTypesService(
   usersHelper: UsersHelper
 ) extends DatabaseAccessor {
 
-  def records2models(records: Seq[TransactionGroupRecord])(implicit ec: ExecutionContext): Future[Seq[TransactionGroup]] = {
+  def records2models(records: Seq[TransactionTypeRecord])(implicit ec: ExecutionContext): Future[Seq[TransactionType]] = {
     val userGuids = records.map(_.createdByAccount)
     val futUsers = usersHelper.getUsers(userGuids)
 
@@ -35,12 +35,12 @@ class TransactionGroupsService(
       accounts <- futAccounts
     } yield {
       records.map { record =>
-        TransactionGroup(
+        TransactionType(
           guid = record.guid,
           accountGuid = accounts.find(_.id == record.accountId).map(_.guid).getOrElse {
             throw new ResourceUnexpectedlyNotFound("Account", record.accountId)
           },
-          transactionType = TransactionType(record.transactionTypeKey),
+          transactionClass = TransactionClass(record.transactionClassKey),
           name = record.name,
           createdBy = users.find(_.guid == record.createdByAccount).getOrElse(UsersHelper.AnonUser),
           createdAt = new DateTime(record.createdAt)
@@ -49,10 +49,10 @@ class TransactionGroupsService(
     }
   }
 
-  def findTransactionGroups(
+  def findTransactionTypes(
     ids: Option[Seq[Long]] = None
-  )(implicit ec: ExecutionContext): Future[Seq[TransactionGroup]] = {
-    var query = TransactionGroups.filter { r => r.id === r.id }
+  )(implicit ec: ExecutionContext): Future[Seq[TransactionType]] = {
+    var query = TransactionTypes.filter { r => r.id === r.id }
 
     ids.foreach { ids =>
       query = query.filter { _.id inSet ids }
@@ -61,25 +61,25 @@ class TransactionGroupsService(
     database.run(query.result).flatMap(records2models)
   }
 
-  def createTransactionGroups(
+  def createTransactionType(
     accountGuid: UUID,
-    transactionType: TransactionType,
+    transactionClass: TransactionClass,
     name: String,
     accessToken: AccessToken
-  )(implicit ec: ExecutionContext): Future[Validation[TransactionGroup]] = {
+  )(implicit ec: ExecutionContext): Future[Validation[TransactionType]] = {
     val query = Accounts.filter { account => account.guid === accountGuid }
 
     database.run(query.result).flatMap { accounts =>
       accounts.headOption.map { account =>
-        val projections = TransactionGroups.map { r =>
-          (r.guid, r.name, r.accountId, r.transactionTypeKey, r.createdByAccount)
-        }.returning(TransactionGroups.map(_.id))
+        val projections = TransactionTypes.map { r =>
+          (r.guid, r.name, r.accountId, r.transactionClassKey, r.createdByAccount)
+        }.returning(TransactionTypes.map(_.id))
 
-        val insert = projections += (UUID.randomUUID, name, account.id, transactionType.key, accessToken.resourceOwner.guid)
+        val insert = projections += (UUID.randomUUID, name, account.id, transactionClass.key, accessToken.resourceOwner.guid)
 
         database.run(insert).flatMap { id =>
-          findTransactionGroups(ids = Some(Seq(id))).map { transactionGroups =>
-            transactionGroups.headOption.map { transactionGroup =>
+          findTransactionTypes(ids = Some(Seq(id))).map { transactionTypes =>
+            transactionTypes.headOption.map { transactionGroup =>
               Validation.success(transactionGroup)
             }.getOrElse {
               throw new ResourceUnexpectedlyNotFound("TransactionGroup", id)

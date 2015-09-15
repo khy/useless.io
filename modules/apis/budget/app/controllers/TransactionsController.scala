@@ -20,7 +20,7 @@ object TransactionsController extends Controller {
   val transactionsService = TransactionsService.default()
 
   case class CreateData(
-    transactionGroupGuid: UUID,
+    transactionTypeGuid: UUID,
     amount: BigDecimal,
     timestamp: DateTime,
     projectionGuid: Option[UUID]
@@ -31,10 +31,10 @@ object TransactionsController extends Controller {
     request.body.validate[CreateData].fold(
       error => Future.successful(Conflict(error.toString)),
       data => transactionsService.createTransaction(
-        transactionGroupUuid = data.transactionGroupGuid,
+        transactionTypeGuid = data.transactionTypeGuid,
         amount = data.amount,
         timestamp = data.timestamp,
-        projectionUuid = data.projectionGuid,
+        projectionGuid = data.projectionGuid,
         accessToken = request.accessToken
       ).map { result =>
         result.fold(
