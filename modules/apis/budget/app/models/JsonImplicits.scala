@@ -6,7 +6,7 @@ import play.api.libs.functional.syntax._
 import io.useless.account.User
 import io.useless.play.json.DateTimeJson._
 
-import models.budget.util.KeyedJson
+import models.budget.util.EnumJson
 
 object JsonImplicits {
 
@@ -30,8 +30,8 @@ object JsonImplicits {
 
   implicit val userFormats = Format(userReads, userWrites)
 
-  implicit val accountTypeFormat = KeyedJson.format(AccountType)
-  implicit val transactionClassFormat = KeyedJson.format(TransactionClass)
+  implicit val accountTypeFormat = EnumJson.keyFormat(AccountType)
+  implicit val transactionClassFormat = EnumJson.keyFormat(TransactionClass)
   implicit val accountFormat = Json.format[Account]
   implicit val projectionFormat = Json.format[Projection]
   implicit val transactionTypeFormat = Json.format[TransactionType]

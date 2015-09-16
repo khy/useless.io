@@ -2,12 +2,15 @@ package models.budget
 
 import models.budget.util._
 
-sealed trait TransactionClass extends Keyed
+sealed class TransactionClass(
+  val key: String,
+  val name: String
+) extends Enum
 
-object TransactionClass extends KeyedResolver[TransactionClass] {
-  case object Credit extends TransactionClass { val key = "credit" }
-  case object Debit extends TransactionClass { val key = "checking" }
-  case class Unknown(key: String) extends TransactionClass
+object TransactionClass extends EnumCompanion[TransactionClass] {
+  case object Credit extends TransactionClass("credit", "Credit")
+  case object Debit extends TransactionClass("checking", "Checking")
+  case class Unknown(override val key: String) extends TransactionClass(key, "Unknown")
 
   val values = Seq(Credit, Debit)
   def unknown(key: String) = Unknown(key)

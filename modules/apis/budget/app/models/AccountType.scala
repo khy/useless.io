@@ -2,13 +2,16 @@ package models.budget
 
 import models.budget.util._
 
-sealed trait AccountType extends Keyed
+sealed class AccountType(
+  val key: String,
+  val name: String
+) extends Enum
 
-object AccountType extends KeyedResolver[AccountType] {
-  case object Credit extends AccountType { val key = "credit" }
-  case object Checking extends AccountType { val key = "checking" }
-  case object Savings extends AccountType { val key = "savings" }
-  case class Unknown(key: String) extends AccountType
+object AccountType extends EnumCompanion[AccountType] {
+  case object Credit extends AccountType("credit", "Credit")
+  case object Checking extends AccountType("checking", "Checking")
+  case object Savings extends AccountType("savings", "Savings")
+  case class Unknown(override val key: String) extends AccountType(key, "Unknown")
 
   val values = Seq(Credit, Checking, Savings)
   def unknown(key: String) = Unknown(key)
