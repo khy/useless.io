@@ -7,3 +7,5 @@ POST    /projections  controllers.budget.ProjectionsController.create
 POST    /transactionTypes   controllers.budget.TransactionTypesController.create
 
 POST    /transactions   controllers.budget.TransactionsController.create
+
+GET     /transactionClasses   controllers.budget.TransactionClassesController.index
