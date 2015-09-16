@@ -3,9 +3,9 @@
 CREATE TABLE accounts (
   id bigserial PRIMARY KEY,
   guid uuid NOT NULL,
-  type_key text NOT NULL,
+  account_type_key text NOT NULL,
   name text NOT NULL,
-  initial_balance decimal,
+  initial_balance decimal NOT NULL,
   created_at timestamp NOT NULL DEFAULT now(),
   created_by_account uuid NOT NULL,
   deleted_at timestamp,

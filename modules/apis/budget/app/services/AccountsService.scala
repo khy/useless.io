@@ -31,7 +31,7 @@ class AccountsService(
       records.map { record =>
         Account(
           guid = record.guid,
-          accountType = AccountType(record.typeKey),
+          accountType = AccountType(record.accountTypeKey),
           name = record.name,
           initialBalance = record.initialBalance,
           createdBy = users.find(_.guid == record.createdByAccount).getOrElse(UsersHelper.AnonUser),
@@ -70,11 +70,11 @@ class AccountsService(
   def createAccount(
     accountType: AccountType,
     name: String,
-    initialBalance: Option[BigDecimal],
+    initialBalance: BigDecimal,
     accessToken: AccessToken
   )(implicit ec: ExecutionContext): Future[Validation[Account]] = {
     val accounts = Accounts.map { a =>
-      (a.guid, a.typeKey, a.name, a.initialBalance, a.createdByAccount)
+      (a.guid, a.accountTypeKey, a.name, a.initialBalance, a.createdByAccount)
     }.returning(Accounts.map(_.id))
 
     val insert = accounts += (UUID.randomUUID, accountType.key, name, initialBalance, accessToken.resourceOwner.guid)

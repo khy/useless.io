@@ -44,7 +44,7 @@ object TestService extends DatabaseAccessor {
   def createAccount(
     accountType: AccountType = AccountType.Checking,
     name: String = "Test Account",
-    initialBalance: Option[BigDecimal] = None,
+    initialBalance: BigDecimal = 100.10,
     accessToken: AccessToken = accessToken
   ): Account = await {
     accountsService.createAccount(accountType, name, initialBalance, accessToken)

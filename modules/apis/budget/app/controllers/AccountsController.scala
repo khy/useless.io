@@ -36,7 +36,7 @@ object AccountsController extends Controller with PaginationController {
   case class CreateData(
     accountType: AccountType,
     name: String,
-    initialBalance: Option[BigDecimal]
+    initialBalance: BigDecimal
   )
   private implicit val cdr = Json.reads[CreateData]
 

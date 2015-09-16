@@ -61,7 +61,7 @@ class AccountsSpec
     }
 
     "return a 409 Conflict any required fields aren't specified" in {
-      Seq("accountType", "name").foreach { field =>
+      Seq("accountType", "name", "initialBalance").foreach { field =>
         val response = await { authenticatedRequest("/accounts").post(json - field) }
         response.status mustBe CONFLICT
       }
@@ -74,7 +74,7 @@ class AccountsSpec
       val account = response.json.as[Account]
       account.accountType mustBe AccountType.Checking
       account.name mustBe "Shared Checking"
-      account.initialBalance mustBe Some(100.75)
+      account.initialBalance mustBe 100.75
     }
 
   }
