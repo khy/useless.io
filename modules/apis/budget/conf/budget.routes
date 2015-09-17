@@ -1,6 +1,8 @@
 GET     /accounts   controllers.budget.AccountsController.index
 POST    /accounts   controllers.budget.AccountsController.create
 
+GET     /accountTypes   controllers.budget.AccountTypesController.index
+
 GET     /projections  controllers.budget.ProjectionsController.index
 POST    /projections  controllers.budget.ProjectionsController.create
 
