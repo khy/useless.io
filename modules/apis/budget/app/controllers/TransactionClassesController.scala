@@ -7,9 +7,11 @@ import play.api.libs.json.Json
 
 import controllers.budget.auth.Auth
 import models.budget.TransactionClass
-import models.budget.JsonImplicits._
+import models.budget.util.NamedEnumJson
 
 object TransactionClassesController extends Controller {
+
+  implicit val transactionClassWrites = NamedEnumJson.fullWrites[TransactionClass]
 
   def index = Auth { implicit request =>
     Ok(Json.toJson(TransactionClass.values))
