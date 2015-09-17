@@ -5,9 +5,9 @@ import models.budget.util._
 sealed class AccountType(
   val key: String,
   val name: String
-) extends Enum
+) extends NamedEnum
 
-object AccountType extends EnumCompanion[AccountType] {
+object AccountType extends NamedEnumCompanion[AccountType] {
   case object Credit extends AccountType("credit", "Credit")
   case object Checking extends AccountType("checking", "Checking")
   case object Savings extends AccountType("savings", "Savings")

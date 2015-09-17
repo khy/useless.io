@@ -3,12 +3,12 @@ package models.budget.util
 import play.api.libs.json._
 import play.api.data.validation.ValidationError
 
-trait Enum {
+trait NamedEnum {
   def key: String
   def name: String
 }
 
-trait EnumCompanion[T <: Enum] {
+trait NamedEnumCompanion[T <: NamedEnum] {
 
   def values: Seq[T]
 
@@ -20,22 +20,25 @@ trait EnumCompanion[T <: Enum] {
 
 }
 
-object EnumJson {
+object NamedEnumJson {
 
-  def keyFormat[T <: Enum](enumCompanion: EnumCompanion[T]) = new Format[T] {
+  def keyFormat[T <: NamedEnum](companion: NamedEnumCompanion[T]) = new Format[T] {
 
     def reads(json: JsValue) = json match {
-      case JsString(key) => JsSuccess(enumCompanion(key))
+      case JsString(key) => JsSuccess(companion(key))
       case _ => JsError(Seq(JsPath() -> Seq(ValidationError("error.expected.jsstring"))))
     }
 
-    def writes(enum: T) = JsString(enum.key)
+    def writes(namedEnum: T) = JsString(namedEnum.key)
 
   }
 
-  def fullWrites[T <: Enum] = new Writes[T] {
+  def fullWrites[T <: NamedEnum] = new Writes[T] {
 
-    def writes(enum: T) = Json.obj("key" -> enum.key, "name" -> enum.name)
+    def writes(namedEnum: T) = Json.obj(
+      "key" -> namedEnum.key,
+      "name" -> namedEnum.name
+    )
 
   }
 

@@ -5,9 +5,9 @@ import models.budget.util._
 sealed class TransactionClass(
   val key: String,
   val name: String
-) extends Enum
+) extends NamedEnum
 
-object TransactionClass extends EnumCompanion[TransactionClass] {
+object TransactionClass extends NamedEnumCompanion[TransactionClass] {
   case object Credit extends TransactionClass("credit", "Credit")
   case object Debit extends TransactionClass("checking", "Checking")
   case class Unknown(override val key: String) extends TransactionClass(key, "Unknown")
