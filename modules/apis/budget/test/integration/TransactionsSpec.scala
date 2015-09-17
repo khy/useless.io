@@ -20,6 +20,32 @@ class TransactionsSpec
   with IntegrationHelper
 {
 
+  "GET /transactions" must {
+
+    "return a 401 Unauthorized if the request isn't authenticated" in {
+      val response = await { unauthentictedRequest("/transactions").get }
+      response.status mustBe UNAUTHORIZED
+    }
+
+    "return only Transactions belonging to the authenticated user" in {
+      TestService.deleteTransactions()
+
+      val includedAccount = TestService.createTransaction(
+        accessToken = TestService.accessToken
+      )
+
+      val excludedAccount = TestService.createTransaction(
+        accessToken = TestService.otherAccessToken
+      )
+
+      val response = await { authenticatedRequest("/transactions").get }
+      val transactions = response.json.as[Seq[Transaction]]
+      transactions.length mustBe 1
+      transactions.head.guid mustBe includedAccount.guid
+    }
+
+  }
+
   "POST /transactions" must {
 
     lazy val transactionType = TestService.createTransactionType()

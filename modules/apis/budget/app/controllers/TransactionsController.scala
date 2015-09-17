@@ -10,14 +10,29 @@ import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import org.joda.time.DateTime
 import io.useless.play.json.DateTimeJson._
 import io.useless.play.json.MessageJson.format
+import io.useless.play.pagination.PaginationController
 
 import controllers.budget.auth.Auth
 import services.budget.TransactionsService
 import models.budget.JsonImplicits._
 
-object TransactionsController extends Controller {
+object TransactionsController extends Controller with PaginationController {
 
   val transactionsService = TransactionsService.default()
+
+  def index = Auth.async { implicit request =>
+    withRawPaginationParams { rawPaginationParams =>
+      transactionsService.findTransactions(
+        createdByAccounts = Some(Seq(request.accessToken.resourceOwner.guid)),
+        rawPaginationParams = rawPaginationParams
+      ).map { result =>
+        result.fold(
+          errors => Conflict(Json.toJson(errors)),
+          transactions => paginatedResult(routes.TransactionsController.index, transactions)
+        )
+      }
+    }
+  }
 
   case class CreateData(
     transactionTypeGuid: UUID,

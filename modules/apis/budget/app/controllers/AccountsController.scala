@@ -27,7 +27,7 @@ object AccountsController extends Controller with PaginationController {
       ).map { result =>
         result.fold(
           errors => Conflict(Json.toJson(errors)),
-          haikus => paginatedResult(routes.AccountsController.index, haikus)
+          accounts => paginatedResult(routes.AccountsController.index, accounts)
         )
       }
     }

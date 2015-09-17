@@ -6,6 +6,7 @@ import play.api.Play.current
 import play.api.test.Helpers._
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import slick.driver.PostgresDriver.api._
+import org.joda.time.DateTime
 import io.useless.account.User
 import io.useless.accesstoken.AccessToken
 
@@ -18,6 +19,7 @@ object TestService extends DatabaseAccessor {
   lazy val accountsService = AccountsService.default()
   lazy val projectionsService = ProjectionsService.default()
   lazy val transactionTypesService = TransactionTypesService.default()
+  lazy val transactionsService = TransactionsService.default()
 
   val accessToken = AccessToken(
     guid = UUID.fromString("00000000-0000-0000-0000-000000000000"),
@@ -64,6 +66,7 @@ object TestService extends DatabaseAccessor {
   }.toSuccess.value
 
   def deleteProjections() {
+    deleteTransactions()
     val query = Projections.filter { a => a.id === a.id }
     await { database.run(query.delete) }
   }
@@ -81,6 +84,16 @@ object TestService extends DatabaseAccessor {
     val query = TransactionTypes.filter { a => a.id === a.id }
     await { database.run(query.delete) }
   }
+
+  def createTransaction(
+    transactionTypeGuid: UUID = createTransactionType().guid,
+    amount: BigDecimal = 100.00,
+    timestamp: DateTime = DateTime.now.minusDays(1),
+    projectionGuid: Option[UUID] = None,
+    accessToken: AccessToken = accessToken
+  ): Transaction = await {
+    transactionsService.createTransaction(transactionTypeGuid, amount, timestamp, projectionGuid, accessToken)
+  }.toSuccess.value
 
   def deleteTransactions() {
     val query = Transactions.filter { a => a.id === a.id }
