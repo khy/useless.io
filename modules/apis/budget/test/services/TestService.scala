@@ -69,7 +69,7 @@ object TestService extends DatabaseAccessor {
   }
 
   def createTransactionType(
-    transactionType: TransactionClass = TransactionClass.Credit,
+    transactionType: TransactionClass = TransactionClass.Income,
     accountGuid: UUID = createAccount().guid,
     name: String =  "Rent"
   ): TransactionType = await {

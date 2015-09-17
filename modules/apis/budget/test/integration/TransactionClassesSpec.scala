@@ -28,8 +28,8 @@ class TransactionClassesSpec
       val response = await { authenticatedRequest("/transactionClasses").get }
       response.status mustBe OK
       val transactionClasses = response.json.as[Seq[TransactionClass]]
-      transactionClasses must contain (TransactionClass.Credit)
-      transactionClasses must contain (TransactionClass.Debit)
+      transactionClasses must contain (TransactionClass.Income)
+      transactionClasses must contain (TransactionClass.Expense)
     }
 
   }

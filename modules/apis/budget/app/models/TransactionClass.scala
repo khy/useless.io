@@ -8,10 +8,10 @@ sealed class TransactionClass(
 ) extends NamedEnum
 
 object TransactionClass extends NamedEnumCompanion[TransactionClass] {
-  case object Credit extends TransactionClass("credit", "Credit")
-  case object Debit extends TransactionClass("checking", "Checking")
+  case object Income extends TransactionClass("income", "Income")
+  case object Expense extends TransactionClass("expense", "Expense")
   case class Unknown(override val key: String) extends TransactionClass(key, "Unknown")
 
-  val values = Seq(Credit, Debit)
+  val values = Seq(Income, Expense)
   def unknown(key: String) = Unknown(key)
 }

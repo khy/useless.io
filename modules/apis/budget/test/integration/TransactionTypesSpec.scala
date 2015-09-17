@@ -23,7 +23,7 @@ class TransactionTypesSpec
     lazy val account = TestService.createAccount(name = "Shared Checking")
 
     lazy val json = Json.obj(
-      "transactionClass" -> TransactionClass.Credit.key,
+      "transactionClass" -> TransactionClass.Income.key,
       "accountGuid" -> account.guid,
       "name" -> "Rent"
     )
@@ -45,7 +45,7 @@ class TransactionTypesSpec
       response.status mustBe CREATED
 
       val transactionType = response.json.as[TransactionType]
-      transactionType.transactionClass mustBe TransactionClass.Credit
+      transactionType.transactionClass mustBe TransactionClass.Income
       transactionType.accountGuid mustBe account.guid
       transactionType.name mustBe "Rent"
     }
