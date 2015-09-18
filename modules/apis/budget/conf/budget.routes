@@ -3,6 +3,7 @@ POST    /accounts   controllers.budget.AccountsController.create
 
 GET     /accountTypes   controllers.budget.AccountTypesController.index
 
+GET     /transactionTypes   controllers.budget.TransactionTypesController.index
 POST    /transactionTypes   controllers.budget.TransactionTypesController.create
 
 GET     /transactions   controllers.budget.TransactionsController.index

@@ -6,6 +6,7 @@ import play.api.Application
 import slick.driver.PostgresDriver.api._
 import org.joda.time.DateTime
 import io.useless.accesstoken.AccessToken
+import io.useless.pagination._
 import io.useless.validation._
 
 import models.budget.{TransactionType, TransactionClass}
@@ -62,27 +63,37 @@ class TransactionTypesService(
   def findTransactionTypes(
     ids: Option[Seq[Long]] = None,
     names: Option[Seq[String]] = None,
-    internal: Option[Boolean] = None
-  )(implicit ec: ExecutionContext): Future[Seq[TransactionType]] = {
-    var query = TransactionTypes.filter { r => r.id === r.id }
+    internal: Option[Boolean] = None,
+    createdByAccounts: Option[Seq[UUID]] = None,
+    rawPaginationParams: RawPaginationParams = RawPaginationParams()
+  )(implicit ec: ExecutionContext): Future[Validation[PaginatedResult[TransactionType]]] = {
+    val valPaginationParams = PaginationParams.build(rawPaginationParams)
 
-    ids.foreach { ids =>
-      query = query.filter { _.id inSet ids }
-    }
+    ValidationUtil.future(valPaginationParams) { paginationParams =>
+      var query = TransactionTypes.filter { r => r.id === r.id }
 
-    names.foreach { names =>
-      query = query.filter { _.name inSet names }
-    }
+      ids.foreach { ids =>
+        query = query.filter { _.id inSet ids }
+      }
 
-    internal.foreach { internal =>
-      query = if (internal) {
-        query.filter { _.accountId.isEmpty }
-      } else {
-        query.filterNot { _.accountId.isEmpty }
+      names.foreach { names =>
+        query = query.filter { _.name inSet names }
+      }
+
+      internal.foreach { internal =>
+        query = if (internal) {
+          query.filter { _.accountId.isEmpty }
+        } else {
+          query.filterNot { _.accountId.isEmpty }
+        }
+      }
+
+      database.run(query.result).flatMap { records =>
+        records2models(records).map { transactionTypes =>
+          PaginatedResult.build(transactionTypes, paginationParams, None)
+        }
       }
     }
-
-    database.run(query.result).flatMap(records2models)
   }
 
   def createTransactionType(
@@ -127,9 +138,10 @@ class TransactionTypesService(
           val insert = transactionTypes += ((UUID.randomUUID, optParentId, optAccountId, name, accessToken.resourceOwner.guid, accessToken.guid))
 
           database.run(insert).flatMap { id =>
-            findTransactionTypes(ids = Some(Seq(id))).map { transactionTypes =>
-              transactionTypes.headOption.getOrElse {
-                throw new ResourceUnexpectedlyNotFound("TransactionGroup", id)
+            findTransactionTypes(ids = Some(Seq(id))).map { result =>
+              result.map(_.items.headOption) match {
+                case Validation.Success(Some(transactionType)) => transactionType
+                case _ => throw new ResourceUnexpectedlyNotFound("TransactionGroup", id)
               }
             }
           }

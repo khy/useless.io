@@ -18,6 +18,26 @@ class TransactionTypesSpec
   with IntegrationHelper
 {
 
+  "GET /transactionTypes" must {
+
+    "return a 401 Unauthorized if the request isn't authenticated" in {
+      val response = await { unauthentictedRequest("/transactionTypes").get }
+      response.status mustBe UNAUTHORIZED
+    }
+
+    "return 200 OK with internal TransactionClasses, if so specified" in {
+      val response = await {
+        authenticatedRequest("/transactionTypes").
+          withQueryString("internal" -> "true").get
+      }
+      response.status mustBe OK
+      val transactionTypeNames = response.json.as[Seq[TransactionType]].map(_.name)
+      transactionTypeNames must contain ("Income")
+      transactionTypeNames must contain ("Expense")
+    }
+
+  }
+
   "POST /transactionTypes" must {
 
     lazy val account = TestService.createAccount(name = "Shared Checking")

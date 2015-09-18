@@ -67,7 +67,7 @@ object TestService extends DatabaseAccessor {
 
   def getInternalTransactionType(name: String): TransactionType = await {
     transactionTypesService.findTransactionTypes(names = Some(Seq(name)), internal = Some(true))
-  }.headOption.get
+  }.toSuccess.value.items.head
 
   def deleteTransactionTypes() {
     deleteTransactions()
