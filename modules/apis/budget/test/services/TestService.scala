@@ -58,11 +58,11 @@ object TestService extends DatabaseAccessor {
   }
 
   def createTransactionType(
-    transactionType: TransactionClass = TransactionClass.Income,
-    accountGuid: UUID = createAccount().guid,
-    name: String =  "Rent"
+    name: String = "Rent",
+    parentGuid: Option[UUID] = None,
+    accountGuid: Option[UUID] = Some(createAccount().guid)
   ): TransactionType = await {
-    transactionTypesService.createTransactionType(accountGuid, transactionType, name, accessToken)
+    transactionTypesService.createTransactionType(name, parentGuid, accountGuid, accessToken)
   }.toSuccess.value
 
   def deleteTransactionTypes() {

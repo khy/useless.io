@@ -19,9 +19,9 @@ object TransactionTypesController extends Controller {
   val transactionTypesService = TransactionTypesService.default()
 
   case class CreateData(
-    transactionClass: TransactionClass,
-    accountGuid: UUID,
-    name: String
+    name: String,
+    parentGuid: Option[UUID],
+    accountGuid: Option[UUID]
   )
   private implicit val cdr = Json.reads[CreateData]
 
@@ -29,9 +29,9 @@ object TransactionTypesController extends Controller {
     request.body.validate[CreateData].fold(
       error => Future.successful(Conflict(error.toString)),
       data => transactionTypesService.createTransactionType(
-        transactionClass = data.transactionClass,
-        accountGuid = data.accountGuid,
         name = data.name,
+        parentGuid = data.parentGuid,
+        accountGuid = data.accountGuid,
         accessToken = request.accessToken
       ).map { result =>
         result.fold(

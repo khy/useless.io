@@ -23,9 +23,8 @@ class TransactionTypesSpec
     lazy val account = TestService.createAccount(name = "Shared Checking")
 
     lazy val json = Json.obj(
-      "transactionClass" -> TransactionClass.Income.key,
-      "accountGuid" -> account.guid,
-      "name" -> "Rent"
+      "name" -> "Rent",
+      "accountGuid" -> account.guid
     )
 
     "return a 401 Unauthorized if the request isn't authenticated" in {
@@ -34,7 +33,7 @@ class TransactionTypesSpec
     }
 
     "return a 409 Conflict any required fields aren't specified" in {
-      Seq("transactionClass", "accountGuid", "name").foreach { field =>
+      Seq("name").foreach { field =>
         val response = await { authenticatedRequest("/transactionTypes").post(json - field) }
         response.status mustBe CONFLICT
       }
@@ -45,9 +44,9 @@ class TransactionTypesSpec
       response.status mustBe CREATED
 
       val transactionType = response.json.as[TransactionType]
-      transactionType.transactionClass mustBe TransactionClass.Income
-      transactionType.accountGuid mustBe account.guid
       transactionType.name mustBe "Rent"
+      transactionType.parentGuid mustBe None
+      transactionType.accountGuid mustBe Some(account.guid)
     }
 
   }
