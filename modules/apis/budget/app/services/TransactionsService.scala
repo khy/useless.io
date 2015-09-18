@@ -95,10 +95,10 @@ class TransactionsService(
     futValTransactionTypeId.flatMap { valTransactionTypeId =>
       ValidationUtil.future(valTransactionTypeId) { case (transactionTypeId) =>
         val transactions = Transactions.map { r =>
-          (r.guid, r.transactionTypeId, r.amount, r.timestamp, r.createdByAccount)
+          (r.guid, r.transactionTypeId, r.amount, r.timestamp, r.createdByAccount, r.createdByAccessToken)
         }.returning(Transactions.map(_.id))
 
-        val insert = transactions += (UUID.randomUUID, transactionTypeId, amount, new Timestamp(timestamp.getMillis), accessToken.resourceOwner.guid)
+        val insert = transactions += (UUID.randomUUID, transactionTypeId, amount, new Timestamp(timestamp.getMillis), accessToken.resourceOwner.guid, accessToken.guid)
 
         database.run(insert).flatMap { id =>
           findTransactions(ids = Some(Seq(id))).map { result =>

@@ -74,10 +74,10 @@ class AccountsService(
     accessToken: AccessToken
   )(implicit ec: ExecutionContext): Future[Validation[Account]] = {
     val accounts = Accounts.map { a =>
-      (a.guid, a.accountTypeKey, a.name, a.initialBalance, a.createdByAccount)
+      (a.guid, a.accountTypeKey, a.name, a.initialBalance, a.createdByAccount, a.createdByAccessToken)
     }.returning(Accounts.map(_.id))
 
-    val insert = accounts += (UUID.randomUUID, accountType.key, name, initialBalance, accessToken.resourceOwner.guid)
+    val insert = accounts += (UUID.randomUUID, accountType.key, name, initialBalance, accessToken.resourceOwner.guid, accessToken.guid)
 
     database.run(insert).flatMap { id =>
       findAccounts(ids = Some(Seq(id))).map { result =>

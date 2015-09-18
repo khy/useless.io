@@ -72,10 +72,10 @@ class TransactionTypesService(
     database.run(query.result).flatMap { accounts =>
       accounts.headOption.map { account =>
         val transactionTypes = TransactionTypes.map { r =>
-          (r.guid, r.name, r.accountId, r.transactionClassKey, r.createdByAccount)
+          (r.guid, r.name, r.accountId, r.transactionClassKey, r.createdByAccount, r.createdByAccessToken)
         }.returning(TransactionTypes.map(_.id))
 
-        val insert = transactionTypes += (UUID.randomUUID, name, account.id, transactionClass.key, accessToken.resourceOwner.guid)
+        val insert = transactionTypes += (UUID.randomUUID, name, account.id, transactionClass.key, accessToken.resourceOwner.guid, accessToken.guid)
 
         database.run(insert).flatMap { id =>
           findTransactionTypes(ids = Some(Seq(id))).map { transactionTypes =>

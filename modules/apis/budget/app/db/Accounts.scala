@@ -13,8 +13,10 @@ case class AccountRecord(
   initialBalance: BigDecimal,
   createdAt: Timestamp,
   createdByAccount: UUID,
+  createdByAccessToken: UUID,
   deletedAt: Option[Timestamp],
-  deletedByAccount: Option[UUID]
+  deletedByAccount: Option[UUID],
+  deletedByAccessToken: Option[UUID]
 )
 
 class AccountsTable(tag: Tag)
@@ -27,10 +29,12 @@ class AccountsTable(tag: Tag)
   def initialBalance = column[BigDecimal]("initial_balance")
   def createdAt = column[Timestamp]("created_at")
   def createdByAccount = column[UUID]("created_by_account")
+  def createdByAccessToken = column[UUID]("created_by_access_token")
   def deletedAt = column[Option[Timestamp]]("deleted_at")
   def deletedByAccount = column[Option[UUID]]("deleted_by_account")
+  def deletedByAccessToken = column[Option[UUID]]("deleted_by_access_token")
 
-  def * = (id, guid, accountTypeKey, name, initialBalance, createdAt, createdByAccount, deletedAt, deletedByAccount) <> (AccountRecord.tupled, AccountRecord.unapply)
+  def * = (id, guid, accountTypeKey, name, initialBalance, createdAt, createdByAccount, createdByAccessToken, deletedAt, deletedByAccount, deletedByAccessToken) <> (AccountRecord.tupled, AccountRecord.unapply)
 }
 
 object Accounts extends TableQuery(new AccountsTable(_))

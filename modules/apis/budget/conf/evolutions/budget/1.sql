@@ -8,8 +8,10 @@ CREATE TABLE accounts (
   initial_balance decimal NOT NULL,
   created_at timestamp NOT NULL DEFAULT now(),
   created_by_account uuid NOT NULL,
+  created_by_access_token uuid NOT NULL,
   deleted_at timestamp,
-  deleted_by_account uuid
+  deleted_by_account uuid,
+  deleted_by_access_token uuid
 );
 
 CREATE TABLE transaction_types (
@@ -20,8 +22,10 @@ CREATE TABLE transaction_types (
   name text NOT NULL,
   created_at timestamp NOT NULL DEFAULT now(),
   created_by_account uuid NOT NULL,
+  created_by_access_token uuid NOT NULL,
   deleted_at timestamp,
-  deleted_by_account uuid
+  deleted_by_account uuid,
+  deleted_by_access_token uuid
 );
 
 CREATE TABLE transactions (
@@ -32,8 +36,10 @@ CREATE TABLE transactions (
   timestamp timestamp NOT NULL,
   created_at timestamp NOT NULL DEFAULT now(),
   created_by_account uuid NOT NULL,
+  created_by_access_token uuid NOT NULL,
   deleted_at timestamp,
-  deleted_by_account uuid
+  deleted_by_account uuid,
+  deleted_by_access_token uuid
 );
 
 # --- !Downs
