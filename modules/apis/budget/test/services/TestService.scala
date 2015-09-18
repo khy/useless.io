@@ -67,7 +67,7 @@ object TestService extends DatabaseAccessor {
 
   def deleteTransactionTypes() {
     deleteTransactions()
-    val query = TransactionTypes.filter { a => a.id === a.id }
+    val query = TransactionTypes.filterNot { _.accountId.isEmpty }
     await { database.run(query.delete) }
   }
 

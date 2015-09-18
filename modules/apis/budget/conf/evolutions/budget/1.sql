@@ -14,6 +14,8 @@ CREATE TABLE accounts (
   deleted_by_access_token uuid
 );
 
+CREATE INDEX accounts_guid_idx ON accounts (guid);
+
 CREATE TABLE transaction_types (
   id bigserial PRIMARY KEY,
   guid uuid NOT NULL,
@@ -27,6 +29,11 @@ CREATE TABLE transaction_types (
   deleted_by_account uuid,
   deleted_by_access_token uuid
 );
+
+CREATE INDEX transaction_types_guid_idx ON transaction_types (guid);
+CREATE INDEX transaction_types_name_idx ON transaction_types (name);
+CREATE INDEX transaction_types_parent_id_idx ON transaction_types (parent_id);
+CREATE INDEX transaction_types_account_id_idx ON transaction_types (account_id);
 
 INSERT INTO transaction_types (guid, name, created_by_account, created_by_access_token)
 VALUES ('a87efcf1-64c2-4949-87d0-e1f4849f743d', 'Income', '2a436fb0-7336-4f19-bde7-61570c05640c', '71a6828a-d20f-4fa6-8b2b-05a254487bda');
@@ -47,6 +54,9 @@ CREATE TABLE transactions (
   deleted_by_account uuid,
   deleted_by_access_token uuid
 );
+
+CREATE INDEX transactions_guid_idx ON transactions (guid);
+CREATE INDEX transactions_transaction_type_id_idx ON transactions (transaction_type_id);
 
 # --- !Downs
 
