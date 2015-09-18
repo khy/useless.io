@@ -20,8 +20,8 @@ object TransactionTypesController extends Controller {
 
   case class CreateData(
     name: String,
-    parentGuid: Option[UUID],
-    accountGuid: Option[UUID]
+    parentGuid: UUID,
+    accountGuid: UUID
   )
   private implicit val cdr = Json.reads[CreateData]
 
@@ -30,8 +30,8 @@ object TransactionTypesController extends Controller {
       error => Future.successful(Conflict(error.toString)),
       data => transactionTypesService.createTransactionType(
         name = data.name,
-        parentGuid = data.parentGuid,
-        accountGuid = data.accountGuid,
+        parentGuid = Some(data.parentGuid),
+        accountGuid = Some(data.accountGuid),
         accessToken = request.accessToken
       ).map { result =>
         result.fold(

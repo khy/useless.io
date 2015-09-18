@@ -60,12 +60,26 @@ class TransactionTypesService(
   }
 
   def findTransactionTypes(
-    ids: Option[Seq[Long]] = None
+    ids: Option[Seq[Long]] = None,
+    names: Option[Seq[String]] = None,
+    internal: Option[Boolean] = None
   )(implicit ec: ExecutionContext): Future[Seq[TransactionType]] = {
     var query = TransactionTypes.filter { r => r.id === r.id }
 
     ids.foreach { ids =>
       query = query.filter { _.id inSet ids }
+    }
+
+    names.foreach { names =>
+      query = query.filter { _.name inSet names }
+    }
+
+    internal.foreach { internal =>
+      query = if (internal) {
+        query.filter { _.accountId.isEmpty }
+      } else {
+        query.filterNot { _.accountId.isEmpty }
+      }
     }
 
     database.run(query.result).flatMap(records2models)

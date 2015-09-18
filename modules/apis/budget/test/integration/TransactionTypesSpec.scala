@@ -21,9 +21,11 @@ class TransactionTypesSpec
   "POST /transactionTypes" must {
 
     lazy val account = TestService.createAccount(name = "Shared Checking")
+    lazy val expense = TestService.getInternalTransactionType("Expense")
 
     lazy val json = Json.obj(
       "name" -> "Rent",
+      "parentGuid" -> expense.guid,
       "accountGuid" -> account.guid
     )
 
@@ -45,7 +47,7 @@ class TransactionTypesSpec
 
       val transactionType = response.json.as[TransactionType]
       transactionType.name mustBe "Rent"
-      transactionType.parentGuid mustBe None
+      transactionType.parentGuid mustBe Some(expense.guid)
       transactionType.accountGuid mustBe Some(account.guid)
     }
 

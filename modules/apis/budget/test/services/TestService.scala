@@ -65,6 +65,10 @@ object TestService extends DatabaseAccessor {
     transactionTypesService.createTransactionType(name, parentGuid, accountGuid, accessToken)
   }.toSuccess.value
 
+  def getInternalTransactionType(name: String): TransactionType = await {
+    transactionTypesService.findTransactionTypes(names = Some(Seq(name)), internal = Some(true))
+  }.headOption.get
+
   def deleteTransactionTypes() {
     deleteTransactions()
     val query = TransactionTypes.filterNot { _.accountId.isEmpty }
