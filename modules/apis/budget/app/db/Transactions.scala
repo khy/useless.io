@@ -10,7 +10,6 @@ case class TransactionRecord(
   transactionTypeId: Long,
   amount: BigDecimal,
   timestamp: Timestamp,
-  projectionId: Option[Long],
   createdAt: Timestamp,
   createdByAccount: UUID,
   deletedAt: Option[Timestamp],
@@ -25,13 +24,12 @@ class TransactionsTable(tag: Tag)
   def transactionTypeId = column[Long]("transaction_type_id")
   def amount = column[BigDecimal]("amount")
   def timestamp = column[Timestamp]("timestamp")
-  def projectionId = column[Option[Long]]("projection_id")
   def createdAt = column[Timestamp]("created_at")
   def createdByAccount = column[UUID]("created_by_account")
   def deletedAt = column[Option[Timestamp]]("deleted_at")
   def deletedByAccount = column[Option[UUID]]("deleted_by_account")
 
-  def * = (id, guid, transactionTypeId, amount, timestamp, projectionId, createdAt, createdByAccount, deletedAt, deletedByAccount) <> (TransactionRecord.tupled, TransactionRecord.unapply)
+  def * = (id, guid, transactionTypeId, amount, timestamp, createdAt, createdByAccount, deletedAt, deletedByAccount) <> (TransactionRecord.tupled, TransactionRecord.unapply)
 }
 
 object Transactions extends TableQuery(new TransactionsTable(_))

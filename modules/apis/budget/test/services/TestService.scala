@@ -17,7 +17,6 @@ import db.budget.util.DatabaseAccessor
 object TestService extends DatabaseAccessor {
 
   lazy val accountsService = AccountsService.default()
-  lazy val projectionsService = ProjectionsService.default()
   lazy val transactionTypesService = TransactionTypesService.default()
   lazy val transactionsService = TransactionsService.default()
 
@@ -58,19 +57,6 @@ object TestService extends DatabaseAccessor {
     await { database.run(query.delete) }
   }
 
-  def createProjection(
-    name: String = "My Projection",
-    accessToken: AccessToken = accessToken
-  ): Projection = await {
-    projectionsService.createProjection(name, accessToken)
-  }.toSuccess.value
-
-  def deleteProjections() {
-    deleteTransactions()
-    val query = Projections.filter { a => a.id === a.id }
-    await { database.run(query.delete) }
-  }
-
   def createTransactionType(
     transactionType: TransactionClass = TransactionClass.Income,
     accountGuid: UUID = createAccount().guid,
@@ -89,10 +75,9 @@ object TestService extends DatabaseAccessor {
     transactionTypeGuid: UUID = createTransactionType().guid,
     amount: BigDecimal = 100.00,
     timestamp: DateTime = DateTime.now.minusDays(1),
-    projectionGuid: Option[UUID] = None,
     accessToken: AccessToken = accessToken
   ): Transaction = await {
-    transactionsService.createTransaction(transactionTypeGuid, amount, timestamp, projectionGuid, accessToken)
+    transactionsService.createTransaction(transactionTypeGuid, amount, timestamp, accessToken)
   }.toSuccess.value
 
   def deleteTransactions() {

@@ -9,7 +9,6 @@ case class Transaction(
   transactionTypeGuid: UUID,
   amount: BigDecimal,
   timestamp: DateTime,
-  projectionGuid: Option[UUID],
   createdBy: User,
   createdAt: DateTime
 )

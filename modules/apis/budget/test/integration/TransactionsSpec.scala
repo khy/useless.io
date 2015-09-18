@@ -49,14 +49,12 @@ class TransactionsSpec
   "POST /transactions" must {
 
     lazy val transactionType = TestService.createTransactionType()
-    lazy val projection = TestService.createProjection()
     val timestamp = DateTime.now.toDateTime(DateTimeZone.UTC)
 
     lazy val json = Json.obj(
       "transactionTypeGuid" -> transactionType.guid,
       "amount" -> 100.0,
-      "timestamp" -> timestamp,
-      "projectionGuid" -> projection.guid
+      "timestamp" -> timestamp
     )
 
     "return a 401 Unauthorized if the request isn't authenticated" in {
@@ -79,7 +77,6 @@ class TransactionsSpec
       transaction.transactionTypeGuid mustBe transactionType.guid
       transaction.amount mustBe 100.0
       transaction.timestamp mustBe timestamp
-      transaction.projectionGuid mustBe Some(projection.guid)
     }
 
   }

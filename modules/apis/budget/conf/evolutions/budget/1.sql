@@ -12,16 +12,6 @@ CREATE TABLE accounts (
   deleted_by_account uuid
 );
 
-CREATE TABLE projections (
-  id bigserial PRIMARY KEY,
-  guid uuid NOT NULL,
-  name text NOT NULL,
-  created_at timestamp NOT NULL DEFAULT now(),
-  created_by_account uuid NOT NULL,
-  deleted_at timestamp,
-  deleted_by_account uuid
-);
-
 CREATE TABLE transaction_types (
   id bigserial PRIMARY KEY,
   guid uuid NOT NULL,
@@ -40,7 +30,6 @@ CREATE TABLE transactions (
   transaction_type_id bigint NOT NULL REFERENCES transaction_types,
   amount decimal NOT NULL,
   timestamp timestamp NOT NULL,
-  projection_id bigint REFERENCES projections,
   created_at timestamp NOT NULL DEFAULT now(),
   created_by_account uuid NOT NULL,
   deleted_at timestamp,
@@ -48,3 +37,7 @@ CREATE TABLE transactions (
 );
 
 # --- !Downs
+
+DROP TABLE accounts CASCADE;
+DROP TABLE transaction_types CASCADE;
+DROP TABLE transactions CASCADE;

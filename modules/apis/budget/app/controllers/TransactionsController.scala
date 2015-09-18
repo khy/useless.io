@@ -37,8 +37,7 @@ object TransactionsController extends Controller with PaginationController {
   case class CreateData(
     transactionTypeGuid: UUID,
     amount: BigDecimal,
-    timestamp: DateTime,
-    projectionGuid: Option[UUID]
+    timestamp: DateTime
   )
   private implicit val cdr = Json.reads[CreateData]
 
@@ -49,7 +48,6 @@ object TransactionsController extends Controller with PaginationController {
         transactionTypeGuid = data.transactionTypeGuid,
         amount = data.amount,
         timestamp = data.timestamp,
-        projectionGuid = data.projectionGuid,
         accessToken = request.accessToken
       ).map { result =>
         result.fold(

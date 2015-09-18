@@ -33,7 +33,6 @@ object JsonImplicits {
   implicit val accountTypeFormat = NamedEnumJson.keyFormat(AccountType)
   implicit val transactionClassFormat = NamedEnumJson.keyFormat(TransactionClass)
   implicit val accountFormat = Json.format[Account]
-  implicit val projectionFormat = Json.format[Projection]
   implicit val transactionTypeFormat = Json.format[TransactionType]
   implicit val transactionFormat = Json.format[Transaction]
 

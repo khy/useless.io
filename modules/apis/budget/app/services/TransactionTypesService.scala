@@ -71,11 +71,11 @@ class TransactionTypesService(
 
     database.run(query.result).flatMap { accounts =>
       accounts.headOption.map { account =>
-        val projections = TransactionTypes.map { r =>
+        val transactionTypes = TransactionTypes.map { r =>
           (r.guid, r.name, r.accountId, r.transactionClassKey, r.createdByAccount)
         }.returning(TransactionTypes.map(_.id))
 
-        val insert = projections += (UUID.randomUUID, name, account.id, transactionClass.key, accessToken.resourceOwner.guid)
+        val insert = transactionTypes += (UUID.randomUUID, name, account.id, transactionClass.key, accessToken.resourceOwner.guid)
 
         database.run(insert).flatMap { id =>
           findTransactionTypes(ids = Some(Seq(id))).map { transactionTypes =>
