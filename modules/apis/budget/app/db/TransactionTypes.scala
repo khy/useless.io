@@ -8,7 +8,6 @@ case class TransactionTypeRecord(
   id: Long,
   guid: UUID,
   parentId: Option[Long],
-  accountId: Option[Long],
   name: String,
   createdAt: Timestamp,
   createdByAccount: UUID,
@@ -24,7 +23,6 @@ class TransactionTypesTable(tag: Tag)
   def id = column[Long]("id")
   def guid = column[UUID]("guid")
   def parentId = column[Option[Long]]("parent_id")
-  def accountId = column[Option[Long]]("account_id")
   def name = column[String]("name")
   def createdAt = column[Timestamp]("created_at")
   def createdByAccount = column[UUID]("created_by_account")
@@ -33,7 +31,7 @@ class TransactionTypesTable(tag: Tag)
   def deletedByAccount = column[Option[UUID]]("deleted_by_account")
   def deletedByAccessToken = column[Option[UUID]]("deleted_by_access_token")
 
-  def * = (id, guid, parentId, accountId, name, createdAt, createdByAccount, createdByAccessToken, deletedAt, deletedByAccount, deletedByAccessToken) <> (TransactionTypeRecord.tupled, TransactionTypeRecord.unapply)
+  def * = (id, guid, parentId, name, createdAt, createdByAccount, createdByAccessToken, deletedAt, deletedByAccount, deletedByAccessToken) <> (TransactionTypeRecord.tupled, TransactionTypeRecord.unapply)
 }
 
 object TransactionTypes extends TableQuery(new TransactionTypesTable(_))

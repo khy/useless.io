@@ -21,13 +21,6 @@ object TransactionTypesController extends Controller with PaginationController {
   def index = Auth.async { implicit request =>
     withRawPaginationParams { rawPaginationParams =>
       transactionTypesService.findTransactionTypes(
-        system = request.queryString.get("system").flatMap { values =>
-          values.headOption.flatMap {
-            case "true" => Some(true)
-            case "false" => Some(false)
-            case _ => None
-          }
-        },
         createdByAccounts = Some(Seq(request.accessToken.resourceOwner.guid)),
         rawPaginationParams = rawPaginationParams
       ).map { result =>
@@ -41,8 +34,7 @@ object TransactionTypesController extends Controller with PaginationController {
 
   case class CreateData(
     name: String,
-    parentGuid: UUID,
-    accountGuid: UUID
+    parentGuid: UUID
   )
   private implicit val cdr = Json.reads[CreateData]
 
@@ -52,7 +44,6 @@ object TransactionTypesController extends Controller with PaginationController {
       data => transactionTypesService.createTransactionType(
         name = data.name,
         parentGuid = Some(data.parentGuid),
-        accountGuid = Some(data.accountGuid),
         accessToken = request.accessToken
       ).map { result =>
         result.fold(

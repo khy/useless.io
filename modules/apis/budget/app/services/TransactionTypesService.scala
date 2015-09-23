@@ -33,15 +33,9 @@ class TransactionTypesService(
     }
     val futTransactionTypes = database.run(transactionTypeQuery.result)
 
-    val accountQuery = Accounts.filter { account =>
-      account.id inSet records.map(_.accountId).filter(_.isDefined).map(_.get)
-    }
-    val futAccounts = database.run(accountQuery.result)
-
     for {
       users <- futUsers
       transactionTypes <- futTransactionTypes
-      accounts <- futAccounts
     } yield {
       records.map { record =>
         TransactionType(
@@ -49,9 +43,6 @@ class TransactionTypesService(
           name = record.name,
           parentGuid = transactionTypes.find { transactionType =>
             record.parentId.map(_ == transactionType.id).getOrElse(false)
-          }.map(_.guid),
-          accountGuid = accounts.find { account =>
-            record.accountId.map(_ == account.id).getOrElse(false)
           }.map(_.guid),
           createdBy = users.find(_.guid == record.createdByAccount).getOrElse(UsersHelper.AnonUser),
           createdAt = new DateTime(record.createdAt)
@@ -63,7 +54,6 @@ class TransactionTypesService(
   def findTransactionTypes(
     ids: Option[Seq[Long]] = None,
     names: Option[Seq[String]] = None,
-    system: Option[Boolean] = None,
     createdByAccounts: Option[Seq[UUID]] = None,
     rawPaginationParams: RawPaginationParams = RawPaginationParams()
   )(implicit ec: ExecutionContext): Future[Validation[PaginatedResult[TransactionType]]] = {
@@ -80,14 +70,6 @@ class TransactionTypesService(
         query = query.filter { _.name inSet names }
       }
 
-      system.foreach { system =>
-        query = if (system) {
-          query.filter { _.accountId.isEmpty }
-        } else {
-          query.filterNot { _.accountId.isEmpty }
-        }
-      }
-
       database.run(query.result).flatMap { records =>
         records2models(records).map { transactionTypes =>
           PaginatedResult.build(transactionTypes, paginationParams, None)
@@ -99,7 +81,6 @@ class TransactionTypesService(
   def createTransactionType(
     name: String,
     parentGuid: Option[UUID],
-    accountGuid: Option[UUID],
     accessToken: AccessToken
   )(implicit ec: ExecutionContext): Future[Validation[TransactionType]] = {
     val futValOptParentId = parentGuid.map { parentGuid =>
@@ -115,34 +96,19 @@ class TransactionTypesService(
       Future.successful(Validation.success(None))
     }
 
-    val futValOptAccountId = accountGuid.map { accountGuid =>
-      val accountQuery = Accounts.filter { _.guid === accountGuid }
-      database.run(accountQuery.result).map { accounts =>
-        accounts.headOption.map { account =>
-          Validation.success(Some(account.id))
-        }.getOrElse {
-          Validation.failure("accountGuid", "useless.error.unknownGuid", "specified" -> accountGuid.toString)
-        }
-      }
-    }.getOrElse {
-      Future.successful(Validation.success(None))
-    }
-
     futValOptParentId.flatMap { valOptParentId =>
-      futValOptAccountId.flatMap { valOptAccountId =>
-        ValidationUtil.future(valOptParentId ++ valOptAccountId) { case (optParentId, optAccountId) =>
-          val transactionTypes = TransactionTypes.map { r =>
-            (r.guid, r.parentId, r.accountId, r.name, r.createdByAccount, r.createdByAccessToken)
-          }.returning(TransactionTypes.map(_.id))
+      ValidationUtil.future(valOptParentId) { case (optParentId) =>
+        val transactionTypes = TransactionTypes.map { r =>
+          (r.guid, r.parentId, r.name, r.createdByAccount, r.createdByAccessToken)
+        }.returning(TransactionTypes.map(_.id))
 
-          val insert = transactionTypes += ((UUID.randomUUID, optParentId, optAccountId, name, accessToken.resourceOwner.guid, accessToken.guid))
+        val insert = transactionTypes += ((UUID.randomUUID, optParentId, name, accessToken.resourceOwner.guid, accessToken.guid))
 
-          database.run(insert).flatMap { id =>
-            findTransactionTypes(ids = Some(Seq(id))).map { result =>
-              result.map(_.items.headOption) match {
-                case Validation.Success(Some(transactionType)) => transactionType
-                case _ => throw new ResourceUnexpectedlyNotFound("TransactionGroup", id)
-              }
+        database.run(insert).flatMap { id =>
+          findTransactionTypes(ids = Some(Seq(id))).map { result =>
+            result.map(_.items.headOption) match {
+              case Validation.Success(Some(transactionType)) => transactionType
+              case _ => throw new ResourceUnexpectedlyNotFound("TransactionGroup", id)
             }
           }
         }

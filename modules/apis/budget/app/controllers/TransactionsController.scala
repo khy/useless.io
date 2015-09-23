@@ -36,6 +36,7 @@ object TransactionsController extends Controller with PaginationController {
 
   case class CreateData(
     transactionTypeGuid: UUID,
+    accountGuid: UUID,
     amount: BigDecimal,
     timestamp: DateTime
   )
@@ -46,6 +47,7 @@ object TransactionsController extends Controller with PaginationController {
       error => Future.successful(Conflict(error.toString)),
       data => transactionsService.createTransaction(
         transactionTypeGuid = data.transactionTypeGuid,
+        accountGuid = data.accountGuid,
         amount = data.amount,
         timestamp = data.timestamp,
         accessToken = request.accessToken

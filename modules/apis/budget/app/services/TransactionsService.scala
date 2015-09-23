@@ -32,15 +32,24 @@ class TransactionsService(
     val transactionTypesQuery = TransactionTypes.filter { _.id inSet records.map(_.transactionTypeId) }
     val futTransactionTypes = database.run(transactionTypesQuery.result)
 
+    val accountQuery = Accounts.filter { account =>
+      account.id inSet records.map(_.accountId)
+    }
+    val futAccounts = database.run(accountQuery.result)
+
     for {
       users <- futUsers
       transactionTypes <- futTransactionTypes
+      accounts <- futAccounts
     } yield {
       records.map { record =>
         Transaction(
           guid = record.guid,
           transactionTypeGuid = transactionTypes.find(_.id == record.transactionTypeId).map(_.guid).getOrElse {
             throw new ResourceUnexpectedlyNotFound("TransactionType", record.transactionTypeId)
+          },
+          accountGuid = accounts.find(_.id == record.accountId).map(_.guid).getOrElse {
+            throw new ResourceUnexpectedlyNotFound("Account", record.accountId)
           },
           amount = record.amount,
           timestamp = new DateTime(record.timestamp),
@@ -79,6 +88,7 @@ class TransactionsService(
 
   def createTransaction(
     transactionTypeGuid: UUID,
+    accountGuid: UUID,
     amount: BigDecimal,
     timestamp: DateTime,
     accessToken: AccessToken
@@ -92,19 +102,30 @@ class TransactionsService(
       }
     }
 
+    val accountQuery = Accounts.filter { _.guid === accountGuid }
+    val futValAccountId =database.run(accountQuery.result).map { accounts =>
+      accounts.headOption.map { account =>
+        Validation.success(account.id)
+      }.getOrElse {
+        Validation.failure("accountGuid", "useless.error.unknownGuid", "specified" -> accountGuid.toString)
+      }
+    }
+
     futValTransactionTypeId.flatMap { valTransactionTypeId =>
-      ValidationUtil.future(valTransactionTypeId) { case (transactionTypeId) =>
-        val transactions = Transactions.map { r =>
-          (r.guid, r.transactionTypeId, r.amount, r.timestamp, r.createdByAccount, r.createdByAccessToken)
-        }.returning(Transactions.map(_.id))
+      futValAccountId.flatMap { valAccountId =>
+        ValidationUtil.future(valTransactionTypeId ++ valAccountId) { case (transactionTypeId, accountId) =>
+          val transactions = Transactions.map { r =>
+            (r.guid, r.transactionTypeId, r.accountId, r.amount, r.timestamp, r.createdByAccount, r.createdByAccessToken)
+          }.returning(Transactions.map(_.id))
 
-        val insert = transactions += (UUID.randomUUID, transactionTypeId, amount, new Timestamp(timestamp.getMillis), accessToken.resourceOwner.guid, accessToken.guid)
+          val insert = transactions += (UUID.randomUUID, transactionTypeId, accountId, amount, new Timestamp(timestamp.getMillis), accessToken.resourceOwner.guid, accessToken.guid)
 
-        database.run(insert).flatMap { id =>
-          findTransactions(ids = Some(Seq(id))).map { result =>
-            result.map(_.items.headOption) match {
-              case Validation.Success(Some(transaction)) => transaction
-              case _ => throw new ResourceUnexpectedlyNotFound("Transaction", id)
+          database.run(insert).flatMap { id =>
+            findTransactions(ids = Some(Seq(id))).map { result =>
+              result.map(_.items.headOption) match {
+                case Validation.Success(Some(transaction)) => transaction
+                case _ => throw new ResourceUnexpectedlyNotFound("Transaction", id)
+              }
             }
           }
         }

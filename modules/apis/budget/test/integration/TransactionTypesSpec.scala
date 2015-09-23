@@ -44,13 +44,11 @@ class TransactionTypesSpec
 
   "POST /transactionTypes" must {
 
-    lazy val account = TestService.createAccount(name = "Shared Checking")
     lazy val expense = TestService.getSystemTransactionType("Expense")
 
     lazy val json = Json.obj(
       "name" -> "Rent",
-      "parentGuid" -> expense.guid,
-      "accountGuid" -> account.guid
+      "parentGuid" -> expense.guid
     )
 
     "return a 401 Unauthorized if the request isn't authenticated" in {
@@ -72,7 +70,6 @@ class TransactionTypesSpec
       val transactionType = response.json.as[TransactionType]
       transactionType.name mustBe "Rent"
       transactionType.parentGuid mustBe Some(expense.guid)
-      transactionType.accountGuid mustBe Some(account.guid)
     }
 
   }
