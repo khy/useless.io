@@ -25,13 +25,13 @@ class TransactionTypesSpec
       response.status mustBe UNAUTHORIZED
     }
 
-    "return 200 OK with internal transaction types, if so specified" in {
-      val expense = TestService.getInternalTransactionType("Expense")
+    "return 200 OK with system transaction types, if so specified" in {
+      val expense = TestService.getSystemTransactionType("Expense")
       TestService.createTransactionType("Rent", Some(expense.guid))
 
       val response = await {
         authenticatedRequest("/transactionTypes").
-          withQueryString("internal" -> "true").get
+          withQueryString("system" -> "true").get
       }
       response.status mustBe OK
       val transactionTypeNames = response.json.as[Seq[TransactionType]].map(_.name)
@@ -45,7 +45,7 @@ class TransactionTypesSpec
   "POST /transactionTypes" must {
 
     lazy val account = TestService.createAccount(name = "Shared Checking")
-    lazy val expense = TestService.getInternalTransactionType("Expense")
+    lazy val expense = TestService.getSystemTransactionType("Expense")
 
     lazy val json = Json.obj(
       "name" -> "Rent",

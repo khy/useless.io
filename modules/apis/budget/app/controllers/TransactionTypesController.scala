@@ -21,7 +21,7 @@ object TransactionTypesController extends Controller with PaginationController {
   def index = Auth.async { implicit request =>
     withRawPaginationParams { rawPaginationParams =>
       transactionTypesService.findTransactionTypes(
-        internal = request.queryString.get("internal").flatMap { values =>
+        system = request.queryString.get("system").flatMap { values =>
           values.headOption.flatMap {
             case "true" => Some(true)
             case "false" => Some(false)

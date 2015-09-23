@@ -63,7 +63,7 @@ class TransactionTypesService(
   def findTransactionTypes(
     ids: Option[Seq[Long]] = None,
     names: Option[Seq[String]] = None,
-    internal: Option[Boolean] = None,
+    system: Option[Boolean] = None,
     createdByAccounts: Option[Seq[UUID]] = None,
     rawPaginationParams: RawPaginationParams = RawPaginationParams()
   )(implicit ec: ExecutionContext): Future[Validation[PaginatedResult[TransactionType]]] = {
@@ -80,8 +80,8 @@ class TransactionTypesService(
         query = query.filter { _.name inSet names }
       }
 
-      internal.foreach { internal =>
-        query = if (internal) {
+      system.foreach { system =>
+        query = if (system) {
           query.filter { _.accountId.isEmpty }
         } else {
           query.filterNot { _.accountId.isEmpty }
