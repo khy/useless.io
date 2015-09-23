@@ -12,7 +12,6 @@ import io.useless.play.pagination.PaginationController
 
 import controllers.budget.auth.Auth
 import services.budget.TransactionTypesService
-import models.budget.TransactionClass
 import models.budget.JsonImplicits._
 
 object TransactionTypesController extends Controller with PaginationController {

@@ -8,5 +8,3 @@ POST    /transactionTypes   controllers.budget.TransactionTypesController.create
 
 GET     /transactions   controllers.budget.TransactionsController.index
 POST    /transactions   controllers.budget.TransactionsController.create
-
-GET     /transactionClasses   controllers.budget.TransactionClassesController.index

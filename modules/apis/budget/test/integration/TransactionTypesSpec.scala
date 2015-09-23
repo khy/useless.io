@@ -7,7 +7,7 @@ import play.api.test._
 import play.api.test.Helpers._
 import play.api.libs.json._
 
-import models.budget.{TransactionType, TransactionClass}
+import models.budget.TransactionType
 import models.budget.JsonImplicits._
 import services.budget.TestService
 import test.budget.integration.util.IntegrationHelper

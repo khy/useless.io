@@ -9,7 +9,7 @@ import io.useless.accesstoken.AccessToken
 import io.useless.pagination._
 import io.useless.validation._
 
-import models.budget.{TransactionType, TransactionClass}
+import models.budget.TransactionType
 import db.budget._
 import db.budget.util.DatabaseAccessor
 import services.budget.util.{UsersHelper, ResourceUnexpectedlyNotFound}
