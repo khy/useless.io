@@ -25,7 +25,10 @@ class TransactionTypesSpec
       response.status mustBe UNAUTHORIZED
     }
 
-    "return 200 OK with internal TransactionClasses, if so specified" in {
+    "return 200 OK with internal transaction types, if so specified" in {
+      val expense = TestService.getInternalTransactionType("Expense")
+      TestService.createTransactionType("Rent", Some(expense.guid))
+
       val response = await {
         authenticatedRequest("/transactionTypes").
           withQueryString("internal" -> "true").get
@@ -34,6 +37,7 @@ class TransactionTypesSpec
       val transactionTypeNames = response.json.as[Seq[TransactionType]].map(_.name)
       transactionTypeNames must contain ("Income")
       transactionTypeNames must contain ("Expense")
+      transactionTypeNames must not contain ("Rent")
     }
 
   }
