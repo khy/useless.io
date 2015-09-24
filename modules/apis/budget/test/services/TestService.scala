@@ -60,18 +60,21 @@ object TestService extends DatabaseAccessor {
   def createTransactionType(
     name: String = "Rent",
     parentGuid: Option[UUID] = None,
+    ownership: TransactionTypeOwnership = TransactionTypeOwnership.User,
     accessToken: AccessToken = accessToken
   ): TransactionType = await {
-    transactionTypesService.createTransactionType(name, parentGuid, accessToken)
+    transactionTypesService.createTransactionType(name, parentGuid, ownership, accessToken)
   }.toSuccess.value
 
   def getSystemTransactionType(name: String): TransactionType = await {
-    transactionTypesService.findTransactionTypes(names = Some(Seq(name)))
+    transactionTypesService.findTransactionTypes(
+      names = Some(Seq(name)), ownerships = Some(Seq(TransactionTypeOwnership.System))
+    )
   }.toSuccess.value.items.head
 
   def deleteTransactionTypes() {
     deleteTransactions()
-    val query = TransactionTypes.filter { r => r.id === r.id }
+    val query = TransactionTypes.filterNot { _.ownershipKey === TransactionTypeOwnership.System.key }
     await { database.run(query.delete) }
   }
 

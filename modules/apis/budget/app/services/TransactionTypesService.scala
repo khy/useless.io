@@ -9,7 +9,7 @@ import io.useless.accesstoken.AccessToken
 import io.useless.pagination._
 import io.useless.validation._
 
-import models.budget.TransactionType
+import models.budget.{TransactionType, TransactionTypeOwnership}
 import db.budget._
 import db.budget.util.DatabaseAccessor
 import services.budget.util.{UsersHelper, ResourceUnexpectedlyNotFound}
@@ -44,6 +44,7 @@ class TransactionTypesService(
           parentGuid = transactionTypes.find { transactionType =>
             record.parentId.map(_ == transactionType.id).getOrElse(false)
           }.map(_.guid),
+          ownership = TransactionTypeOwnership(record.ownershipKey),
           createdBy = users.find(_.guid == record.createdByAccount).getOrElse(UsersHelper.AnonUser),
           createdAt = new DateTime(record.createdAt)
         )
@@ -54,6 +55,7 @@ class TransactionTypesService(
   def findTransactionTypes(
     ids: Option[Seq[Long]] = None,
     names: Option[Seq[String]] = None,
+    ownerships: Option[Seq[TransactionTypeOwnership]] = None,
     createdByAccounts: Option[Seq[UUID]] = None,
     rawPaginationParams: RawPaginationParams = RawPaginationParams()
   )(implicit ec: ExecutionContext): Future[Validation[PaginatedResult[TransactionType]]] = {
@@ -70,6 +72,10 @@ class TransactionTypesService(
         query = query.filter { _.name inSet names }
       }
 
+      ownerships.foreach { ownerships =>
+        query = query.filter { _.ownershipKey inSet ownerships.map(_.key)}
+      }
+
       database.run(query.result).flatMap { records =>
         records2models(records).map { transactionTypes =>
           PaginatedResult.build(transactionTypes, paginationParams, None)
@@ -81,6 +87,7 @@ class TransactionTypesService(
   def createTransactionType(
     name: String,
     parentGuid: Option[UUID],
+    ownership: TransactionTypeOwnership,
     accessToken: AccessToken
   )(implicit ec: ExecutionContext): Future[Validation[TransactionType]] = {
     val futValOptParentId = parentGuid.map { parentGuid =>
@@ -99,10 +106,10 @@ class TransactionTypesService(
     futValOptParentId.flatMap { valOptParentId =>
       ValidationUtil.future(valOptParentId) { case (optParentId) =>
         val transactionTypes = TransactionTypes.map { r =>
-          (r.guid, r.parentId, r.name, r.createdByAccount, r.createdByAccessToken)
+          (r.guid, r.name, r.parentId, r.ownershipKey, r.createdByAccount, r.createdByAccessToken)
         }.returning(TransactionTypes.map(_.id))
 
-        val insert = transactionTypes += ((UUID.randomUUID, optParentId, name, accessToken.resourceOwner.guid, accessToken.guid))
+        val insert = transactionTypes += ((UUID.randomUUID, name, optParentId, ownership.key, accessToken.resourceOwner.guid, accessToken.guid))
 
         database.run(insert).flatMap { id =>
           findTransactionTypes(ids = Some(Seq(id))).map { result =>

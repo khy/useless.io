@@ -6,8 +6,9 @@ import io.useless.account.User
 
 case class TransactionType(
   guid: UUID,
-  parentGuid: Option[UUID],
   name: String,
+  parentGuid: Option[UUID],
+  ownership: TransactionTypeOwnership,
   createdBy: User,
   createdAt: DateTime
 )

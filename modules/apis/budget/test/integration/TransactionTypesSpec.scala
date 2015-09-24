@@ -7,7 +7,7 @@ import play.api.test._
 import play.api.test.Helpers._
 import play.api.libs.json._
 
-import models.budget.TransactionType
+import models.budget.{TransactionType, TransactionTypeOwnership}
 import models.budget.JsonImplicits._
 import services.budget.TestService
 import test.budget.integration.util.IntegrationHelper
@@ -27,11 +27,15 @@ class TransactionTypesSpec
 
     "return 200 OK with system transaction types, if so specified" in {
       val expense = TestService.getSystemTransactionType("Expense")
-      TestService.createTransactionType("Rent", Some(expense.guid))
+      TestService.createTransactionType(
+        name = "Rent",
+        parentGuid = Some(expense.guid),
+        ownership = TransactionTypeOwnership.User
+      )
 
       val response = await {
         authenticatedRequest("/transactionTypes").
-          withQueryString("system" -> "true").get
+          withQueryString("ownership" -> TransactionTypeOwnership.System.key).get
       }
       response.status mustBe OK
       val transactionTypeNames = response.json.as[Seq[TransactionType]].map(_.name)

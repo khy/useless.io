@@ -12,6 +12,7 @@ import io.useless.play.pagination.PaginationController
 
 import controllers.budget.auth.Auth
 import services.budget.TransactionTypesService
+import models.budget.TransactionTypeOwnership
 import models.budget.JsonImplicits._
 
 object TransactionTypesController extends Controller with PaginationController {
@@ -21,6 +22,9 @@ object TransactionTypesController extends Controller with PaginationController {
   def index = Auth.async { implicit request =>
     withRawPaginationParams { rawPaginationParams =>
       transactionTypesService.findTransactionTypes(
+        ownerships = request.queryString.get("ownership").map { ownerships =>
+          ownerships.map(TransactionTypeOwnership(_))
+        },
         createdByAccounts = Some(Seq(request.accessToken.resourceOwner.guid)),
         rawPaginationParams = rawPaginationParams
       ).map { result =>
@@ -42,8 +46,9 @@ object TransactionTypesController extends Controller with PaginationController {
     request.body.validate[CreateData].fold(
       error => Future.successful(Conflict(error.toString)),
       data => transactionTypesService.createTransactionType(
-        name = data.name,
         parentGuid = Some(data.parentGuid),
+        name = data.name,
+        ownership = TransactionTypeOwnership.User,
         accessToken = request.accessToken
       ).map { result =>
         result.fold(
