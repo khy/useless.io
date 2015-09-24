@@ -25,22 +25,37 @@ class TransactionTypesSpec
       response.status mustBe UNAUTHORIZED
     }
 
-    "return 200 OK with system transaction types, if so specified" in {
+    "return 200 OK with transaction types that the requestor owns, along with system transaction types" in {
+      TestService.deleteTransactionTypes()
       val expense = TestService.getSystemTransactionType("Expense")
+      val income = TestService.getSystemTransactionType("Income")
+
       TestService.createTransactionType(
         name = "Rent",
         parentGuid = Some(expense.guid),
-        ownership = TransactionTypeOwnership.User
+        ownership = TransactionTypeOwnership.User,
+        accessToken = TestService.otherAccessToken
       )
 
-      val response = await {
-        authenticatedRequest("/transactionTypes").
-          withQueryString("ownership" -> TransactionTypeOwnership.System.key).get
-      }
+      TestService.createTransactionType(
+        name = "Salary",
+        parentGuid = Some(income.guid),
+        ownership = TransactionTypeOwnership.System,
+        accessToken = TestService.otherAccessToken
+      )
+
+      TestService.createTransactionType(
+        name = "Dominos",
+        parentGuid = Some(expense.guid),
+        ownership = TransactionTypeOwnership.User,
+        accessToken = TestService.accessToken
+      )
+
+      val response = await { authenticatedRequest("/transactionTypes").get }
       response.status mustBe OK
       val transactionTypeNames = response.json.as[Seq[TransactionType]].map(_.name)
-      transactionTypeNames must contain ("Income")
-      transactionTypeNames must contain ("Expense")
+      transactionTypeNames must contain ("Salary")
+      transactionTypeNames must contain ("Dominos")
       transactionTypeNames must not contain ("Rent")
     }
 

@@ -76,6 +76,13 @@ class TransactionTypesService(
         query = query.filter { _.ownershipKey inSet ownerships.map(_.key)}
       }
 
+      createdByAccounts.foreach { createdByAccounts =>
+        query = query.filter { transactionType =>
+          transactionType.createdByAccount.inSet(createdByAccounts) ||
+          transactionType.ownershipKey === TransactionTypeOwnership.System.key
+        }
+      }
+
       database.run(query.result).flatMap { records =>
         records2models(records).map { transactionTypes =>
           PaginatedResult.build(transactionTypes, paginationParams, None)
