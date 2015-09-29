@@ -10,7 +10,7 @@ import io.useless.accesstoken.AccessToken
 import io.useless.pagination._
 import io.useless.validation._
 
-import models.budget.Transaction
+import models.budget._
 import db.budget._
 import db.budget.util.DatabaseAccessor
 import services.budget.util.{UsersHelper, ResourceUnexpectedlyNotFound}
@@ -26,21 +26,29 @@ class TransactionsService(
 ) extends DatabaseAccessor {
 
   def records2models(records: Seq[TransactionRecord])(implicit ec: ExecutionContext): Future[Seq[Transaction]] = {
+    val transactionConfirmationsQuery = TransactionConfirmations.filter { _.transactionId inSet records.map(_.id) }
+    val futTransactionConfirmations = database.run(transactionConfirmationsQuery.result)
+
+    val futTCUserGuids = futTransactionConfirmations.map { transactionConfirmations =>
+      transactionConfirmations.map(_.createdByAccount)
+    }
+
     val userGuids = records.map(_.createdByAccount)
-    val futUsers = usersHelper.getUsers(userGuids)
+    val futUsers = futTCUserGuids.flatMap { tcUserGuids =>
+      usersHelper.getUsers(userGuids ++ tcUserGuids)
+    }
 
     val transactionTypesQuery = TransactionTypes.filter { _.id inSet records.map(_.transactionTypeId) }
     val futTransactionTypes = database.run(transactionTypesQuery.result)
 
-    val accountQuery = Accounts.filter { account =>
-      account.id inSet records.map(_.accountId)
-    }
+    val accountQuery = Accounts.filter { _.id inSet records.map(_.accountId) }
     val futAccounts = database.run(accountQuery.result)
 
     for {
       users <- futUsers
       transactionTypes <- futTransactionTypes
       accounts <- futAccounts
+      transactionConfirmations <- futTransactionConfirmations
     } yield {
       records.map { record =>
         Transaction(
@@ -53,6 +61,13 @@ class TransactionsService(
           },
           amount = record.amount,
           timestamp = new DateTime(record.timestamp),
+          confirmation = transactionConfirmations.find(_.transactionId == record.id).map { confirmationRecord =>
+            TransactionConfirmation(
+              guid = confirmationRecord.guid,
+              createdBy = users.find(_.guid == confirmationRecord.createdByAccount).getOrElse(UsersHelper.AnonUser),
+              createdAt = new DateTime(confirmationRecord.createdAt)
+            )
+          },
           createdBy = users.find(_.guid == record.createdByAccount).getOrElse(UsersHelper.AnonUser),
           createdAt = new DateTime(record.createdAt)
         )
@@ -131,6 +146,40 @@ class TransactionsService(
         }
       }
     }
+  }
+
+  def confirmTransaction(
+    transactionGuid: UUID,
+    accessToken: AccessToken
+  )(implicit ec: ExecutionContext): Future[Validation[Transaction]] = {
+    val transactionQuery = Transactions.filter(_.guid === transactionGuid)
+    val futValTransactionId = database.run(transactionQuery.result).map { transactions =>
+      transactions.headOption.map { transaction =>
+        Validation.success(transaction.id)
+      }.getOrElse {
+        Validation.failure("transactionGuid", "useless.error.unknownGuid", "specified" -> transactionGuid.toString)
+      }
+    }
+
+    futValTransactionId.flatMap { valTransactionId =>
+      ValidationUtil.future(valTransactionId) { transactionId =>
+        val confirmations = TransactionConfirmations.map { r =>
+          (r.guid, r.transactionId, r.createdByAccount, r.createdByAccessToken)
+        }.returning(TransactionConfirmations.map(_.id))
+
+        val insert = confirmations += (UUID.randomUUID, transactionId, accessToken.resourceOwner.guid, accessToken.guid)
+
+        database.run(insert).flatMap { _ =>
+          findTransactions(ids = Some(Seq(transactionId))).map { result =>
+            result.map(_.items.headOption) match {
+              case Validation.Success(Some(transaction)) => transaction
+              case _ => throw new ResourceUnexpectedlyNotFound("Transaction", transactionId)
+            }
+          }
+        }
+      }
+    }
+
   }
 
 }

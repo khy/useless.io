@@ -10,6 +10,7 @@ case class Transaction(
   accountGuid: UUID,
   amount: BigDecimal,
   timestamp: DateTime,
+  confirmation: Option[TransactionConfirmation],
   createdBy: User,
   createdAt: DateTime
 )

@@ -83,4 +83,23 @@ class TransactionsSpec
 
   }
 
+  "POST /transactions/:guid/confirmations" must {
+
+    lazy val transaction = TestService.createTransaction()
+
+    "return a 401 Unauthorized if the request isn't authenticated" in {
+      val response = await { unauthentictedRequest(s"/transactions/${transaction.guid}/confirmations").post("") }
+      response.status mustBe UNAUTHORIZED
+    }
+
+    "return a new Transaction if authorized" in {
+      val response = await { authenticatedRequest(s"/transactions/${transaction.guid}/confirmations").post("") }
+      response.status mustBe CREATED
+
+      val _transaction = response.json.as[Transaction]
+      _transaction.confirmation mustBe 'defined
+    }
+
+  }
+
 }
