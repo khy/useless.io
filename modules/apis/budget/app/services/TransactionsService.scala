@@ -1,6 +1,6 @@
 package services.budget
 
-import java.util.UUID
+import java.util.{Date, UUID}
 import java.sql.Timestamp
 import scala.concurrent.{Future, ExecutionContext}
 import play.api.Application
@@ -13,7 +13,7 @@ import io.useless.validation._
 import models.budget._
 import db.budget._
 import db.budget.util.DatabaseAccessor
-import services.budget.util.{UsersHelper, ResourceUnexpectedlyNotFound}
+import services.budget.util._
 
 object TransactionsService {
 
@@ -44,11 +44,15 @@ class TransactionsService(
     val accountQuery = Accounts.filter { _.id inSet records.map(_.accountId) }
     val futAccounts = database.run(accountQuery.result)
 
+    val adjustedTransactionsQuery = Transactions.filter { _.id inSet records.flatMap(_.adjustedTransactionId.toSeq) }
+    val futAdjustedTransactions = database.run(adjustedTransactionsQuery.result)
+
     for {
       users <- futUsers
       transactionTypes <- futTransactionTypes
       accounts <- futAccounts
       transactionConfirmations <- futTransactionConfirmations
+      adjustedTransactions <- futAdjustedTransactions
     } yield {
       records.map { record =>
         Transaction(
@@ -68,6 +72,11 @@ class TransactionsService(
               createdAt = new DateTime(confirmationRecord.createdAt)
             )
           },
+          adjustedTransactionGuid = record.adjustedTransactionId.map { adjustedTransactionId =>
+            adjustedTransactions.find(_.id == adjustedTransactionId).map(_.guid).getOrElse {
+              throw new ResourceUnexpectedlyNotFound("Transaction", adjustedTransactionId)
+            }
+          },
           createdBy = users.find(_.guid == record.createdByAccount).getOrElse(UsersHelper.AnonUser),
           createdAt = new DateTime(record.createdAt)
         )
@@ -77,6 +86,7 @@ class TransactionsService(
 
   def findTransactions(
     ids: Option[Seq[Long]] = None,
+    guids: Option[Seq[UUID]] = None,
     createdByAccounts: Option[Seq[UUID]] = None,
     rawPaginationParams: RawPaginationParams = RawPaginationParams()
   )(implicit ec: ExecutionContext): Future[Validation[PaginatedResult[Transaction]]] = {
@@ -87,6 +97,10 @@ class TransactionsService(
 
       ids.foreach { ids =>
         query = query.filter { _.id inSet ids }
+      }
+
+      guids.foreach { guids =>
+        query = query.filter { _.guid inSet guids }
       }
 
       createdByAccounts.foreach { createdByAccounts =>
@@ -106,6 +120,7 @@ class TransactionsService(
     accountGuid: UUID,
     amount: BigDecimal,
     timestamp: DateTime,
+    adjustedTransactionGuid: Option[UUID],
     accessToken: AccessToken
   )(implicit ec: ExecutionContext): Future[Validation[Transaction]] = {
     val transactionTypesQuery = TransactionTypes.filter { _.guid === transactionTypeGuid }
@@ -118,7 +133,7 @@ class TransactionsService(
     }
 
     val accountQuery = Accounts.filter { _.guid === accountGuid }
-    val futValAccountId =database.run(accountQuery.result).map { accounts =>
+    val futValAccountId = database.run(accountQuery.result).map { accounts =>
       accounts.headOption.map { account =>
         Validation.success(account.id)
       }.getOrElse {
@@ -126,24 +141,81 @@ class TransactionsService(
       }
     }
 
+    val futValOptAdjustedTransactionId = adjustedTransactionGuid.map { adjustedTransactionGuid =>
+      val adjustedTransactionsQuery = Transactions.filter { _.guid === adjustedTransactionGuid }
+      database.run(adjustedTransactionsQuery.result).map { transactions =>
+        transactions.headOption.map { transaction =>
+          Validation.success(Some(transaction.id))
+        }.getOrElse {
+          Validation.failure("adjustedTransactionGuid", "useless.error.unknownGuid", "specified" -> adjustedTransactionGuid.toString)
+        }
+      }
+    }.getOrElse {
+      Future.successful(Validation.success(None))
+    }
+
     futValTransactionTypeId.flatMap { valTransactionTypeId =>
       futValAccountId.flatMap { valAccountId =>
-        ValidationUtil.future(valTransactionTypeId ++ valAccountId) { case (transactionTypeId, accountId) =>
-          val transactions = Transactions.map { r =>
-            (r.guid, r.transactionTypeId, r.accountId, r.amount, r.timestamp, r.createdByAccount, r.createdByAccessToken)
-          }.returning(Transactions.map(_.id))
+        futValOptAdjustedTransactionId.flatMap { valOptAdjustedTransactionId =>
+          ValidationUtil.future(valTransactionTypeId ++ valAccountId ++ valOptAdjustedTransactionId) { case ((transactionTypeId, accountId), optAdjustedTransactionId) =>
+            val transactions = Transactions.map { r =>
+              (r.guid, r.transactionTypeId, r.accountId, r.amount, r.timestamp, r.adjustedTransactionId, r.createdByAccount, r.createdByAccessToken)
+            }.returning(Transactions.map(_.id))
 
-          val insert = transactions += (UUID.randomUUID, transactionTypeId, accountId, amount, new Timestamp(timestamp.getMillis), accessToken.resourceOwner.guid, accessToken.guid)
+            val insert = transactions += (
+              UUID.randomUUID,
+              transactionTypeId,
+              accountId,
+              amount,
+              new Timestamp(timestamp.getMillis),
+              optAdjustedTransactionId,
+              accessToken.resourceOwner.guid,
+              accessToken.guid
+            )
 
-          database.run(insert).flatMap { id =>
-            findTransactions(ids = Some(Seq(id))).map { result =>
-              result.map(_.items.headOption) match {
-                case Validation.Success(Some(transaction)) => transaction
-                case _ => throw new ResourceUnexpectedlyNotFound("Transaction", id)
+            database.run(insert).flatMap { id =>
+              findTransactions(ids = Some(Seq(id))).map { result =>
+                result.map(_.items.headOption) match {
+                  case Validation.Success(Some(transaction)) => transaction
+                  case _ => throw new ResourceUnexpectedlyNotFound("Transaction", id)
+                }
               }
             }
           }
         }
+      }
+    }
+  }
+
+  def adjustTransaction(
+    transactionGuid: UUID,
+    trasanctionTypeGuid: Option[UUID],
+    accountGuid: Option[UUID],
+    amount: Option[BigDecimal],
+    timestamp: Option[DateTime],
+    accessToken: AccessToken
+  )(implicit ec: ExecutionContext): Future[Validation[Transaction]] = {
+    findTransactions(guids = Some(Seq(transactionGuid))).flatMap { result =>
+      result.map(_.items.headOption) match {
+        case Validation.Success(Some(transaction)) => createTransaction(
+          transactionTypeGuid = trasanctionTypeGuid.getOrElse(transaction.transactionTypeGuid),
+          accountGuid = accountGuid.getOrElse(transaction.accountGuid),
+          amount = amount.getOrElse(transaction.amount),
+          timestamp = timestamp.getOrElse(transaction.timestamp),
+          adjustedTransactionGuid = Some(transaction.guid),
+          accessToken = accessToken
+        ).flatMap { result =>
+          result.fold(
+            errors => Future.successful(Validation.failure(errors)),
+            transaction => deleteTransaction(transactionGuid, accessToken).map { _ =>
+              Validation.success(transaction)
+            }
+          )
+        }
+        case Validation.Success(None) => Future.successful {
+          Validation.failure("transactionGuid", "useless.error.unknownGuid", "specified" -> transactionGuid.toString)
+        }
+        case f: Validation.Failure[_] => throw new UnexpectedValidationFailure(f)
       }
     }
   }
@@ -179,7 +251,24 @@ class TransactionsService(
         }
       }
     }
+  }
 
+  def deleteTransaction(
+    transactionGuid: UUID,
+    accessToken: AccessToken
+  )(implicit ec: ExecutionContext): Future[Boolean] = {
+    val now = new Timestamp((new Date).getTime)
+
+    val query = Transactions.filter { transaction =>
+      transaction.guid === transactionGuid &&
+      transaction.deletedAt.isEmpty
+    }.map { transaction =>
+      (transaction.deletedAt, transaction.deletedByAccount, transaction.deletedByAccessToken)
+    }.update((Some(now), Some(accessToken.resourceOwner.guid), Some(accessToken.guid)))
+
+    database.run(query).map { result =>
+      if (result > 0) true else false
+    }
   }
 
 }

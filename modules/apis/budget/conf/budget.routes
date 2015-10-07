@@ -8,4 +8,5 @@ POST    /transactionTypes   controllers.budget.TransactionTypesController.create
 
 GET     /transactions   controllers.budget.TransactionsController.index
 POST    /transactions   controllers.budget.TransactionsController.create
-POST    /transactions/:guid/confirmations   controllers.budget.TransactionsController.createConfirmation(guid: java.util.UUID)
+POST    /transactions/:guid/adjustments   controllers.budget.TransactionsController.adjust(guid: java.util.UUID)
+POST    /transactions/:guid/confirmations   controllers.budget.TransactionsController.confirm(guid: java.util.UUID)

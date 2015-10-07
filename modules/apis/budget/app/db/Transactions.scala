@@ -11,6 +11,7 @@ case class TransactionRecord(
   accountId: Long,
   amount: BigDecimal,
   timestamp: Timestamp,
+  adjustedTransactionId: Option[Long],
   createdAt: Timestamp,
   createdByAccount: UUID,
   createdByAccessToken: UUID,
@@ -28,6 +29,7 @@ class TransactionsTable(tag: Tag)
   def accountId = column[Long]("account_id")
   def amount = column[BigDecimal]("amount")
   def timestamp = column[Timestamp]("timestamp")
+  def adjustedTransactionId = column[Option[Long]]("adjusted_transaction_id")
   def createdAt = column[Timestamp]("created_at")
   def createdByAccount = column[UUID]("created_by_account")
   def createdByAccessToken = column[UUID]("created_by_access_token")
@@ -35,7 +37,7 @@ class TransactionsTable(tag: Tag)
   def deletedByAccount = column[Option[UUID]]("deleted_by_account")
   def deletedByAccessToken = column[Option[UUID]]("deleted_by_access_token")
 
-  def * = (id, guid, transactionTypeId, accountId, amount, timestamp, createdAt, createdByAccount, createdByAccessToken, deletedAt, deletedByAccount, deletedByAccessToken) <> (TransactionRecord.tupled, TransactionRecord.unapply)
+  def * = (id, guid, transactionTypeId, accountId, amount, timestamp, adjustedTransactionId, createdAt, createdByAccount, createdByAccessToken, deletedAt, deletedByAccount, deletedByAccessToken) <> (TransactionRecord.tupled, TransactionRecord.unapply)
 }
 
 object Transactions extends TableQuery(new TransactionsTable(_))

@@ -11,6 +11,7 @@ case class Transaction(
   amount: BigDecimal,
   timestamp: DateTime,
   confirmation: Option[TransactionConfirmation],
+  adjustedTransactionGuid: Option[UUID],
   createdBy: User,
   createdAt: DateTime
 )

@@ -50,6 +50,7 @@ object TransactionsController extends Controller with PaginationController {
         accountGuid = data.accountGuid,
         amount = data.amount,
         timestamp = data.timestamp,
+        adjustedTransactionGuid = None,
         accessToken = request.accessToken
       ).map { result =>
         result.fold(
@@ -60,14 +61,41 @@ object TransactionsController extends Controller with PaginationController {
     )
   }
 
-  def createConfirmation(transactionGuid: UUID) = Auth.async { request =>
+  case class AdjustData(
+    transactionTypeGuid: Option[UUID],
+    accountGuid: Option[UUID],
+    amount: Option[BigDecimal],
+    timestamp: Option[DateTime]
+  )
+  private implicit val adr = Json.reads[AdjustData]
+
+  def adjust(transactionGuid: UUID) = Auth.async(parse.json) { request =>
+    request.body.validate[AdjustData].fold(
+      error => Future.successful(Conflict(error.toString)),
+      data => transactionsService.adjustTransaction(
+        transactionGuid = transactionGuid,
+        trasanctionTypeGuid = data.transactionTypeGuid,
+        accountGuid = data.accountGuid,
+        amount = data.amount,
+        timestamp = data.timestamp,
+        accessToken = request.accessToken
+      ).map { result =>
+        result.fold(
+          errors => Conflict(Json.toJson(errors)),
+          adjustedTransaction => Created(Json.toJson(adjustedTransaction))
+        )
+      }
+    )
+  }
+
+  def confirm(transactionGuid: UUID) = Auth.async { request =>
     transactionsService.confirmTransaction(
       transactionGuid = transactionGuid,
       accessToken = request.accessToken
     ).map { result =>
       result.fold(
         errors => Conflict(Json.toJson(errors)),
-        confirmation => Created(Json.toJson(confirmation))
+        confirmedTransaction => Created(Json.toJson(confirmedTransaction))
       )
     }
   }

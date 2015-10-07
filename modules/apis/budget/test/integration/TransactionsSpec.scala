@@ -102,4 +102,32 @@ class TransactionsSpec
 
   }
 
+  "POST /transactions/:guid/adjustments" must {
+
+    "return a 401 Unauthorized if the request isn't authenticated" in {
+      val transaction = TestService.createTransaction()
+      val json = Json.obj("amount" -> 200.0)
+
+      val response = await { unauthentictedRequest(s"/transactions/${transaction.guid}/adjustments").post(json) }
+      response.status mustBe UNAUTHORIZED
+    }
+
+    "return a new Transaction with the specified changes" in {
+      val transaction = TestService.createTransaction(amount = 100.00)
+      val json = Json.obj("amount" -> 95.0)
+
+      val response = await { authenticatedRequest(s"/transactions/${transaction.guid}/adjustments").post(json) }
+      response.status mustBe CREATED
+
+      val _transaction = response.json.as[Transaction]
+      _transaction.guid must not be transaction.guid
+      _transaction.transactionTypeGuid mustBe transaction.transactionTypeGuid
+      _transaction.accountGuid mustBe transaction.accountGuid
+      _transaction.amount mustBe 95.0
+      _transaction.timestamp mustBe transaction.timestamp.toDateTime(DateTimeZone.UTC)
+      _transaction.adjustedTransactionGuid mustBe Some(transaction.guid)
+    }
+
+  }
+
 }
