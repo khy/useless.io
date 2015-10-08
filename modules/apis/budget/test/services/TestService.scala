@@ -74,10 +74,16 @@ object TestService extends DatabaseAccessor {
 
   def deleteTransactionTypes() {
     deleteTransactions()
+    deletePlannedTransactions()
     val query = TransactionTypes.filterNot { transactionType =>
       transactionType.ownershipKey === TransactionTypeOwnership.System.key &&
       transactionType.createdByAccount === UUID.fromString("2a436fb0-7336-4f19-bde7-61570c05640c")
     }
+    await { database.run(query.delete) }
+  }
+
+  def deletePlannedTransactions() {
+    val query = PlannedTransactions.filter { a => a.id === a.id }
     await { database.run(query.delete) }
   }
 

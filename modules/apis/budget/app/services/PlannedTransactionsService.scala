@@ -1,0 +1,145 @@
+package services.budget
+
+import java.util.{Date, UUID}
+import java.sql.Timestamp
+import scala.concurrent.{Future, ExecutionContext}
+import play.api.Application
+import slick.driver.PostgresDriver.api._
+import org.joda.time.DateTime
+import io.useless.accesstoken.AccessToken
+import io.useless.pagination._
+import io.useless.validation._
+
+import models.budget._
+import db.budget._
+import db.budget.util.DatabaseAccessor
+import services.budget.util._
+
+object PlannedTransactionsService {
+
+  def default()(implicit app: Application) = new PlannedTransactionsService(UsersHelper.default())
+
+}
+
+class PlannedTransactionsService(
+  usersHelper: UsersHelper
+) extends DatabaseAccessor {
+
+  def records2models(
+    records: Seq[PlannedTransactionRecord]
+  )(implicit ec: ExecutionContext): Future[Seq[PlannedTransaction]] = {
+    val userGuids = records.map(_.createdByAccount)
+    val futUsers = usersHelper.getUsers(userGuids)
+
+    val transactionTypesQuery = TransactionTypes.filter { _.id inSet records.map(_.transactionTypeId) }
+    val futTransactionTypes = database.run(transactionTypesQuery.result)
+
+    val accountQuery = Accounts.filter { _.id inSet records.map(_.accountId) }
+    val futAccounts = database.run(accountQuery.result)
+
+    for {
+      users <- futUsers
+      transactionTypes <- futTransactionTypes
+      accounts <- futAccounts
+    } yield {
+      records.map { record =>
+        PlannedTransaction(
+          guid = record.guid,
+          transactionTypeGuid = transactionTypes.find(_.id == record.transactionTypeId).map(_.guid).getOrElse {
+            throw new ResourceUnexpectedlyNotFound("TransactionType", record.transactionTypeId)
+          },
+          accountGuid = accounts.find(_.id == record.accountId).map(_.guid).getOrElse {
+            throw new ResourceUnexpectedlyNotFound("Account", record.accountId)
+          },
+          minAmount = record.minAmount,
+          maxAmount = record.maxAmount,
+          minTimestamp = record.minTimestamp.map { ts => new DateTime(ts) },
+          maxTimestamp = record.maxTimestamp.map { ts => new DateTime(ts) },
+          createdBy = users.find(_.guid == record.createdByAccount).getOrElse(UsersHelper.AnonUser),
+          createdAt = new DateTime(record.createdAt)
+        )
+      }
+    }
+  }
+
+  def findPlannedTransactions(
+    ids: Option[Seq[Long]] = None,
+    rawPaginationParams: RawPaginationParams = RawPaginationParams()
+  )(implicit ec: ExecutionContext): Future[Validation[PaginatedResult[PlannedTransaction]]] = {
+    val valPaginationParams = PaginationParams.build(rawPaginationParams)
+
+    ValidationUtil.future(valPaginationParams) { paginationParams =>
+      var query = PlannedTransactions.filter { r => r.id === r.id }
+
+      ids.foreach { ids =>
+        query = query.filter { _.id inSet ids }
+      }
+
+      database.run(query.result).flatMap { records =>
+        records2models(records).map { plannedTransactions =>
+          PaginatedResult.build(plannedTransactions, paginationParams, None)
+        }
+      }
+    }
+  }
+
+  def createPlannedTransaction(
+    transactionTypeGuid: UUID,
+    accountGuid: UUID,
+    minAmount: Option[BigDecimal],
+    maxAmount: Option[BigDecimal],
+    minTimestamp: Option[DateTime],
+    maxTimestamp: Option[DateTime],
+    accessToken: AccessToken
+  )(implicit ec: ExecutionContext): Future[Validation[PlannedTransaction]] = {
+    val transactionTypesQuery = TransactionTypes.filter { _.guid === transactionTypeGuid }
+    val futValTransactionTypeId = database.run(transactionTypesQuery.result).map { transactionTypes =>
+      transactionTypes.headOption.map { transactionType =>
+        Validation.success(transactionType.id)
+      }.getOrElse {
+        Validation.failure("transactionTypeGuid", "useless.error.unknownGuid", "specified" -> transactionTypeGuid.toString)
+      }
+    }
+
+    val accountQuery = Accounts.filter { _.guid === accountGuid }
+    val futValAccountId = database.run(accountQuery.result).map { accounts =>
+      accounts.headOption.map { account =>
+        Validation.success(account.id)
+      }.getOrElse {
+        Validation.failure("accountGuid", "useless.error.unknownGuid", "specified" -> accountGuid.toString)
+      }
+    }
+
+    futValTransactionTypeId.flatMap { valTransactionTypeId =>
+      futValAccountId.flatMap { valAccountId =>
+        ValidationUtil.future(valTransactionTypeId ++ valAccountId) { case (transactionTypeId, accountId) =>
+          val plannedTransactions = PlannedTransactions.map { r =>
+            (r.guid, r.transactionTypeId, r.accountId, r.minAmount, r.maxAmount, r.minTimestamp, r.maxTimestamp, r.createdByAccount, r.createdByAccessToken)
+          }.returning(PlannedTransactions.map(_.id))
+
+          val insert = plannedTransactions += (
+            UUID.randomUUID,
+            transactionTypeId,
+            accountId,
+            minAmount,
+            maxAmount,
+            minTimestamp.map { ts => new Timestamp(ts.getMillis) },
+            maxTimestamp.map { ts => new Timestamp(ts.getMillis) },
+            accessToken.resourceOwner.guid,
+            accessToken.guid
+          )
+
+          database.run(insert).flatMap { id =>
+            findPlannedTransactions(ids = Some(Seq(id))).map { result =>
+              result.map(_.items.headOption) match {
+                case Validation.Success(Some(plannedTransaction)) => plannedTransaction
+                case _ => throw new ResourceUnexpectedlyNotFound("PlannedTransaction", id)
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+}

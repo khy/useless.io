@@ -35,6 +35,7 @@ object JsonImplicits {
   implicit val accountFormat = Json.format[Account]
   implicit val transactionTypeFormat = Json.format[TransactionType]
   implicit val confirmationFormat = Json.format[TransactionConfirmation]
+  implicit val plannedTransactionFormat = Json.format[PlannedTransaction]
   implicit val transactionFormat = Json.format[Transaction]
 
 }
