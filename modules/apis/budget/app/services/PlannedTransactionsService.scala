@@ -64,6 +64,7 @@ class PlannedTransactionsService(
 
   def findPlannedTransactions(
     ids: Option[Seq[Long]] = None,
+    createdByAccounts: Option[Seq[UUID]] = None,
     rawPaginationParams: RawPaginationParams = RawPaginationParams()
   )(implicit ec: ExecutionContext): Future[Validation[PaginatedResult[PlannedTransaction]]] = {
     val valPaginationParams = PaginationParams.build(rawPaginationParams)
@@ -73,6 +74,10 @@ class PlannedTransactionsService(
 
       ids.foreach { ids =>
         query = query.filter { _.id inSet ids }
+      }
+
+      createdByAccounts.foreach { createdByAccounts =>
+        query = query.filter { _.createdByAccount inSet createdByAccounts }
       }
 
       database.run(query.result).flatMap { records =>

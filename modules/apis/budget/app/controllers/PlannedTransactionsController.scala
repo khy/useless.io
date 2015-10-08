@@ -20,6 +20,20 @@ object PlannedTransactionsController extends Controller with PaginationControlle
 
   val plannedTransactionsService = PlannedTransactionsService.default()
 
+  def index = Auth.async { implicit request =>
+    withRawPaginationParams { rawPaginationParams =>
+      plannedTransactionsService.findPlannedTransactions(
+        createdByAccounts = Some(Seq(request.accessToken.resourceOwner.guid)),
+        rawPaginationParams = rawPaginationParams
+      ).map { result =>
+        result.fold(
+          errors => Conflict(Json.toJson(errors)),
+          plannedTransactions => paginatedResult(routes.PlannedTransactionsController.index, plannedTransactions)
+        )
+      }
+    }
+  }
+
   case class CreateData(
     transactionTypeGuid: UUID,
     accountGuid: UUID,

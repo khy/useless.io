@@ -6,6 +6,7 @@ GET     /accountTypes   controllers.budget.AccountTypesController.index
 GET     /transactionTypes   controllers.budget.TransactionTypesController.index
 POST    /transactionTypes   controllers.budget.TransactionTypesController.create
 
+GET     /plannedTransactions  controllers.budget.PlannedTransactionsController.index
 POST    /plannedTransactions  controllers.budget.PlannedTransactionsController.create
 
 GET     /transactions   controllers.budget.TransactionsController.index

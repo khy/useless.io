@@ -20,6 +20,32 @@ class PlannedTransactionsSpec
   with IntegrationHelper
 {
 
+  "GET /plannedTransactions" must {
+
+    "return a 401 Unauthorized if the request isn't authenticated" in {
+      val response = await { unauthentictedRequest("/plannedTransactions").get }
+      response.status mustBe UNAUTHORIZED
+    }
+
+    "return only PlannedTransactions belonging to the authenticated user" in {
+      TestService.deletePlannedTransactions()
+
+      val includedAccount = TestService.createPlannedTransaction(
+        accessToken = TestService.accessToken
+      )
+
+      val excludedAccount = TestService.createPlannedTransaction(
+        accessToken = TestService.otherAccessToken
+      )
+
+      val response = await { authenticatedRequest("/plannedTransactions").get }
+      val plannedTransactions = response.json.as[Seq[PlannedTransaction]]
+      plannedTransactions.length mustBe 1
+      plannedTransactions.head.guid mustBe includedAccount.guid
+    }
+
+  }
+
   "POST /plannedTransactions" must {
 
     lazy val transactionType = TestService.createTransactionType()

@@ -18,6 +18,7 @@ object TestService extends DatabaseAccessor {
 
   lazy val accountsService = AccountsService.default()
   lazy val transactionTypesService = TransactionTypesService.default()
+  lazy val plannedTransactionsService = PlannedTransactionsService.default()
   lazy val transactionsService = TransactionsService.default()
 
   val accessToken = AccessToken(
@@ -81,6 +82,18 @@ object TestService extends DatabaseAccessor {
     }
     await { database.run(query.delete) }
   }
+
+  def createPlannedTransaction(
+    transactionTypeGuid: UUID = createTransactionType().guid,
+    accountGuid: UUID = createAccount().guid,
+    minAmount: Option[BigDecimal] = Some(100.00),
+    maxAmount: Option[BigDecimal] = Some(200.00),
+    minTimestamp: Option[DateTime] = Some(DateTime.now.plusDays(10)),
+    maxTimestamp: Option[DateTime] = Some(DateTime.now.plusDays(15)),
+    accessToken: AccessToken = accessToken
+  ): PlannedTransaction = await {
+    plannedTransactionsService.createPlannedTransaction(transactionTypeGuid, accountGuid, minAmount, maxAmount, minTimestamp, maxTimestamp, accessToken)
+  }.toSuccess.value
 
   def deletePlannedTransactions() {
     val query = PlannedTransactions.filter { a => a.id === a.id }
