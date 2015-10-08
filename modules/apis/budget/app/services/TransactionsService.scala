@@ -211,39 +211,6 @@ class TransactionsService(
     }
   }
 
-  def confirmTransaction(
-    transactionGuid: UUID,
-    accessToken: AccessToken
-  )(implicit ec: ExecutionContext): Future[Validation[Transaction]] = {
-    val transactionQuery = Transactions.filter(_.guid === transactionGuid)
-    val futValTransactionId = database.run(transactionQuery.result).map { transactions =>
-      transactions.headOption.map { transaction =>
-        Validation.success(transaction.id)
-      }.getOrElse {
-        Validation.failure("transactionGuid", "useless.error.unknownGuid", "specified" -> transactionGuid.toString)
-      }
-    }
-
-    futValTransactionId.flatMap { valTransactionId =>
-      ValidationUtil.future(valTransactionId) { transactionId =>
-        val confirmations = TransactionConfirmations.map { r =>
-          (r.guid, r.transactionId, r.createdByAccount, r.createdByAccessToken)
-        }.returning(TransactionConfirmations.map(_.id))
-
-        val insert = confirmations += (UUID.randomUUID, transactionId, accessToken.resourceOwner.guid, accessToken.guid)
-
-        database.run(insert).flatMap { _ =>
-          findTransactions(ids = Some(Seq(transactionId))).map { result =>
-            result.map(_.items.headOption) match {
-              case Validation.Success(Some(transaction)) => transaction
-              case _ => throw new ResourceUnexpectedlyNotFound("Transaction", transactionId)
-            }
-          }
-        }
-      }
-    }
-  }
-
   def deleteTransaction(
     transactionGuid: UUID,
     accessToken: AccessToken

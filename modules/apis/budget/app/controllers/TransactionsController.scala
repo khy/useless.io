@@ -88,16 +88,4 @@ object TransactionsController extends Controller with PaginationController {
     )
   }
 
-  def confirm(transactionGuid: UUID) = Auth.async { request =>
-    transactionsService.confirmTransaction(
-      transactionGuid = transactionGuid,
-      accessToken = request.accessToken
-    ).map { result =>
-      result.fold(
-        errors => Conflict(Json.toJson(errors)),
-        confirmedTransaction => Created(Json.toJson(confirmedTransaction))
-      )
-    }
-  }
-
 }
