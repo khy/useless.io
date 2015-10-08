@@ -26,17 +26,8 @@ class TransactionsService(
 ) extends DatabaseAccessor {
 
   def records2models(records: Seq[TransactionRecord])(implicit ec: ExecutionContext): Future[Seq[Transaction]] = {
-    val transactionConfirmationsQuery = TransactionConfirmations.filter { _.transactionId inSet records.map(_.id) }
-    val futTransactionConfirmations = database.run(transactionConfirmationsQuery.result)
-
-    val futTCUserGuids = futTransactionConfirmations.map { transactionConfirmations =>
-      transactionConfirmations.map(_.createdByAccount)
-    }
-
     val userGuids = records.map(_.createdByAccount)
-    val futUsers = futTCUserGuids.flatMap { tcUserGuids =>
-      usersHelper.getUsers(userGuids ++ tcUserGuids)
-    }
+    val futUsers = usersHelper.getUsers(userGuids)
 
     val transactionTypesQuery = TransactionTypes.filter { _.id inSet records.map(_.transactionTypeId) }
     val futTransactionTypes = database.run(transactionTypesQuery.result)
@@ -44,15 +35,17 @@ class TransactionsService(
     val accountQuery = Accounts.filter { _.id inSet records.map(_.accountId) }
     val futAccounts = database.run(accountQuery.result)
 
-    val adjustedTransactionsQuery = Transactions.filter { _.id inSet records.flatMap(_.adjustedTransactionId.toSeq) }
-    val futAdjustedTransactions = database.run(adjustedTransactionsQuery.result)
+    val transactionIds = records.flatMap { record =>
+      record.plannedTransactionId.toSeq ++ record.adjustedTransactionId.toSeq
+    }
+    val transactionsQuery = Transactions.filter { _.id inSet transactionIds }
+    val futTransactions = database.run(transactionsQuery.result)
 
     for {
       users <- futUsers
       transactionTypes <- futTransactionTypes
       accounts <- futAccounts
-      transactionConfirmations <- futTransactionConfirmations
-      adjustedTransactions <- futAdjustedTransactions
+      transactions <- futTransactions
     } yield {
       records.map { record =>
         Transaction(
@@ -65,15 +58,13 @@ class TransactionsService(
           },
           amount = record.amount,
           timestamp = new DateTime(record.timestamp),
-          confirmation = transactionConfirmations.find(_.transactionId == record.id).map { confirmationRecord =>
-            TransactionConfirmation(
-              guid = confirmationRecord.guid,
-              createdBy = users.find(_.guid == confirmationRecord.createdByAccount).getOrElse(UsersHelper.AnonUser),
-              createdAt = new DateTime(confirmationRecord.createdAt)
-            )
+          plannedTransactionGuid = record.plannedTransactionId.map { plannedTransactionId =>
+            transactions.find(_.id == plannedTransactionId).map(_.guid).getOrElse {
+              throw new ResourceUnexpectedlyNotFound("Transaction", plannedTransactionId)
+            }
           },
           adjustedTransactionGuid = record.adjustedTransactionId.map { adjustedTransactionId =>
-            adjustedTransactions.find(_.id == adjustedTransactionId).map(_.guid).getOrElse {
+            transactions.find(_.id == adjustedTransactionId).map(_.guid).getOrElse {
               throw new ResourceUnexpectedlyNotFound("Transaction", adjustedTransactionId)
             }
           },
