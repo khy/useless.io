@@ -83,6 +83,41 @@ class TransactionsSpec
 
   }
 
+  "DELETE /transactions" must {
+
+    "return a 401 Unauthorized if the request isn't authenticated" in {
+      val transaction = TestService.createTransaction(accessToken = TestService.accessToken)
+      val response = await { unauthentictedRequest(s"/transactions/${transaction.guid}").delete }
+      response.status mustBe UNAUTHORIZED
+    }
+
+    "return a 409 Conflict if the specified GUID doesn't exist" in {
+      val response = await { authenticatedRequest(s"/transactions/${UUID.randomUUID}").delete }
+      response.status mustBe CONFLICT
+      ((response.json \ "transactionGuid")(0) \ "key").as[String] mustBe "useless.error.unknownGuid"
+    }
+
+    "return a 409 Conflict if the specified GUID doesn't belong to the authenticated account" in {
+      val transaction = TestService.createTransaction(accessToken = TestService.otherAccessToken)
+      val response = await { authenticatedRequest(s"/transactions/${transaction.guid}").delete }
+      response.status mustBe CONFLICT
+      ((response.json \ "transactionGuid")(0) \ "key").as[String] mustBe "useless.error.unauthorized"
+    }
+
+    "return a 204 No Content if the specified GUID exists and belongs to the authenticated account" in {
+      TestService.deleteTransactions()
+      val transaction = TestService.createTransaction(accessToken = TestService.accessToken)
+
+      val deleteResponse = await { authenticatedRequest(s"/transactions/${transaction.guid}").delete }
+      deleteResponse.status mustBe NO_CONTENT
+
+      val indexResponse = await { authenticatedRequest("/transactions").get }
+      val transactions = indexResponse.json.as[Seq[Transaction]]
+      transactions.length mustBe 0
+    }
+
+  }
+
   "POST /transactions/:guid/adjustments" must {
 
     "return a 401 Unauthorized if the request isn't authenticated" in {

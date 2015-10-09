@@ -84,7 +84,7 @@ class TransactionsService(
     val valPaginationParams = PaginationParams.build(rawPaginationParams)
 
     ValidationUtil.future(valPaginationParams) { paginationParams =>
-      var query = Transactions.filter { r => r.id === r.id }
+      var query = Transactions.filter(_.deletedAt.isEmpty)
 
       ids.foreach { ids =>
         query = query.filter { _.id inSet ids }
@@ -214,18 +214,33 @@ class TransactionsService(
   def deleteTransaction(
     transactionGuid: UUID,
     accessToken: AccessToken
-  )(implicit ec: ExecutionContext): Future[Boolean] = {
-    val now = new Timestamp((new Date).getTime)
+  )(implicit ec: ExecutionContext): Future[Validation[Boolean]] = {
+    val query = Transactions.filter { r => r.guid === transactionGuid }
+    database.run(query.result).flatMap { records =>
+      records.headOption.map { record =>
+        if (record.createdByAccount != accessToken.resourceOwner.guid) {
+          Future.successful {
+            Validation.failure("transactionGuid", "useless.error.unauthorized", "specified" -> transactionGuid.toString)
+          }
+        } else {
+          val now = new Timestamp((new Date).getTime)
 
-    val query = Transactions.filter { transaction =>
-      transaction.guid === transactionGuid &&
-      transaction.deletedAt.isEmpty
-    }.map { transaction =>
-      (transaction.deletedAt, transaction.deletedByAccount, transaction.deletedByAccessToken)
-    }.update((Some(now), Some(accessToken.resourceOwner.guid), Some(accessToken.guid)))
+          val query = Transactions.filter { transaction =>
+            transaction.id === record.id &&
+            transaction.deletedAt.isEmpty
+          }.map { transaction =>
+            (transaction.deletedAt, transaction.deletedByAccount, transaction.deletedByAccessToken)
+          }.update((Some(now), Some(accessToken.resourceOwner.guid), Some(accessToken.guid)))
 
-    database.run(query).map { result =>
-      if (result > 0) true else false
+          database.run(query).map { result =>
+            Validation.success(result > 0)
+          }
+        }
+      }.getOrElse {
+        Future.successful {
+          Validation.failure("transactionGuid", "useless.error.unknownGuid", "specified" -> transactionGuid.toString)
+        }
+      }
     }
   }
 

@@ -12,4 +12,5 @@ DELETE  /plannedTransactions/:guid  controllers.budget.PlannedTransactionsContro
 
 GET     /transactions   controllers.budget.TransactionsController.index
 POST    /transactions   controllers.budget.TransactionsController.create
+DELETE  /transactions/:guid   controllers.budget.TransactionsController.delete(guid: java.util.UUID)
 POST    /transactions/:guid/adjustments   controllers.budget.TransactionsController.adjust(guid: java.util.UUID)

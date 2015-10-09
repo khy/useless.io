@@ -61,6 +61,18 @@ object TransactionsController extends Controller with PaginationController {
     )
   }
 
+  def delete(guid: UUID) = Auth.async { request =>
+    transactionsService.deleteTransaction(
+      transactionGuid = guid,
+      accessToken = request.accessToken
+    ).map { result =>
+      result.fold(
+        errors => Conflict(Json.toJson(errors)),
+        _ => NoContent
+      )
+    }
+  }
+
   case class AdjustData(
     transactionTypeGuid: Option[UUID],
     accountGuid: Option[UUID],
