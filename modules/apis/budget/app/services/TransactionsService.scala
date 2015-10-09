@@ -35,16 +35,17 @@ class TransactionsService(
     val accountQuery = Accounts.filter { _.id inSet records.map(_.accountId) }
     val futAccounts = database.run(accountQuery.result)
 
-    val transactionIds = records.flatMap { record =>
-      record.plannedTransactionId.toSeq ++ record.adjustedTransactionId.toSeq
-    }
-    val transactionsQuery = Transactions.filter { _.id inSet transactionIds }
+    val plannedTransactionsQuery = PlannedTransactions.filter { _.id inSet records.flatMap(_.plannedTransactionId.toSeq) }
+    val futPlannedTransactions = database.run(plannedTransactionsQuery.result)
+
+    val transactionsQuery = Transactions.filter { _.id inSet records.flatMap(_.adjustedTransactionId.toSeq) }
     val futTransactions = database.run(transactionsQuery.result)
 
     for {
       users <- futUsers
       transactionTypes <- futTransactionTypes
       accounts <- futAccounts
+      plannedTransactions <- futPlannedTransactions
       transactions <- futTransactions
     } yield {
       records.map { record =>
@@ -59,8 +60,8 @@ class TransactionsService(
           amount = record.amount,
           timestamp = new DateTime(record.timestamp),
           plannedTransactionGuid = record.plannedTransactionId.map { plannedTransactionId =>
-            transactions.find(_.id == plannedTransactionId).map(_.guid).getOrElse {
-              throw new ResourceUnexpectedlyNotFound("Transaction", plannedTransactionId)
+            plannedTransactions.find(_.id == plannedTransactionId).map(_.guid).getOrElse {
+              throw new ResourceUnexpectedlyNotFound("PlannedTransaction", plannedTransactionId)
             }
           },
           adjustedTransactionGuid = record.adjustedTransactionId.map { adjustedTransactionId =>
@@ -111,6 +112,7 @@ class TransactionsService(
     accountGuid: UUID,
     amount: BigDecimal,
     timestamp: DateTime,
+    plannedTransactionGuid: Option[UUID],
     adjustedTransactionGuid: Option[UUID],
     accessToken: AccessToken
   )(implicit ec: ExecutionContext): Future[Validation[Transaction]] = {
@@ -145,30 +147,48 @@ class TransactionsService(
       Future.successful(Validation.success(None))
     }
 
+    val futValOptPlannedTransactionId = plannedTransactionGuid.map { plannedTransactionGuid =>
+      val plannedTransactionsQuery = PlannedTransactions.filter { _.guid === plannedTransactionGuid }
+      database.run(plannedTransactionsQuery.result).map { plannedTransactions =>
+        plannedTransactions.headOption.map { plannedTransaction =>
+          Validation.success(Some(plannedTransaction.id))
+        }.getOrElse {
+          Validation.failure("plannedTransactionGuid", "useless.error.unknownGuid", "specified" -> plannedTransactionGuid.toString)
+        }
+      }
+    }.getOrElse {
+      Future.successful(Validation.success(None))
+    }
+
     futValTransactionTypeId.flatMap { valTransactionTypeId =>
       futValAccountId.flatMap { valAccountId =>
-        futValOptAdjustedTransactionId.flatMap { valOptAdjustedTransactionId =>
-          ValidationUtil.future(valTransactionTypeId ++ valAccountId ++ valOptAdjustedTransactionId) { case ((transactionTypeId, accountId), optAdjustedTransactionId) =>
-            val transactions = Transactions.map { r =>
-              (r.guid, r.transactionTypeId, r.accountId, r.amount, r.timestamp, r.adjustedTransactionId, r.createdByAccount, r.createdByAccessToken)
-            }.returning(Transactions.map(_.id))
+        futValOptPlannedTransactionId.flatMap { valOptPlannedTransactionId =>
+          futValOptAdjustedTransactionId.flatMap { valOptAdjustedTransactionId =>
+            ValidationUtil.future(valTransactionTypeId ++ valAccountId ++ valOptPlannedTransactionId ++ valOptAdjustedTransactionId) {
+              case (((transactionTypeId, accountId), optPlannedTransactionId), optAdjustedTransactionId) => {
+                val transactions = Transactions.map { r =>
+                  (r.guid, r.transactionTypeId, r.accountId, r.amount, r.timestamp, r.plannedTransactionId, r.adjustedTransactionId, r.createdByAccount, r.createdByAccessToken)
+                }.returning(Transactions.map(_.id))
 
-            val insert = transactions += (
-              UUID.randomUUID,
-              transactionTypeId,
-              accountId,
-              amount,
-              new Timestamp(timestamp.getMillis),
-              optAdjustedTransactionId,
-              accessToken.resourceOwner.guid,
-              accessToken.guid
-            )
+                val insert = transactions += (
+                  UUID.randomUUID,
+                  transactionTypeId,
+                  accountId,
+                  amount,
+                  new Timestamp(timestamp.getMillis),
+                  optPlannedTransactionId,
+                  optAdjustedTransactionId,
+                  accessToken.resourceOwner.guid,
+                  accessToken.guid
+                )
 
-            database.run(insert).flatMap { id =>
-              findTransactions(ids = Some(Seq(id))).map { result =>
-                result.map(_.items.headOption) match {
-                  case Validation.Success(Some(transaction)) => transaction
-                  case _ => throw new ResourceUnexpectedlyNotFound("Transaction", id)
+                database.run(insert).flatMap { id =>
+                  findTransactions(ids = Some(Seq(id))).map { result =>
+                    result.map(_.items.headOption) match {
+                      case Validation.Success(Some(transaction)) => transaction
+                      case _ => throw new ResourceUnexpectedlyNotFound("Transaction", id)
+                    }
+                  }
                 }
               }
             }
@@ -193,6 +213,7 @@ class TransactionsService(
           accountGuid = accountGuid.getOrElse(transaction.accountGuid),
           amount = amount.getOrElse(transaction.amount),
           timestamp = timestamp.getOrElse(transaction.timestamp),
+          plannedTransactionGuid = transaction.plannedTransactionGuid,
           adjustedTransactionGuid = Some(transaction.guid),
           accessToken = accessToken
         ).flatMap { result =>

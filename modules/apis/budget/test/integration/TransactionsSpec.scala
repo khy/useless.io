@@ -51,12 +51,14 @@ class TransactionsSpec
     lazy val transactionType = TestService.createTransactionType()
     lazy val account = TestService.createAccount()
     val timestamp = DateTime.now.toDateTime(DateTimeZone.UTC)
+    lazy val plannedTransaction = TestService.createPlannedTransaction()
 
     lazy val json = Json.obj(
       "transactionTypeGuid" -> transactionType.guid,
       "accountGuid" -> account.guid,
       "amount" -> 100.0,
-      "timestamp" -> timestamp
+      "timestamp" -> timestamp,
+      "plannedTransactionGuid" -> plannedTransaction.guid
     )
 
     "return a 401 Unauthorized if the request isn't authenticated" in {
@@ -79,6 +81,7 @@ class TransactionsSpec
       transaction.transactionTypeGuid mustBe transactionType.guid
       transaction.amount mustBe 100.0
       transaction.timestamp mustBe timestamp
+      transaction.plannedTransactionGuid mustBe Some(plannedTransaction.guid)
     }
 
   }

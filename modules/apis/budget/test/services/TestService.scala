@@ -105,10 +105,11 @@ object TestService extends DatabaseAccessor {
     accountGuid: UUID = createAccount().guid,
     amount: BigDecimal = 100.00,
     timestamp: DateTime = DateTime.now.minusDays(1),
-    adjustedAccountGuid: Option[UUID] = None,
+    plannedTransactionGuid: Option[UUID] = None,
+    adjustedTransactionGuid: Option[UUID] = None,
     accessToken: AccessToken = accessToken
   ): Transaction = await {
-    transactionsService.createTransaction(transactionTypeGuid, accountGuid, amount, timestamp, adjustedAccountGuid, accessToken)
+    transactionsService.createTransaction(transactionTypeGuid, accountGuid, amount, timestamp, plannedTransactionGuid, adjustedTransactionGuid, accessToken)
   }.toSuccess.value
 
   def deleteTransactions() {
