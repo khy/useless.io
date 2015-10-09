@@ -64,4 +64,16 @@ object PlannedTransactionsController extends Controller with PaginationControlle
     )
   }
 
+  def delete(guid: UUID) = Auth.async { request =>
+    plannedTransactionsService.deletePlannedTransaction(
+      plannedTransactionGuid = guid,
+      accessToken = request.accessToken
+    ).map { result =>
+      result.fold(
+        errors => Conflict(Json.toJson(errors)),
+        _ => NoContent
+      )
+    }
+  }
+
 }

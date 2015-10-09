@@ -70,7 +70,7 @@ class PlannedTransactionsService(
     val valPaginationParams = PaginationParams.build(rawPaginationParams)
 
     ValidationUtil.future(valPaginationParams) { paginationParams =>
-      var query = PlannedTransactions.filter { r => r.id === r.id }
+      var query = PlannedTransactions.filter(_.deletedAt.isEmpty)
 
       ids.foreach { ids =>
         query = query.filter { _.id inSet ids }
@@ -142,6 +142,39 @@ class PlannedTransactionsService(
               }
             }
           }
+        }
+      }
+    }
+  }
+
+  def deletePlannedTransaction(
+    plannedTransactionGuid: UUID,
+    accessToken: AccessToken
+  )(implicit ec: ExecutionContext): Future[Validation[Boolean]] = {
+    val query = PlannedTransactions.filter { r => r.guid === plannedTransactionGuid }
+    database.run(query.result).flatMap { records =>
+      records.headOption.map { record =>
+        if (record.createdByAccount != accessToken.resourceOwner.guid) {
+          Future.successful {
+            Validation.failure("plannedTransactionGuid", "useless.error.unauthorized", "specified" -> plannedTransactionGuid.toString)
+          }
+        } else {
+          val now = new Timestamp((new Date).getTime)
+
+          val query = PlannedTransactions.filter { plannedTransaction =>
+            plannedTransaction.id === record.id &&
+            plannedTransaction.deletedAt.isEmpty
+          }.map { plannedTransaction =>
+            (plannedTransaction.deletedAt, plannedTransaction.deletedByAccount, plannedTransaction.deletedByAccessToken)
+          }.update((Some(now), Some(accessToken.resourceOwner.guid), Some(accessToken.guid)))
+
+          database.run(query).map { result =>
+            Validation.success(result > 0)
+          }
+        }
+      }.getOrElse {
+        Future.successful {
+          Validation.failure("plannedTransactionGuid", "useless.error.unknownGuid", "specified" -> plannedTransactionGuid.toString)
         }
       }
     }

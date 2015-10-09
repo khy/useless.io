@@ -8,6 +8,7 @@ POST    /transactionTypes   controllers.budget.TransactionTypesController.create
 
 GET     /plannedTransactions  controllers.budget.PlannedTransactionsController.index
 POST    /plannedTransactions  controllers.budget.PlannedTransactionsController.create
+DELETE  /plannedTransactions/:guid  controllers.budget.PlannedTransactionsController.delete(guid: java.util.UUID)
 
 GET     /transactions   controllers.budget.TransactionsController.index
 POST    /transactions   controllers.budget.TransactionsController.create

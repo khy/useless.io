@@ -8,6 +8,7 @@ import play.api.test.Helpers._
 import play.api.libs.json._
 import org.joda.time.{ DateTime, DateTimeZone }
 import io.useless.play.json.DateTimeJson._
+import io.useless.validation.Validation
 
 import models.budget.PlannedTransaction
 import models.budget.JsonImplicits._
@@ -30,18 +31,18 @@ class PlannedTransactionsSpec
     "return only PlannedTransactions belonging to the authenticated user" in {
       TestService.deletePlannedTransactions()
 
-      val includedAccount = TestService.createPlannedTransaction(
+      val includedPlannedTransaction = TestService.createPlannedTransaction(
         accessToken = TestService.accessToken
       )
 
-      val excludedAccount = TestService.createPlannedTransaction(
+      val excludedPlannedTransaction = TestService.createPlannedTransaction(
         accessToken = TestService.otherAccessToken
       )
 
       val response = await { authenticatedRequest("/plannedTransactions").get }
       val plannedTransactions = response.json.as[Seq[PlannedTransaction]]
       plannedTransactions.length mustBe 1
-      plannedTransactions.head.guid mustBe includedAccount.guid
+      plannedTransactions.head.guid mustBe includedPlannedTransaction.guid
     }
 
   }
@@ -85,6 +86,41 @@ class PlannedTransactionsSpec
       plannedTransaction.maxAmount mustBe Some(200.0)
       plannedTransaction.minTimestamp mustBe Some(minTimestamp)
       plannedTransaction.maxTimestamp mustBe Some(maxTimestamp)
+    }
+
+  }
+
+  "DELETE /plannedTransactions/:guid" must {
+
+    "return a 401 Unauthorized if the request isn't authenticated" in {
+      val plannedTransaction = TestService.createPlannedTransaction(accessToken = TestService.accessToken)
+      val response = await { unauthentictedRequest(s"/plannedTransactions/${plannedTransaction.guid}").delete }
+      response.status mustBe UNAUTHORIZED
+    }
+
+    "return a 409 Conflict if the specified GUID doesn't exist" in {
+      val response = await { authenticatedRequest(s"/plannedTransactions/${UUID.randomUUID}").delete }
+      response.status mustBe CONFLICT
+      ((response.json \ "plannedTransactionGuid")(0) \ "key").as[String] mustBe "useless.error.unknownGuid"
+    }
+
+    "return a 409 Conflict if the specified GUID doesn't belong to the authenticated account" in {
+      val plannedTransaction = TestService.createPlannedTransaction(accessToken = TestService.otherAccessToken)
+      val response = await { authenticatedRequest(s"/plannedTransactions/${plannedTransaction.guid}").delete }
+      response.status mustBe CONFLICT
+      ((response.json \ "plannedTransactionGuid")(0) \ "key").as[String] mustBe "useless.error.unauthorized"
+    }
+
+    "return a 204 No Content if the specified GUID exists and belongs to the authenticated account" in {
+      TestService.deletePlannedTransactions()
+      val plannedTransaction = TestService.createPlannedTransaction(accessToken = TestService.accessToken)
+
+      val deleteResponse = await { authenticatedRequest(s"/plannedTransactions/${plannedTransaction.guid}").delete }
+      deleteResponse.status mustBe NO_CONTENT
+
+      val indexResponse = await { authenticatedRequest("/plannedTransactions").get }
+      val plannedTransactions = indexResponse.json.as[Seq[PlannedTransaction]]
+      plannedTransactions.length mustBe 0
     }
 
   }
