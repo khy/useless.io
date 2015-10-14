@@ -96,6 +96,7 @@ object TestService extends DatabaseAccessor {
   }.toSuccess.value
 
   def deletePlannedTransactions() {
+    deleteTransactions()
     val query = PlannedTransactions.filter { a => a.id === a.id }
     await { database.run(query.delete) }
   }

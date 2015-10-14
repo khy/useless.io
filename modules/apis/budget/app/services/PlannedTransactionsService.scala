@@ -37,10 +37,14 @@ class PlannedTransactionsService(
     val accountQuery = Accounts.filter { _.id inSet records.map(_.accountId) }
     val futAccounts = database.run(accountQuery.result)
 
+    val transactionsQuery = Transactions.filter { _.plannedTransactionId inSet records.map(_.id) }
+    val futTransactions = database.run(transactionsQuery.result)
+
     for {
       users <- futUsers
       transactionTypes <- futTransactionTypes
       accounts <- futAccounts
+      transactions <- futTransactions
     } yield {
       records.map { record =>
         PlannedTransaction(
@@ -55,6 +59,7 @@ class PlannedTransactionsService(
           maxAmount = record.maxAmount,
           minTimestamp = record.minTimestamp.map { ts => new DateTime(ts) },
           maxTimestamp = record.maxTimestamp.map { ts => new DateTime(ts) },
+          transactionGuid = transactions.find(_.plannedTransactionId == Some(record.id)).map(_.guid),
           createdBy = users.find(_.guid == record.createdByAccount).getOrElse(UsersHelper.AnonUser),
           createdAt = new DateTime(record.createdAt)
         )

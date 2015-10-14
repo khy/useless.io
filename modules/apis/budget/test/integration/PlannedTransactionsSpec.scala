@@ -45,6 +45,16 @@ class PlannedTransactionsSpec
       plannedTransactions.head.guid mustBe includedPlannedTransaction.guid
     }
 
+    "return the transaction GUID that the planned transaction has been associated with, if any" in {
+      TestService.deletePlannedTransactions()
+      val plannedTransaction = TestService.createPlannedTransaction()
+      val transaction = TestService.createTransaction(plannedTransactionGuid = Some(plannedTransaction.guid))
+
+      val response = await { authenticatedRequest("/plannedTransactions").get }
+      val plannedTransactions = response.json.as[Seq[PlannedTransaction]]
+      plannedTransactions.head.transactionGuid mustBe Some(transaction.guid)
+    }
+
   }
 
   "POST /plannedTransactions" must {
