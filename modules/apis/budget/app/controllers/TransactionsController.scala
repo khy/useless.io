@@ -25,10 +25,15 @@ object TransactionsController extends Controller with PaginationController {
       transactionsService.findTransactions(
         createdByAccounts = Some(Seq(request.accessToken.resourceOwner.guid)),
         rawPaginationParams = rawPaginationParams
-      ).map { result =>
+      ).flatMap { result =>
         result.fold(
-          errors => Conflict(Json.toJson(errors)),
-          transactions => paginatedResult(routes.TransactionsController.index, transactions)
+          errors => Future.successful(Conflict(Json.toJson(errors))),
+          result => {
+            transactionsService.records2models(result.items).map { transactions =>
+              val _result = result.copy(items = transactions)
+              paginatedResult(routes.TransactionsController.index, _result)
+            }
+          }
         )
       }
     }
@@ -54,10 +59,14 @@ object TransactionsController extends Controller with PaginationController {
         plannedTransactionGuid = data.plannedTransactionGuid,
         adjustedTransactionGuid = None,
         accessToken = request.accessToken
-      ).map { result =>
+      ).flatMap { result =>
         result.fold(
-          errors => Conflict(Json.toJson(errors)),
-          transaction => Created(Json.toJson(transaction))
+          errors => Future.successful(Conflict(Json.toJson(errors))),
+          transactionRecord => {
+            transactionsService.records2models(Seq(transactionRecord)).map { transactions =>
+              Created(Json.toJson(transactions.head))
+            }
+          }
         )
       }
     )
@@ -93,10 +102,14 @@ object TransactionsController extends Controller with PaginationController {
         amount = data.amount,
         timestamp = data.timestamp,
         accessToken = request.accessToken
-      ).map { result =>
+      ).flatMap { result =>
         result.fold(
-          errors => Conflict(Json.toJson(errors)),
-          adjustedTransaction => Created(Json.toJson(adjustedTransaction))
+          errors => Future.successful(Conflict(Json.toJson(errors))),
+          adjustedTransactionRecord => {
+            transactionsService.records2models(Seq(adjustedTransactionRecord)).map { adjustedTransactions =>
+              Created(Json.toJson(adjustedTransactions.head))
+            }
+          }
         )
       }
     )

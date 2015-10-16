@@ -110,8 +110,11 @@ object TestService extends DatabaseAccessor {
     adjustedTransactionGuid: Option[UUID] = None,
     accessToken: AccessToken = accessToken
   ): Transaction = await {
-    transactionsService.createTransaction(transactionTypeGuid, accountGuid, amount, timestamp, plannedTransactionGuid, adjustedTransactionGuid, accessToken)
-  }.toSuccess.value
+    val futResult = transactionsService.createTransaction(transactionTypeGuid, accountGuid, amount, timestamp, plannedTransactionGuid, adjustedTransactionGuid, accessToken)
+    futResult.flatMap { result =>
+      transactionsService.records2models(Seq(result.toSuccess.value))
+    }
+  }.head
 
   def deleteTransactions() {
     val query = Transactions.filter { a => a.id === a.id }

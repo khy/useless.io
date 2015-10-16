@@ -36,5 +36,6 @@ object JsonImplicits {
   implicit val transactionTypeFormat = Json.format[TransactionType]
   implicit val plannedTransactionFormat = Json.format[PlannedTransaction]
   implicit val transactionFormat = Json.format[Transaction]
+  implicit val transferFormat = Json.format[Transfer]
 
 }
