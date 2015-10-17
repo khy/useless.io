@@ -27,13 +27,32 @@ class AccountsService(
   def records2models(records: Seq[AccountRecord])(implicit ec: ExecutionContext): Future[Seq[Account]] = {
     val userGuids = records.map(_.createdByAccount)
 
-    usersHelper.getUsers(userGuids).map { users =>
+    val transactionSumsQuery = Transactions.filter { transaction =>
+      transaction.accountId.inSet(records.map(_.id)) &&
+      transaction.deletedAt.isEmpty
+    }.groupBy { transaction =>
+      transaction.accountId
+    }.map { case (accountId, transaction) =>
+      (accountId, transaction.map(_.amount).sum)
+    }
+    val futTransactionSums = database.run(transactionSumsQuery.result)
+
+    for {
+      users <- usersHelper.getUsers(userGuids)
+      transactionSums <- futTransactionSums
+    } yield {
       records.map { record =>
+        val transactionSum: BigDecimal = transactionSums.
+          find { case (accountId, _) => accountId == record.id }.
+          flatMap { case (_, sum) => sum }.
+          getOrElse(0.0)
+
         Account(
           guid = record.guid,
           accountType = AccountType(record.accountTypeKey),
           name = record.name,
           initialBalance = record.initialBalance,
+          balance = record.initialBalance + transactionSum,
           createdBy = users.find(_.guid == record.createdByAccount).getOrElse(UsersHelper.AnonUser),
           createdAt = new DateTime(record.createdAt)
         )

@@ -9,6 +9,7 @@ case class Account(
   accountType: AccountType,
   name: String,
   initialBalance: BigDecimal,
+  balance: BigDecimal,
   createdBy: User,
   createdAt: DateTime
 )

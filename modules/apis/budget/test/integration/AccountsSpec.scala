@@ -45,6 +45,27 @@ class AccountsSpec
       accounts.head.guid mustBe includedAccount.guid
     }
 
+    "return Accounts with the appropriate balance (ignoring soft-deleted transactions)" in {
+      TestService.deleteAccounts()
+      val account1 = TestService.createAccount(initialBalance = 50.0)
+      val account2 = TestService.createAccount(initialBalance = 25.0)
+
+      TestService.createTransaction(accountGuid = account1.guid, amount = 100.0)
+      TestService.createTransaction(accountGuid = account1.guid, amount = -25.0)
+      val toDelete = TestService.createTransaction(accountGuid = account1.guid, amount = 75.0)
+      TestService.softDeleteTransaction(toDelete.guid)
+
+      TestService.createTransaction(accountGuid = account2.guid, amount = -75.0)
+      TestService.createTransaction(accountGuid = account2.guid, amount = 50.0)
+
+      val response = await { authenticatedRequest("/accounts").get }
+      val accounts = response.json.as[Seq[Account]]
+      val _account1 = accounts.find(_.guid == account1.guid).get
+      _account1.balance mustBe 125.0
+      val _account2 = accounts.find(_.guid == account2.guid).get
+      _account2.balance mustBe 0.0
+    }
+
   }
 
   "POST /accounts" must {

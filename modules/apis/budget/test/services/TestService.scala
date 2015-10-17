@@ -116,8 +116,21 @@ object TestService extends DatabaseAccessor {
     }
   }.head
 
+  def softDeleteTransaction(
+    transactionGuid: UUID,
+    accessToken: AccessToken = accessToken
+  ): Boolean = await {
+    transactionsService.deleteTransaction(transactionGuid, accessToken)
+  }.toSuccess.value
+
   def deleteTransactions() {
+    deleteTransfers()
     val query = Transactions.filter { a => a.id === a.id }
+    await { database.run(query.delete) }
+  }
+
+  def deleteTransfers() {
+    val query = Transfers.filter { r => r.id === r.id }
     await { database.run(query.delete) }
   }
 
