@@ -6,6 +6,6 @@ import org.joda.time.LocalDate
 case class Projection(
   account: Account,
   date: LocalDate,
-  minAmount: BigDecimal,
-  maxAmount: BigDecimal
+  minBalance: BigDecimal,
+  maxBalance: BigDecimal
 )

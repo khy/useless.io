@@ -104,12 +104,12 @@ class ProjectionsSpec
       val projections = response.json.as[Seq[Projection]]
 
       val projection1 = projections.find(_.account.guid == account1.guid).get
-      projection1.minAmount mustBe 55.0
-      projection1.maxAmount mustBe 290.0
+      projection1.minBalance mustBe 55.0
+      projection1.maxBalance mustBe 290.0
 
       val projection2 = projections.find(_.account.guid == account2.guid).get
-      projection2.minAmount mustBe -160.0
-      projection2.maxAmount mustBe -75.0
+      projection2.minBalance mustBe -160.0
+      projection2.maxBalance mustBe -75.0
     }
 
   }

@@ -91,8 +91,8 @@ class ProjectionsService(
           Projection(
             account = account,
             date = date,
-            minAmount = (account.balance + minAmountSum),
-            maxAmount = (account.balance + maxAmountSum)
+            minBalance = (account.balance + minAmountSum),
+            maxBalance = (account.balance + maxAmountSum)
           )
         }
 
