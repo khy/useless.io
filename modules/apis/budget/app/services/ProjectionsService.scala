@@ -5,6 +5,7 @@ import java.sql.Timestamp
 import scala.concurrent.{Future, ExecutionContext}
 import play.api.Application
 import slick.driver.PostgresDriver.api._
+import slick.lifted.Rep
 import org.joda.time.LocalDate
 import io.useless.accesstoken.AccessToken
 import io.useless.pagination._
@@ -28,6 +29,18 @@ class ProjectionsService(
   accountsService: AccountsService
 ) extends DatabaseAccessor {
 
+  /**
+   * We're looking for an *absolute* min and max. I.e., given every possible
+   * combination of transactions that satisfy the ranges of the accounts'
+   * planned transaction, on or before the specified date, which combination
+   * results in the lowest and highest balances.
+   *
+   * So, for both min and max amount sums, include all of the projected
+   * transactions that have a date range that is strictly prior to the specified
+   * date. For min, also include all of the projected transactions that have a date
+   * range that stradles the specified date, and that have a negative minAmount.
+   * Include the same for max, except only if they have a positive maxAmount.
+   */
   def getProjections(
     date: LocalDate,
     coreAccountGuid: UUID,
@@ -36,38 +49,50 @@ class ProjectionsService(
     accountsService.findAccounts(createdByAccounts = Some(Seq(coreAccountGuid))).flatMap { result =>
       val accounts = result.toSuccess.value.items
 
-      val sumsQuery = PlannedTransactions.join(Accounts).on { case (plannedTransaction, account) =>
-        plannedTransaction.accountId === account.id
-      }.filter { case (plannedTransaction, account) =>
-        account.guid.inSet(accounts.map(_.guid)) &&
-        plannedTransaction.minTimestamp <= new Timestamp(date.toDateTimeAtStartOfDay.getMillis) &&
-        plannedTransaction.maxTimestamp >= new Timestamp(date.toDateTimeAtStartOfDay.getMillis) &&
-        plannedTransaction.deletedAt.isEmpty
-      }.groupBy { case (plannedTransaction, account) =>
-        account.guid
-      }.map { case (accountGuid, group) => (
-        accountGuid,
-        group.map { case (plannedTransaction, _) => plannedTransaction.minAmount }.sum,
-        group.map { case (plannedTransaction, _) => plannedTransaction.maxAmount }.sum
-      )}
+      val timestamp = new Timestamp(date.toDateTimeAtStartOfDay.getMillis)
 
-      database.run(sumsQuery.result).map { sums =>
+      def amountSumQuery(
+        amount: PlannedTransactionsTable => Rep[Option[BigDecimal]]
+      )(
+        condition: Rep[Option[BigDecimal]] => Rep[Option[Boolean]]
+      ) = {
+        PlannedTransactions.join(Accounts).on { case (plannedTransaction, account) =>
+          plannedTransaction.accountId === account.id
+        }.filter { case (pt, account) =>
+          account.guid.inSet(accounts.map(_.guid)) && (
+            (condition(amount(pt)) && pt.minTimestamp <= timestamp && pt.maxTimestamp >= timestamp) ||
+            pt.maxTimestamp <= timestamp
+          ) && pt.deletedAt.isEmpty
+        }.groupBy { case (_, account) =>
+          account.guid
+        }.map { case (accountGuid, group) =>
+          (accountGuid, group.map { case (pt, _) => amount(pt) }.sum)
+        }
+      }
+
+      val minAmountSumsQuery = amountSumQuery(_.minAmount) { _ < BigDecimal(0) }
+      val maxAmountSumsQuery = amountSumQuery(_.maxAmount) { _ > BigDecimal(0) }
+
+      for {
+        minAmountSums <- database.run(minAmountSumsQuery.result)
+        maxAmountSums <- database.run(maxAmountSumsQuery.result)
+      } yield {
         val projections = accounts.map { account =>
-          val minPlannedAmount: BigDecimal = sums.
-            find { case (accountGuid, _, _) => accountGuid == account.guid }.
-            flatMap { case (_, minAmount, _) => minAmount }.
+          val minAmountSum: BigDecimal = minAmountSums.
+            find { case (accountGuid, _) => accountGuid == account.guid }.
+            flatMap { case (_, min) => min }.
             getOrElse(0.0)
 
-          val maxPlannedAmount: BigDecimal = sums.
-            find { case (accountGuid, _, _) => accountGuid == account.guid }.
-            flatMap { case (_, _, maxAmount) => maxAmount }.
+          val maxAmountSum: BigDecimal = maxAmountSums.
+            find { case (accountGuid, _) => accountGuid == account.guid }.
+            flatMap { case (_, max) => max }.
             getOrElse(0.0)
 
           Projection(
             account = account,
             date = date,
-            minAmount = (account.balance + minPlannedAmount),
-            maxAmount = (account.balance + maxPlannedAmount)
+            minAmount = (account.balance + minAmountSum),
+            maxAmount = (account.balance + maxAmountSum)
           )
         }
 

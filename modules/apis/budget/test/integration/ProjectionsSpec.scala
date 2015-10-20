@@ -40,6 +40,17 @@ class ProjectionsSpec
       TestService.createTransaction(accountGuid = account1.guid, amount = 100.0)
       TestService.createTransaction(accountGuid = account2.guid, amount = -75.0)
 
+      // Because entire range is prior to date below, both min and max count it
+      TestService.createPlannedTransaction(
+        accountGuid = account1.guid,
+        minAmount = Some(25.0),
+        maxAmount = Some(50.0),
+        minTimestamp = Some(DateTime.now.plusDays(3)),
+        maxTimestamp = Some(DateTime.now.plusDays(5))
+      )
+
+      // Because range stradles date and min is negative,
+      // min counts it but max doesn't
       TestService.createPlannedTransaction(
         accountGuid = account1.guid,
         minAmount = Some(-120.0),
@@ -48,7 +59,17 @@ class ProjectionsSpec
         maxTimestamp = Some(DateTime.now.plusDays(11))
       )
 
-      // Should not be included since it happens after the 'date' below
+      // Because range stradles date and max is positive,
+      // max counts it but min doesn't
+      TestService.createPlannedTransaction(
+        accountGuid = account1.guid,
+        minAmount = Some(80.0),
+        maxAmount = Some(90.0),
+        minTimestamp = Some(DateTime.now.plusDays(9)),
+        maxTimestamp = Some(DateTime.now.plusDays(11))
+      )
+
+      // Because range is past date, neither min or max count it
       TestService.createPlannedTransaction(
         accountGuid = account1.guid,
         minAmount = Some(60.0),
@@ -65,6 +86,14 @@ class ProjectionsSpec
         maxTimestamp = Some(DateTime.now.plusDays(11))
       )
 
+      TestService.createPlannedTransaction(
+        accountGuid = account2.guid,
+        minAmount = Some(-35.0),
+        maxAmount = Some(-25.0),
+        minTimestamp = Some(DateTime.now.plusDays(5)),
+        maxTimestamp = Some(DateTime.now.plusDays(5))
+      )
+
       val response = await {
         authenticatedRequest("/projections").
           withQueryString("date" -> LocalDate.now.plusDays(10).toString).
@@ -75,12 +104,12 @@ class ProjectionsSpec
       val projections = response.json.as[Seq[Projection]]
 
       val projection1 = projections.find(_.account.guid == account1.guid).get
-      projection1.minAmount mustBe 30.0
-      projection1.maxAmount mustBe 50.0
+      projection1.minAmount mustBe 55.0
+      projection1.maxAmount mustBe 290.0
 
       val projection2 = projections.find(_.account.guid == account2.guid).get
-      projection2.minAmount mustBe -125.0
-      projection2.maxAmount mustBe -100.0
+      projection2.minAmount mustBe -160.0
+      projection2.maxAmount mustBe -75.0
     }
 
   }
