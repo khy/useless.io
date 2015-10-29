@@ -85,6 +85,8 @@ class PlannedTransactionsService(
         query = query.filter { _.createdByAccount inSet createdByAccounts }
       }
 
+      query = query.sortBy(_.minTimestamp.asc)
+
       database.run(query.result).flatMap { records =>
         records2models(records).map { plannedTransactions =>
           PaginatedResult.build(plannedTransactions, paginationParams, None)

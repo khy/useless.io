@@ -99,6 +99,8 @@ class TransactionsService(
         query = query.filter { _.createdByAccount inSet createdByAccounts }
       }
 
+      query = query.sortBy(_.timestamp.desc)
+
       database.run(query.result).map { transactionRecords =>
         PaginatedResult.build(transactionRecords, paginationParams, None)
       }
