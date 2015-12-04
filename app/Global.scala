@@ -18,9 +18,9 @@ object Global
     Logger.info("Using this config:")
     Logger.info(app.configuration.underlying.root.render(ConfigRenderOptions.concise))
 
-    Logger.info("Ensuring indexes...")
-    Account.ensureIndexes()
-    AuthorizationDao.instance.ensureIndexes()
+    Logger.info("NOT ensuring indexes...")
+    // Account.ensureIndexes()
+    // AuthorizationDao.instance.ensureIndexes()
   }
 
 }
