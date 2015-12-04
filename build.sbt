@@ -32,7 +32,11 @@ lazy val root = (project in file(".")).
 dockerBaseImage := "java:8"
 maintainer in Docker := "Kevin Hyland <khy@me.com>"
 dockerRepository := Some("khyland")
-dockerCmd := Seq("-Dconfig.file=conf/prod.conf")
+dockerCmd := Seq(
+  "-Dconfig.file=conf/prod.conf",
+  "-DapplyEvolutions.books=true",
+  "-DapplyEvolutions.budget=true"
+)
 
 useGpg := true
 
