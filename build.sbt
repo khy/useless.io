@@ -41,3 +41,5 @@ dockerCmd := Seq(
 useGpg := true
 
 publishStepTasks := Seq((publishSigned in lib), (ensureBoot2Docker), (publish in (root, Docker)))
+
+javaOptions in (ThisBuild, Test) += "-Dconfig.file=" + baseDirectory.value + "/conf/test.conf"

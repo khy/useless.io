@@ -1,6 +1,7 @@
 package test.budget.integration.util
 
 import java.util.UUID
+import play.api.test.FakeApplication
 import play.api.libs.ws.WS
 import org.scalatestplus.play.OneServerPerSuite
 
@@ -13,6 +14,10 @@ trait IntegrationHelper {
 
   self: OneServerPerSuite =>
 
+  implicit override lazy val app = {
+    FakeApplication(additionalConfiguration = Map("application.router" -> "budget.Routes"))
+  }
+
   val mockAccessTokenClient = new MockAccessTokenClient(Seq(TestService.accessToken))
   val mockAccountClient = new MockAccountClient(Seq(TestService.accessToken.resourceOwner))
 
@@ -24,7 +29,8 @@ trait IntegrationHelper {
   }
 
   def unauthentictedRequest(path: String) = {
-    WS.url(s"http://localhost:$port$path")
+    // Not sure why, but I need to explicitly pass the app here.
+    WS.url(s"http://localhost:$port$path")(app)
   }
 
 }
