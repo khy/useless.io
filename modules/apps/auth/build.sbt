@@ -7,5 +7,3 @@ libraryDependencies ++= Seq(
 ) ++ Seq (
   "org.seleniumhq.selenium" % "selenium-java" % "2.39.0" % "test"
 )
-
-javaOptions in Test += "-Dconfig.file=conf/auth.test.conf"
