@@ -30,6 +30,10 @@ class HaikuSpec
     MongoUtil.clearDb("haiku.mongo.uri")
   }
 
+  implicit override lazy val app = {
+    FakeApplication(additionalConfiguration = Map("application.router" -> "haiku.Routes"))
+  }
+
   implicit val url = s"http://localhost:$port/haikus"
 
   val khy = AccessToken(
