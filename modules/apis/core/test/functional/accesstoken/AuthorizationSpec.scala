@@ -22,6 +22,7 @@ class AuthorizationSpec
 
     trait Context extends WithServer {
       MongoHelper.clearDb()
+      override val app = appWithRoute
       val _app = createApp("Account", "account.useless.io")
       val user = createUser("khy@useless.io", "khy", None)
       val accessToken = block { user.addAccessToken(Some(_app.guid), Seq()) }.right.get

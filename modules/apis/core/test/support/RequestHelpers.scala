@@ -3,11 +3,16 @@ package support
 import java.util.UUID
 import scala.concurrent.Future
 import play.api.Application
+import play.api.test.FakeApplication
 import play.api.libs.json.JsValue
 import play.api.libs.ws.{ WS, WSResponse }
 import play.api.test.Helpers._
 
 trait RequestHelpers {
+
+  val appWithRoute = {
+    FakeApplication(additionalConfiguration = Map("application.router" -> "core.Routes"))
+  }
 
   def block[T](future: Future[T]) = await(future)
 

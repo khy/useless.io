@@ -18,6 +18,7 @@ class AppSpec
 
   trait Context extends WithServer {
     MongoHelper.clearDb()
+    override val app = appWithRoute
     val adminUser = createUser("khy@useless.io", "khy", None, Seq(Scope.Platform))
     val adminAccessToken = adminUser.accessTokens(0).guid
     val url = s"http://localhost:$port/apps"

@@ -22,6 +22,7 @@ class AccountSpec
 
     trait Context extends WithServer {
       MongoHelper.clearDb()
+      override implicit val app = appWithRoute
       val api = createApi("haiku")
       val user = createUser("khy@useless.io", "khy", Some("Kevin Hyland"))
       val url = s"http://localhost:$port/accounts/${user.guid}"
@@ -85,6 +86,7 @@ class AccountSpec
 
     trait Context extends WithServer {
       MongoHelper.clearDb()
+      override implicit val app = appWithRoute
       val api = createApp("Gran Mal", "granmal.com")
       val user = createUser("khy@useless.io", "khy", Some("Kevin Hyland"))
       val appAccessToken = api.accessTokens(0)

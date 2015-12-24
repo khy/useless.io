@@ -23,6 +23,7 @@ class AccessTokenSpec
 
     trait Context extends WithServer {
       MongoHelper.clearDb()
+      override val app = appWithRoute
       val user = createUser("khy@useless.io", "khy", Some("Kevin Hyland"))
       val _app = createApp("Gran Mal", "granmal.com")
       val userAccessToken = block { user.addAccessToken(Some(_app.guid), Seq(UselessScope("haiku/read"))) }.right.get
@@ -72,6 +73,7 @@ class AccessTokenSpec
 
     trait Context extends WithServer {
       MongoHelper.clearDb()
+      override val app = appWithRoute
 
       val user = createUser("khy@useless.io", "khy", None)
       val adminApp = createApp("Admin", "admin.useless.io")
@@ -119,6 +121,7 @@ class AccessTokenSpec
 
     trait Context extends WithServer {
       MongoHelper.clearDb()
+      override val app = appWithRoute
 
       val user = createUser("khy@useless.io", "khy", None)
       val regularApp = createApp("Gran Mal", "granmal.com")
@@ -184,6 +187,7 @@ class AccessTokenSpec
 
     trait Context extends WithServer {
       MongoHelper.clearDb()
+      override val app = appWithRoute
       val user = createUser("khy@useless.io", "khy", None)
       val authApp = createApp("Admin", "auth.useless.io", Seq(Scope.Auth))
       val trustedApp = createApp("Gran Mal", "granmal.com", Seq(Scope.Trusted))

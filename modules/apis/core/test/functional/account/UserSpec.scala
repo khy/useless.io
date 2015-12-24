@@ -21,6 +21,7 @@ class UserSpec
   override def beforeEach { MongoHelper.clearDb() }
 
   val url = s"http://localhost:$port/users"
+  override implicit lazy val app = appWithRoute
 
   "POST /users" should {
     "reject the request if an email is not specified" in {
