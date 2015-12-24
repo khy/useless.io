@@ -1,5 +1,6 @@
 package test.util
 
+import play.api.test.FakeApplication
 import org.scalatest._
 import org.scalatestplus.play._
 
@@ -10,3 +11,10 @@ trait DefaultSpec
   with BeforeAndAfterAll
   with ClearDbBeforeEach
   with DefaultUselessMock
+{
+
+  implicit override lazy val app = {
+    FakeApplication(additionalConfiguration = Map("application.router" -> "books.Routes"))
+  }
+
+}

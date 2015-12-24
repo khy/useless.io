@@ -6,5 +6,3 @@ libraryDependencies ++= Defaults.DependencyGroups.postgres ++  Seq(
   "com.github.tminglei" %% "slick-pg" % "0.9.1",
   Defaults.Dependencies.scalaTestPlay
 )
-
-javaOptions in Test += "-Dconfig.file=conf/books.test.conf"
