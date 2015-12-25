@@ -1,7 +1,5 @@
 organization := "io.useless"
 
-Defaults.Settings.base
-
 val playVersion = "2.3.9"
 
 libraryDependencies ++= Seq(

@@ -1,5 +1,3 @@
-Defaults.Settings.base
-
 libraryDependencies ++= Defaults.DependencyGroups.postgres ++ Seq(
   ws,
   jdbc,
