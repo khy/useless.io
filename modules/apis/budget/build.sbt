@@ -1,6 +1,6 @@
-libraryDependencies ++= Defaults.DependencyGroups.postgres ++ Seq(
+libraryDependencies ++= Default.DependencyGroup.postgres ++ Seq(
   ws,
   jdbc,
-  Defaults.Dependencies.jodaTime,
-  Defaults.Dependencies.scalaTestPlay
+  Default.Dependency.jodaTime,
+  Default.Dependency.scalaTestPlay
 )

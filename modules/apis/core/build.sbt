@@ -1,4 +1,4 @@
 libraryDependencies ++= Seq(
-  Defaults.Dependencies.reactiveMongo,
-  Defaults.Dependencies.scalaTestPlay
+  Default.Dependency.reactiveMongo,
+  Default.Dependency.scalaTestPlay
 )

@@ -1,9 +1,9 @@
 import sbt._
 import Keys._
 
-object Defaults {
+object Default {
 
-  object Dependencies {
+  object Dependency {
     val reactiveMongo = "org.reactivemongo" %% "reactivemongo" % "0.10.5.0.akka23"
     val slick = "com.typesafe.slick"  %% "slick" % "3.0.2"
     val postgres = "org.postgresql" %  "postgresql" % "9.3-1102-jdbc4"
@@ -12,8 +12,8 @@ object Defaults {
     val scalaTestPlay = "org.scalatestplus" %% "play" % "1.1.0" % "test"
   }
 
-  object DependencyGroups {
-    val postgres = Seq(Dependencies.slick, Dependencies.postgres, Dependencies.hikariCp)
+  object DependencyGroup {
+    val postgres = Seq(Dependency.slick, Dependency.postgres, Dependency.hikariCp)
   }
 
 }

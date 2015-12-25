@@ -1,6 +1,6 @@
-libraryDependencies ++= Defaults.DependencyGroups.postgres ++  Seq(
+libraryDependencies ++= Default.DependencyGroup.postgres ++  Seq(
   ws,
   jdbc,
   "com.github.tminglei" %% "slick-pg" % "0.9.1",
-  Defaults.Dependencies.scalaTestPlay
+  Default.Dependency.scalaTestPlay
 )
