@@ -106,6 +106,7 @@ class TransfersService(
         accountGuid = fromAccountGuid,
         amount = -amount,
         date = date,
+        name = None,
         plannedTransactionGuid = None,
         adjustedTransactionGuid = None,
         accessToken = accessToken
@@ -115,6 +116,7 @@ class TransfersService(
         accountGuid = toAccountGuid,
         amount = amount,
         date = date,
+        name = None,
         plannedTransactionGuid = None,
         adjustedTransactionGuid = None,
         accessToken = accessToken

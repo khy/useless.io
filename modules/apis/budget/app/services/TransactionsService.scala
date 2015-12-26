@@ -59,6 +59,7 @@ class TransactionsService(
           },
           amount = record.amount,
           date = new LocalDate(record.date),
+          name = record.name,
           plannedTransactionGuid = record.plannedTransactionId.map { plannedTransactionId =>
             plannedTransactions.find(_.id == plannedTransactionId).map(_.guid).getOrElse {
               throw new ResourceUnexpectedlyNotFound("PlannedTransaction", plannedTransactionId)
@@ -112,6 +113,7 @@ class TransactionsService(
     accountGuid: UUID,
     amount: BigDecimal,
     date: LocalDate,
+    name: Option[String],
     plannedTransactionGuid: Option[UUID],
     adjustedTransactionGuid: Option[UUID],
     accessToken: AccessToken
@@ -168,7 +170,7 @@ class TransactionsService(
       valTransactionRecord <- {
         ValidationUtil.future(valTransactionTypeId ++ valAccountId ++ valOptPlannedTransactionId ++ valOptAdjustedTransactionId) {
           case (((transactionTypeId, accountId), optPlannedTransactionId), optAdjustedTransactionId) => {
-            createTransaction(transactionTypeId, accountId, amount, date, optPlannedTransactionId, optAdjustedTransactionId, accessToken)
+            createTransaction(transactionTypeId, accountId, amount, date, name, optPlannedTransactionId, optAdjustedTransactionId, accessToken)
           }
         }
       }
@@ -180,12 +182,13 @@ class TransactionsService(
     accountId: Long,
     amount: BigDecimal,
     date: LocalDate,
+    name: Option[String],
     plannedTransactionId: Option[Long],
     adjustedTransactionId: Option[Long],
     accessToken: AccessToken
   )(implicit ec: ExecutionContext): Future[TransactionRecord] = {
     val transactions = Transactions.map { r =>
-      (r.guid, r.transactionTypeId, r.accountId, r.amount, r.date, r.plannedTransactionId, r.adjustedTransactionId, r.createdByAccount, r.createdByAccessToken)
+      (r.guid, r.transactionTypeId, r.accountId, r.amount, r.date, r.name, r.plannedTransactionId, r.adjustedTransactionId, r.createdByAccount, r.createdByAccessToken)
     }.returning(Transactions.map(_.id))
 
     val insert = transactions += ((
@@ -194,6 +197,7 @@ class TransactionsService(
       accountId,
       amount,
       new sql.Date(date.toDate.getTime),
+      name,
       plannedTransactionId,
       adjustedTransactionId,
       accessToken.resourceOwner.guid,
@@ -216,6 +220,7 @@ class TransactionsService(
     accountGuid: Option[UUID],
     amount: Option[BigDecimal],
     date: Option[LocalDate],
+    name: Option[String],
     accessToken: AccessToken
   )(implicit ec: ExecutionContext): Future[Validation[TransactionRecord]] = {
     findTransactions(guids = Some(Seq(transactionGuid))).flatMap { result =>
@@ -228,6 +233,7 @@ class TransactionsService(
             accountGuid = accountGuid.getOrElse(transaction.accountGuid),
             amount = amount.getOrElse(transaction.amount),
             date = date.getOrElse(transaction.date),
+            name = name.orElse(transaction.name),
             plannedTransactionGuid = transaction.plannedTransactionGuid,
             adjustedTransactionGuid = Some(transaction.guid),
             accessToken = accessToken

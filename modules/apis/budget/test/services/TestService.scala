@@ -90,9 +90,10 @@ object TestService extends DatabaseAccessor {
     maxAmount: Option[BigDecimal] = Some(200.00),
     minDate: Option[LocalDate] = Some(LocalDate.now.plusDays(10)),
     maxDate: Option[LocalDate] = Some(LocalDate.now.plusDays(15)),
+    name: Option[String] = None,
     accessToken: AccessToken = accessToken
   ): PlannedTransaction = await {
-    plannedTransactionsService.createPlannedTransaction(transactionTypeGuid, accountGuid, minAmount, maxAmount, minDate, maxDate, accessToken)
+    plannedTransactionsService.createPlannedTransaction(transactionTypeGuid, accountGuid, minAmount, maxAmount, minDate, maxDate, name, accessToken)
   }.toSuccess.value
 
   def deletePlannedTransactions() {
@@ -106,11 +107,12 @@ object TestService extends DatabaseAccessor {
     accountGuid: UUID = createAccount().guid,
     amount: BigDecimal = 100.00,
     date: LocalDate = LocalDate.now.minusDays(1),
+    name: Option[String] = None,
     plannedTransactionGuid: Option[UUID] = None,
     adjustedTransactionGuid: Option[UUID] = None,
     accessToken: AccessToken = accessToken
   ): Transaction = await {
-    val futResult = transactionsService.createTransaction(transactionTypeGuid, accountGuid, amount, date, plannedTransactionGuid, adjustedTransactionGuid, accessToken)
+    val futResult = transactionsService.createTransaction(transactionTypeGuid, accountGuid, amount, date, name, plannedTransactionGuid, adjustedTransactionGuid, accessToken)
     futResult.flatMap { result =>
       transactionsService.records2models(Seq(result.toSuccess.value))
     }

@@ -12,6 +12,7 @@ case class PlannedTransaction(
   maxAmount: Option[BigDecimal],
   minDate: Option[LocalDate],
   maxDate: Option[LocalDate],
+  name: Option[String],
   transactionGuid: Option[UUID],
   createdBy: User,
   createdAt: DateTime

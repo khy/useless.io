@@ -10,6 +10,7 @@ case class Transaction(
   accountGuid: UUID,
   amount: BigDecimal,
   date: LocalDate,
+  name: Option[String],
   plannedTransactionGuid: Option[UUID],
   adjustedTransactionGuid: Option[UUID],
   createdBy: User,

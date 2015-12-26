@@ -58,6 +58,7 @@ class TransactionsSpec
       "accountGuid" -> account.guid,
       "amount" -> 100.0,
       "date" -> date,
+      "name" -> "Test Transaction",
       "plannedTransactionGuid" -> plannedTransaction.guid
     )
 
@@ -81,6 +82,7 @@ class TransactionsSpec
       transaction.transactionTypeGuid mustBe transactionType.guid
       transaction.amount mustBe 100.0
       transaction.date mustBe date
+      transaction.name mustBe Some("Test Transaction")
       transaction.plannedTransactionGuid mustBe Some(plannedTransaction.guid)
     }
 
@@ -144,6 +146,7 @@ class TransactionsSpec
       _transaction.accountGuid mustBe transaction.accountGuid
       _transaction.amount mustBe 95.0
       _transaction.date mustBe transaction.date
+      _transaction.name mustBe transaction.name
       _transaction.adjustedTransactionGuid mustBe Some(transaction.guid)
     }
 

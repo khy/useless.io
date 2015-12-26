@@ -40,7 +40,8 @@ object PlannedTransactionsController extends Controller with PaginationControlle
     minAmount: Option[BigDecimal],
     maxAmount: Option[BigDecimal],
     minDate: Option[LocalDate],
-    maxDate: Option[LocalDate]
+    maxDate: Option[LocalDate],
+    name: Option[String]
   )
   private implicit val cdr = Json.reads[CreateData]
 
@@ -54,6 +55,7 @@ object PlannedTransactionsController extends Controller with PaginationControlle
         maxAmount = data.maxAmount,
         minDate = data.minDate,
         maxDate = data.maxDate,
+        name = data.name,
         accessToken = request.accessToken
       ).map { result =>
         result.fold(

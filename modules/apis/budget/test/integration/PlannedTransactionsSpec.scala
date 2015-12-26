@@ -70,7 +70,8 @@ class PlannedTransactionsSpec
       "minAmount" -> 100.0,
       "maxAmount" -> 200.0,
       "minDate" -> minDate,
-      "maxDate" -> maxDate
+      "maxDate" -> maxDate,
+      "name" -> "Test Planned Transaction"
     )
 
     "return a 401 Unauthorized if the request isn't authenticated" in {
@@ -96,6 +97,7 @@ class PlannedTransactionsSpec
       plannedTransaction.maxAmount mustBe Some(200.0)
       plannedTransaction.minDate mustBe Some(minDate)
       plannedTransaction.maxDate mustBe Some(maxDate)
+      plannedTransaction.name mustBe Some("Test Planned Transaction")
     }
 
   }

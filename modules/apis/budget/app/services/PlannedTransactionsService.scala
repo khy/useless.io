@@ -59,6 +59,7 @@ class PlannedTransactionsService(
           maxAmount = record.maxAmount,
           minDate = record.minDate.map { new LocalDate(_) },
           maxDate = record.maxDate.map { new LocalDate(_) },
+          name = record.name,
           transactionGuid = transactions.find(_.plannedTransactionId == Some(record.id)).map(_.guid),
           createdBy = users.find(_.guid == record.createdByAccount).getOrElse(UsersHelper.AnonUser),
           createdAt = new DateTime(record.createdAt)
@@ -102,6 +103,7 @@ class PlannedTransactionsService(
     maxAmount: Option[BigDecimal],
     minDate: Option[LocalDate],
     maxDate: Option[LocalDate],
+    name: Option[String],
     accessToken: AccessToken
   )(implicit ec: ExecutionContext): Future[Validation[PlannedTransaction]] = {
     val transactionTypesQuery = TransactionTypes.filter { _.guid === transactionTypeGuid }
@@ -126,7 +128,7 @@ class PlannedTransactionsService(
       futValAccountId.flatMap { valAccountId =>
         ValidationUtil.future(valTransactionTypeId ++ valAccountId) { case (transactionTypeId, accountId) =>
           val plannedTransactions = PlannedTransactions.map { r =>
-            (r.guid, r.transactionTypeId, r.accountId, r.minAmount, r.maxAmount, r.minDate, r.maxDate, r.createdByAccount, r.createdByAccessToken)
+            (r.guid, r.transactionTypeId, r.accountId, r.minAmount, r.maxAmount, r.minDate, r.maxDate, r.name, r.createdByAccount, r.createdByAccessToken)
           }.returning(PlannedTransactions.map(_.id))
 
           val insert = plannedTransactions += (
@@ -137,6 +139,7 @@ class PlannedTransactionsService(
             maxAmount,
             minDate.map { d => new sql.Date(d.toDate.getTime) },
             maxDate.map { d => new sql.Date(d.toDate.getTime) },
+            name,
             accessToken.resourceOwner.guid,
             accessToken.guid
           )

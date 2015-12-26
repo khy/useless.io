@@ -13,6 +13,7 @@ case class PlannedTransactionRecord(
   maxAmount: Option[BigDecimal],
   minDate: Option[Date],
   maxDate: Option[Date],
+  name: Option[String],
   adjustedPlannedTransactionId: Option[Long],
   createdAt: Timestamp,
   createdByAccount: UUID,
@@ -33,6 +34,7 @@ class PlannedTransactionsTable(tag: Tag)
   def maxAmount = column[Option[BigDecimal]]("max_amount")
   def minDate = column[Option[Date]]("min_date")
   def maxDate = column[Option[Date]]("max_date")
+  def name = column[Option[String]]("name")
   def adjustedPlannedTransactionId = column[Option[Long]]("adjusted_planned_transaction_id")
   def createdAt = column[Timestamp]("created_at")
   def createdByAccount = column[UUID]("created_by_account")
@@ -41,7 +43,7 @@ class PlannedTransactionsTable(tag: Tag)
   def deletedByAccount = column[Option[UUID]]("deleted_by_account")
   def deletedByAccessToken = column[Option[UUID]]("deleted_by_access_token")
 
-  def * = (id, guid, transactionTypeId, accountId, minAmount, maxAmount, minDate, maxDate, adjustedPlannedTransactionId, createdAt, createdByAccount, createdByAccessToken, deletedAt, deletedByAccount, deletedByAccessToken) <> (PlannedTransactionRecord.tupled, PlannedTransactionRecord.unapply)
+  def * = (id, guid, transactionTypeId, accountId, minAmount, maxAmount, minDate, maxDate, name, adjustedPlannedTransactionId, createdAt, createdByAccount, createdByAccessToken, deletedAt, deletedByAccount, deletedByAccessToken) <> (PlannedTransactionRecord.tupled, PlannedTransactionRecord.unapply)
 }
 
 object PlannedTransactions extends TableQuery(new PlannedTransactionsTable(_))
