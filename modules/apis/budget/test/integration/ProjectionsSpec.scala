@@ -6,7 +6,7 @@ import org.scalatestplus.play._
 import play.api.test._
 import play.api.test.Helpers._
 import play.api.libs.json._
-import org.joda.time.{DateTime, LocalDate}
+import org.joda.time.LocalDate
 import io.useless.play.json.DateTimeJson._
 
 import models.budget.Projection
@@ -45,8 +45,8 @@ class ProjectionsSpec
         accountGuid = account1.guid,
         minAmount = Some(25.0),
         maxAmount = Some(50.0),
-        minTimestamp = Some(DateTime.now.plusDays(3)),
-        maxTimestamp = Some(DateTime.now.plusDays(5))
+        minDate = Some(LocalDate.now.plusDays(3)),
+        maxDate = Some(LocalDate.now.plusDays(5))
       )
 
       // Because range stradles date and min is negative,
@@ -55,8 +55,8 @@ class ProjectionsSpec
         accountGuid = account1.guid,
         minAmount = Some(-120.0),
         maxAmount = Some(-100.0),
-        minTimestamp = Some(DateTime.now.plusDays(9)),
-        maxTimestamp = Some(DateTime.now.plusDays(11))
+        minDate = Some(LocalDate.now.plusDays(9)),
+        maxDate = Some(LocalDate.now.plusDays(11))
       )
 
       // Because range stradles date and max is positive,
@@ -65,8 +65,8 @@ class ProjectionsSpec
         accountGuid = account1.guid,
         minAmount = Some(80.0),
         maxAmount = Some(90.0),
-        minTimestamp = Some(DateTime.now.plusDays(9)),
-        maxTimestamp = Some(DateTime.now.plusDays(11))
+        minDate = Some(LocalDate.now.plusDays(9)),
+        maxDate = Some(LocalDate.now.plusDays(11))
       )
 
       // Because range is past date, neither min or max count it
@@ -74,24 +74,24 @@ class ProjectionsSpec
         accountGuid = account1.guid,
         minAmount = Some(60.0),
         maxAmount = Some(70.0),
-        minTimestamp = Some(DateTime.now.plusDays(11)),
-        maxTimestamp = Some(DateTime.now.plusDays(13))
+        minDate = Some(LocalDate.now.plusDays(11)),
+        maxDate = Some(LocalDate.now.plusDays(13))
       )
 
       TestService.createPlannedTransaction(
         accountGuid = account2.guid,
         minAmount = Some(-75.0),
         maxAmount = Some(-50.0),
-        minTimestamp = Some(DateTime.now.plusDays(7)),
-        maxTimestamp = Some(DateTime.now.plusDays(11))
+        minDate = Some(LocalDate.now.plusDays(7)),
+        maxDate = Some(LocalDate.now.plusDays(11))
       )
 
       TestService.createPlannedTransaction(
         accountGuid = account2.guid,
         minAmount = Some(-35.0),
         maxAmount = Some(-25.0),
-        minTimestamp = Some(DateTime.now.plusDays(5)),
-        maxTimestamp = Some(DateTime.now.plusDays(5))
+        minDate = Some(LocalDate.now.plusDays(5)),
+        maxDate = Some(LocalDate.now.plusDays(5))
       )
 
       val response = await {

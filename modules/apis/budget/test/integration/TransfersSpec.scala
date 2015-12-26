@@ -6,7 +6,7 @@ import org.scalatestplus.play._
 import play.api.test._
 import play.api.test.Helpers._
 import play.api.libs.json._
-import org.joda.time.{ DateTime, DateTimeZone }
+import org.joda.time.LocalDate
 import io.useless.play.json.DateTimeJson._
 
 import models.budget.Transfer
@@ -24,13 +24,13 @@ class TransfersSpec
 
     lazy val fromAccount = TestService.createAccount()
     lazy val toAccount = TestService.createAccount()
-    val timestamp = DateTime.now.toDateTime(DateTimeZone.UTC)
+    val date = LocalDate.now
 
     lazy val json = Json.obj(
       "fromAccountGuid" -> fromAccount.guid,
       "toAccountGuid" -> toAccount.guid,
       "amount" -> 100.0,
-      "timestamp" -> timestamp
+      "date" -> date
     )
 
     "return a 401 Unauthorized if the request isn't authenticated" in {
@@ -39,7 +39,7 @@ class TransfersSpec
     }
 
     "return a 409 Conflict any required fields aren't specified" in {
-      Seq("fromAccountGuid", "toAccountGuid", "amount", "timestamp").foreach { field =>
+      Seq("fromAccountGuid", "toAccountGuid", "amount", "date").foreach { field =>
         val response = await { authenticatedRequest("/transfers").post(json - field) }
         response.status mustBe CONFLICT
       }

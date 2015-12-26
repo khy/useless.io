@@ -6,7 +6,7 @@ import org.scalatestplus.play._
 import play.api.test._
 import play.api.test.Helpers._
 import play.api.libs.json._
-import org.joda.time.{ DateTime, DateTimeZone }
+import org.joda.time.LocalDate
 import io.useless.play.json.DateTimeJson._
 import io.useless.validation.Validation
 
@@ -61,16 +61,16 @@ class PlannedTransactionsSpec
 
     lazy val transactionType = TestService.createTransactionType()
     lazy val account = TestService.createAccount()
-    val minTimestamp = DateTime.now.plusDays(10).toDateTime(DateTimeZone.UTC)
-    val maxTimestamp = DateTime.now.plusDays(15).toDateTime(DateTimeZone.UTC)
+    val minDate = LocalDate.now.plusDays(10)
+    val maxDate = LocalDate.now.plusDays(15)
 
     lazy val json = Json.obj(
       "transactionTypeGuid" -> transactionType.guid,
       "accountGuid" -> account.guid,
       "minAmount" -> 100.0,
       "maxAmount" -> 200.0,
-      "minTimestamp" -> minTimestamp,
-      "maxTimestamp" -> maxTimestamp
+      "minDate" -> minDate,
+      "maxDate" -> maxDate
     )
 
     "return a 401 Unauthorized if the request isn't authenticated" in {
@@ -94,8 +94,8 @@ class PlannedTransactionsSpec
       plannedTransaction.accountGuid mustBe account.guid
       plannedTransaction.minAmount mustBe Some(100.0)
       plannedTransaction.maxAmount mustBe Some(200.0)
-      plannedTransaction.minTimestamp mustBe Some(minTimestamp)
-      plannedTransaction.maxTimestamp mustBe Some(maxTimestamp)
+      plannedTransaction.minDate mustBe Some(minDate)
+      plannedTransaction.maxDate mustBe Some(maxDate)
     }
 
   }

@@ -1,7 +1,7 @@
 package services.budget
 
 import java.util.{Date, UUID}
-import java.sql.Timestamp
+import java.sql
 import scala.concurrent.{Future, ExecutionContext}
 import play.api.Application
 import slick.driver.PostgresDriver.api._
@@ -49,7 +49,7 @@ class ProjectionsService(
     accountsService.findAccounts(createdByAccounts = Some(Seq(coreAccountGuid))).flatMap { result =>
       val accounts = result.toSuccess.value.items
 
-      val timestamp = new Timestamp(date.toDateTimeAtStartOfDay.getMillis)
+      val sqlDate = new sql.Date(date.toDate.getTime)
 
       def amountSumQuery(
         amount: PlannedTransactionsTable => Rep[Option[BigDecimal]]
@@ -60,8 +60,8 @@ class ProjectionsService(
           plannedTransaction.accountId === account.id
         }.filter { case (pt, account) =>
           account.guid.inSet(accounts.map(_.guid)) && (
-            (condition(amount(pt)) && pt.minTimestamp <= timestamp && pt.maxTimestamp >= timestamp) ||
-            pt.maxTimestamp <= timestamp
+            (condition(amount(pt)) && pt.minDate <= sqlDate && pt.maxDate >= sqlDate) ||
+            pt.maxDate <= sqlDate
           ) && pt.deletedAt.isEmpty
         }.groupBy { case (_, account) =>
           account.guid

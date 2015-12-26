@@ -6,7 +6,7 @@ import play.api.Play.current
 import play.api.test.Helpers._
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import slick.driver.PostgresDriver.api._
-import org.joda.time.DateTime
+import org.joda.time.LocalDate
 import io.useless.account.User
 import io.useless.accesstoken.AccessToken
 
@@ -88,11 +88,11 @@ object TestService extends DatabaseAccessor {
     accountGuid: UUID = createAccount().guid,
     minAmount: Option[BigDecimal] = Some(100.00),
     maxAmount: Option[BigDecimal] = Some(200.00),
-    minTimestamp: Option[DateTime] = Some(DateTime.now.plusDays(10)),
-    maxTimestamp: Option[DateTime] = Some(DateTime.now.plusDays(15)),
+    minDate: Option[LocalDate] = Some(LocalDate.now.plusDays(10)),
+    maxDate: Option[LocalDate] = Some(LocalDate.now.plusDays(15)),
     accessToken: AccessToken = accessToken
   ): PlannedTransaction = await {
-    plannedTransactionsService.createPlannedTransaction(transactionTypeGuid, accountGuid, minAmount, maxAmount, minTimestamp, maxTimestamp, accessToken)
+    plannedTransactionsService.createPlannedTransaction(transactionTypeGuid, accountGuid, minAmount, maxAmount, minDate, maxDate, accessToken)
   }.toSuccess.value
 
   def deletePlannedTransactions() {
@@ -105,12 +105,12 @@ object TestService extends DatabaseAccessor {
     transactionTypeGuid: UUID = createTransactionType().guid,
     accountGuid: UUID = createAccount().guid,
     amount: BigDecimal = 100.00,
-    timestamp: DateTime = DateTime.now.minusDays(1),
+    date: LocalDate = LocalDate.now.minusDays(1),
     plannedTransactionGuid: Option[UUID] = None,
     adjustedTransactionGuid: Option[UUID] = None,
     accessToken: AccessToken = accessToken
   ): Transaction = await {
-    val futResult = transactionsService.createTransaction(transactionTypeGuid, accountGuid, amount, timestamp, plannedTransactionGuid, adjustedTransactionGuid, accessToken)
+    val futResult = transactionsService.createTransaction(transactionTypeGuid, accountGuid, amount, date, plannedTransactionGuid, adjustedTransactionGuid, accessToken)
     futResult.flatMap { result =>
       transactionsService.records2models(Seq(result.toSuccess.value))
     }

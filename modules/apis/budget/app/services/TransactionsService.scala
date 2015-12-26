@@ -1,11 +1,11 @@
 package services.budget
 
 import java.util.{Date, UUID}
-import java.sql.Timestamp
+import java.sql
 import scala.concurrent.{Future, ExecutionContext}
 import play.api.Application
 import slick.driver.PostgresDriver.api._
-import org.joda.time.DateTime
+import org.joda.time.{LocalDate, DateTime}
 import io.useless.accesstoken.AccessToken
 import io.useless.pagination._
 import io.useless.validation._
@@ -58,7 +58,7 @@ class TransactionsService(
             throw new ResourceUnexpectedlyNotFound("Account", record.accountId)
           },
           amount = record.amount,
-          timestamp = new DateTime(record.timestamp),
+          date = new LocalDate(record.date),
           plannedTransactionGuid = record.plannedTransactionId.map { plannedTransactionId =>
             plannedTransactions.find(_.id == plannedTransactionId).map(_.guid).getOrElse {
               throw new ResourceUnexpectedlyNotFound("PlannedTransaction", plannedTransactionId)
@@ -99,7 +99,7 @@ class TransactionsService(
         query = query.filter { _.createdByAccount inSet createdByAccounts }
       }
 
-      query = query.sortBy(_.timestamp.desc)
+      query = query.sortBy(_.date.desc)
 
       database.run(query.result).map { transactionRecords =>
         PaginatedResult.build(transactionRecords, paginationParams, None)
@@ -111,7 +111,7 @@ class TransactionsService(
     transactionTypeGuid: UUID,
     accountGuid: UUID,
     amount: BigDecimal,
-    timestamp: DateTime,
+    date: LocalDate,
     plannedTransactionGuid: Option[UUID],
     adjustedTransactionGuid: Option[UUID],
     accessToken: AccessToken
@@ -168,7 +168,7 @@ class TransactionsService(
       valTransactionRecord <- {
         ValidationUtil.future(valTransactionTypeId ++ valAccountId ++ valOptPlannedTransactionId ++ valOptAdjustedTransactionId) {
           case (((transactionTypeId, accountId), optPlannedTransactionId), optAdjustedTransactionId) => {
-            createTransaction(transactionTypeId, accountId, amount, timestamp, optPlannedTransactionId, optAdjustedTransactionId, accessToken)
+            createTransaction(transactionTypeId, accountId, amount, date, optPlannedTransactionId, optAdjustedTransactionId, accessToken)
           }
         }
       }
@@ -179,13 +179,13 @@ class TransactionsService(
     transactionTypeId: Long,
     accountId: Long,
     amount: BigDecimal,
-    timestamp: DateTime,
+    date: LocalDate,
     plannedTransactionId: Option[Long],
     adjustedTransactionId: Option[Long],
     accessToken: AccessToken
   )(implicit ec: ExecutionContext): Future[TransactionRecord] = {
     val transactions = Transactions.map { r =>
-      (r.guid, r.transactionTypeId, r.accountId, r.amount, r.timestamp, r.plannedTransactionId, r.adjustedTransactionId, r.createdByAccount, r.createdByAccessToken)
+      (r.guid, r.transactionTypeId, r.accountId, r.amount, r.date, r.plannedTransactionId, r.adjustedTransactionId, r.createdByAccount, r.createdByAccessToken)
     }.returning(Transactions.map(_.id))
 
     val insert = transactions += ((
@@ -193,7 +193,7 @@ class TransactionsService(
       transactionTypeId,
       accountId,
       amount,
-      new Timestamp(timestamp.getMillis),
+      new sql.Date(date.toDate.getTime),
       plannedTransactionId,
       adjustedTransactionId,
       accessToken.resourceOwner.guid,
@@ -215,7 +215,7 @@ class TransactionsService(
     trasanctionTypeGuid: Option[UUID],
     accountGuid: Option[UUID],
     amount: Option[BigDecimal],
-    timestamp: Option[DateTime],
+    date: Option[LocalDate],
     accessToken: AccessToken
   )(implicit ec: ExecutionContext): Future[Validation[TransactionRecord]] = {
     findTransactions(guids = Some(Seq(transactionGuid))).flatMap { result =>
@@ -227,7 +227,7 @@ class TransactionsService(
             transactionTypeGuid = trasanctionTypeGuid.getOrElse(transaction.transactionTypeGuid),
             accountGuid = accountGuid.getOrElse(transaction.accountGuid),
             amount = amount.getOrElse(transaction.amount),
-            timestamp = timestamp.getOrElse(transaction.timestamp),
+            date = date.getOrElse(transaction.date),
             plannedTransactionGuid = transaction.plannedTransactionGuid,
             adjustedTransactionGuid = Some(transaction.guid),
             accessToken = accessToken
@@ -260,7 +260,7 @@ class TransactionsService(
             Validation.failure("transactionGuid", "useless.error.unauthorized", "specified" -> transactionGuid.toString)
           }
         } else {
-          val now = new Timestamp((new Date).getTime)
+          val now = new sql.Timestamp((new Date).getTime)
 
           val query = Transactions.filter { transaction =>
             transaction.id === record.id &&

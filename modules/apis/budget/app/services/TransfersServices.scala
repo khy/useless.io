@@ -5,7 +5,7 @@ import java.sql.Timestamp
 import scala.concurrent.{Future, ExecutionContext}
 import play.api.Application
 import slick.driver.PostgresDriver.api._
-import org.joda.time.DateTime
+import org.joda.time.{LocalDate, DateTime}
 import io.useless.accesstoken.AccessToken
 import io.useless.pagination._
 import io.useless.validation._
@@ -89,7 +89,7 @@ class TransfersService(
     fromAccountGuid: UUID,
     toAccountGuid: UUID,
     amount: BigDecimal,
-    timestamp: DateTime,
+    date: LocalDate,
     accessToken: AccessToken
   )(implicit ec: ExecutionContext): Future[Validation[TransferRecord]] = {
     val transactionTypeQuery = TransactionTypes.filter(_.name === "Transfer").map(_.guid)
@@ -105,7 +105,7 @@ class TransfersService(
         transactionTypeGuid = transferGuid,
         accountGuid = fromAccountGuid,
         amount = -amount,
-        timestamp = timestamp,
+        date = date,
         plannedTransactionGuid = None,
         adjustedTransactionGuid = None,
         accessToken = accessToken
@@ -114,7 +114,7 @@ class TransfersService(
         transactionTypeGuid = transferGuid,
         accountGuid = toAccountGuid,
         amount = amount,
-        timestamp = timestamp,
+        date = date,
         plannedTransactionGuid = None,
         adjustedTransactionGuid = None,
         accessToken = accessToken

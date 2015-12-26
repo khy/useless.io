@@ -1,11 +1,11 @@
 package services.budget
 
 import java.util.{Date, UUID}
-import java.sql.Timestamp
+import java.sql
 import scala.concurrent.{Future, ExecutionContext}
 import play.api.Application
 import slick.driver.PostgresDriver.api._
-import org.joda.time.DateTime
+import org.joda.time.{LocalDate, DateTime}
 import io.useless.accesstoken.AccessToken
 import io.useless.pagination._
 import io.useless.validation._
@@ -57,8 +57,8 @@ class PlannedTransactionsService(
           },
           minAmount = record.minAmount,
           maxAmount = record.maxAmount,
-          minTimestamp = record.minTimestamp.map { ts => new DateTime(ts) },
-          maxTimestamp = record.maxTimestamp.map { ts => new DateTime(ts) },
+          minDate = record.minDate.map { new LocalDate(_) },
+          maxDate = record.maxDate.map { new LocalDate(_) },
           transactionGuid = transactions.find(_.plannedTransactionId == Some(record.id)).map(_.guid),
           createdBy = users.find(_.guid == record.createdByAccount).getOrElse(UsersHelper.AnonUser),
           createdAt = new DateTime(record.createdAt)
@@ -85,7 +85,7 @@ class PlannedTransactionsService(
         query = query.filter { _.createdByAccount inSet createdByAccounts }
       }
 
-      query = query.sortBy(_.minTimestamp.asc)
+      query = query.sortBy(_.minDate.asc)
 
       database.run(query.result).flatMap { records =>
         records2models(records).map { plannedTransactions =>
@@ -100,8 +100,8 @@ class PlannedTransactionsService(
     accountGuid: UUID,
     minAmount: Option[BigDecimal],
     maxAmount: Option[BigDecimal],
-    minTimestamp: Option[DateTime],
-    maxTimestamp: Option[DateTime],
+    minDate: Option[LocalDate],
+    maxDate: Option[LocalDate],
     accessToken: AccessToken
   )(implicit ec: ExecutionContext): Future[Validation[PlannedTransaction]] = {
     val transactionTypesQuery = TransactionTypes.filter { _.guid === transactionTypeGuid }
@@ -126,7 +126,7 @@ class PlannedTransactionsService(
       futValAccountId.flatMap { valAccountId =>
         ValidationUtil.future(valTransactionTypeId ++ valAccountId) { case (transactionTypeId, accountId) =>
           val plannedTransactions = PlannedTransactions.map { r =>
-            (r.guid, r.transactionTypeId, r.accountId, r.minAmount, r.maxAmount, r.minTimestamp, r.maxTimestamp, r.createdByAccount, r.createdByAccessToken)
+            (r.guid, r.transactionTypeId, r.accountId, r.minAmount, r.maxAmount, r.minDate, r.maxDate, r.createdByAccount, r.createdByAccessToken)
           }.returning(PlannedTransactions.map(_.id))
 
           val insert = plannedTransactions += (
@@ -135,8 +135,8 @@ class PlannedTransactionsService(
             accountId,
             minAmount,
             maxAmount,
-            minTimestamp.map { ts => new Timestamp(ts.getMillis) },
-            maxTimestamp.map { ts => new Timestamp(ts.getMillis) },
+            minDate.map { d => new sql.Date(d.toDate.getTime) },
+            maxDate.map { d => new sql.Date(d.toDate.getTime) },
             accessToken.resourceOwner.guid,
             accessToken.guid
           )
@@ -166,7 +166,7 @@ class PlannedTransactionsService(
             Validation.failure("plannedTransactionGuid", "useless.error.unauthorized", "specified" -> plannedTransactionGuid.toString)
           }
         } else {
-          val now = new Timestamp((new Date).getTime)
+          val now = new sql.Timestamp((new Date).getTime)
 
           val query = PlannedTransactions.filter { plannedTransaction =>
             plannedTransaction.id === record.id &&

@@ -1,7 +1,7 @@
 package db.budget
 
 import java.util.UUID
-import java.sql.Timestamp
+import java.sql.{Timestamp, Date}
 import slick.driver.PostgresDriver.api._
 
 case class TransactionRecord(
@@ -10,7 +10,7 @@ case class TransactionRecord(
   transactionTypeId: Long,
   accountId: Long,
   amount: BigDecimal,
-  timestamp: Timestamp,
+  date: Date,
   plannedTransactionId: Option[Long],
   adjustedTransactionId: Option[Long],
   createdAt: Timestamp,
@@ -29,7 +29,7 @@ class TransactionsTable(tag: Tag)
   def transactionTypeId = column[Long]("transaction_type_id")
   def accountId = column[Long]("account_id")
   def amount = column[BigDecimal]("amount")
-  def timestamp = column[Timestamp]("timestamp")
+  def date = column[Date]("date")
   def plannedTransactionId = column[Option[Long]]("planned_transaction_id")
   def adjustedTransactionId = column[Option[Long]]("adjusted_transaction_id")
   def createdAt = column[Timestamp]("created_at")
@@ -39,7 +39,7 @@ class TransactionsTable(tag: Tag)
   def deletedByAccount = column[Option[UUID]]("deleted_by_account")
   def deletedByAccessToken = column[Option[UUID]]("deleted_by_access_token")
 
-  def * = (id, guid, transactionTypeId, accountId, amount, timestamp, plannedTransactionId, adjustedTransactionId, createdAt, createdByAccount, createdByAccessToken, deletedAt, deletedByAccount, deletedByAccessToken) <> (TransactionRecord.tupled, TransactionRecord.unapply)
+  def * = (id, guid, transactionTypeId, accountId, amount, date, plannedTransactionId, adjustedTransactionId, createdAt, createdByAccount, createdByAccessToken, deletedAt, deletedByAccount, deletedByAccessToken) <> (TransactionRecord.tupled, TransactionRecord.unapply)
 }
 
 object Transactions extends TableQuery(new TransactionsTable(_))

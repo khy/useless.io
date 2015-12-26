@@ -1,7 +1,7 @@
 package models.budget
 
 import java.util.UUID
-import org.joda.time.DateTime
+import org.joda.time.{LocalDate, DateTime}
 import io.useless.account.User
 
 case class PlannedTransaction(
@@ -10,8 +10,8 @@ case class PlannedTransaction(
   accountGuid: UUID,
   minAmount: Option[BigDecimal],
   maxAmount: Option[BigDecimal],
-  minTimestamp: Option[DateTime],
-  maxTimestamp: Option[DateTime],
+  minDate: Option[LocalDate],
+  maxDate: Option[LocalDate],
   transactionGuid: Option[UUID],
   createdBy: User,
   createdAt: DateTime

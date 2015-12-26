@@ -7,7 +7,7 @@ import play.api.mvc._
 import play.api.libs.json.Json
 import play.api.Play.current
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
-import org.joda.time.DateTime
+import org.joda.time.LocalDate
 import io.useless.play.json.DateTimeJson._
 import io.useless.play.json.MessageJson.format
 import io.useless.play.pagination.PaginationController
@@ -24,7 +24,7 @@ object TransfersController extends Controller with PaginationController {
     fromAccountGuid: UUID,
     toAccountGuid: UUID,
     amount: BigDecimal,
-    timestamp: DateTime
+    date: LocalDate
   )
   private implicit val cdr = Json.reads[CreateData]
 
@@ -35,7 +35,7 @@ object TransfersController extends Controller with PaginationController {
         fromAccountGuid = data.fromAccountGuid,
         toAccountGuid = data.toAccountGuid,
         amount = data.amount,
-        timestamp = data.timestamp,
+        date = data.date,
         accessToken = request.accessToken
       ).flatMap { result =>
         result.fold(

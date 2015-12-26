@@ -14,7 +14,7 @@ trait IntegrationHelper {
 
   self: OneServerPerSuite =>
 
-  implicit override lazy val app = {
+  implicit override lazy val app: FakeApplication = {
     FakeApplication(additionalConfiguration = Map("application.router" -> "budget.Routes"))
   }
 

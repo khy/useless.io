@@ -6,7 +6,7 @@ import org.scalatestplus.play._
 import play.api.test._
 import play.api.test.Helpers._
 import play.api.libs.json._
-import org.joda.time.{ DateTime, DateTimeZone }
+import org.joda.time.LocalDate
 import io.useless.play.json.DateTimeJson._
 
 import models.budget.Transaction
@@ -50,14 +50,14 @@ class TransactionsSpec
 
     lazy val transactionType = TestService.createTransactionType()
     lazy val account = TestService.createAccount()
-    val timestamp = DateTime.now.toDateTime(DateTimeZone.UTC)
+    val date = LocalDate.now
     lazy val plannedTransaction = TestService.createPlannedTransaction()
 
     lazy val json = Json.obj(
       "transactionTypeGuid" -> transactionType.guid,
       "accountGuid" -> account.guid,
       "amount" -> 100.0,
-      "timestamp" -> timestamp,
+      "date" -> date,
       "plannedTransactionGuid" -> plannedTransaction.guid
     )
 
@@ -67,7 +67,7 @@ class TransactionsSpec
     }
 
     "return a 409 Conflict any required fields aren't specified" in {
-      Seq("transactionTypeGuid", "accountGuid", "amount", "timestamp").foreach { field =>
+      Seq("transactionTypeGuid", "accountGuid", "amount", "date").foreach { field =>
         val response = await { authenticatedRequest("/transactions").post(json - field) }
         response.status mustBe CONFLICT
       }
@@ -80,7 +80,7 @@ class TransactionsSpec
       val transaction = response.json.as[Transaction]
       transaction.transactionTypeGuid mustBe transactionType.guid
       transaction.amount mustBe 100.0
-      transaction.timestamp mustBe timestamp
+      transaction.date mustBe date
       transaction.plannedTransactionGuid mustBe Some(plannedTransaction.guid)
     }
 
@@ -143,7 +143,7 @@ class TransactionsSpec
       _transaction.transactionTypeGuid mustBe transaction.transactionTypeGuid
       _transaction.accountGuid mustBe transaction.accountGuid
       _transaction.amount mustBe 95.0
-      _transaction.timestamp mustBe transaction.timestamp.toDateTime(DateTimeZone.UTC)
+      _transaction.date mustBe transaction.date
       _transaction.adjustedTransactionGuid mustBe Some(transaction.guid)
     }
 
