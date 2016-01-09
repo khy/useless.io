@@ -80,29 +80,49 @@ class TransactionsService(
   def findTransactions(
     ids: Option[Seq[Long]] = None,
     guids: Option[Seq[UUID]] = None,
+    accountGuids: Option[Seq[UUID]] = None,
     createdByAccounts: Option[Seq[UUID]] = None,
     rawPaginationParams: RawPaginationParams = RawPaginationParams()
   )(implicit ec: ExecutionContext): Future[Validation[PaginatedResult[TransactionRecord]]] = {
     val valPaginationParams = PaginationParams.build(rawPaginationParams)
 
     ValidationUtil.future(valPaginationParams) { paginationParams =>
-      var query = Transactions.filter(_.deletedAt.isEmpty)
+      var query = Transactions.join(Accounts).on { case (txn, account) =>
+        txn.accountId === account.id
+      }.filter { case (txn, _) =>
+        txn.deletedAt.isEmpty
+      }
 
       ids.foreach { ids =>
-        query = query.filter { _.id inSet ids }
+        query = query.filter { case (txn, _) =>
+          txn.id inSet ids
+        }
       }
 
       guids.foreach { guids =>
-        query = query.filter { _.guid inSet guids }
+        query = query.filter { case (txn, _) =>
+          txn.guid inSet guids
+        }
+      }
+
+      accountGuids.foreach { accountGuids =>
+        query = query.filter { case (_, account) =>
+          account.guid inSet accountGuids
+        }
       }
 
       createdByAccounts.foreach { createdByAccounts =>
-        query = query.filter { _.createdByAccount inSet createdByAccounts }
+        query = query.filter { case (txn, _) =>
+          txn.createdByAccount inSet createdByAccounts
+        }
       }
 
-      query = query.sortBy(_.date.desc)
+      query = query.sortBy { case (txn, _) =>
+        txn.date.desc
+      }
 
-      database.run(query.result).map { transactionRecords =>
+      database.run(query.result).map { results =>
+        val transactionRecords = results.map { case (transactionRecord, _) => transactionRecord }
         PaginatedResult.build(transactionRecords, paginationParams, None)
       }
     }

@@ -44,6 +44,30 @@ class TransactionsSpec
       transactions.head.guid mustBe includedAccount.guid
     }
 
+    "return only Transactions belonging to the specified account" in {
+      TestService.deleteTransactions()
+
+      val includedAccount = TestService.createAccount()
+      val includedTransaction = TestService.createTransaction(
+        accountGuid = includedAccount.guid
+      )
+
+      val excludedAccount = TestService.createAccount()
+      val excludedTransaction = TestService.createTransaction(
+        accountGuid = excludedAccount.guid
+      )
+
+      val response = await {
+        authenticatedRequest("/transactions").
+          withQueryString("accountGuid" -> includedAccount.guid.toString).
+          get
+      }
+
+      val transactions = response.json.as[Seq[Transaction]]
+      transactions.length mustBe 1
+      transactions.head.guid mustBe includedTransaction.guid
+    }
+
   }
 
   "POST /transactions" must {

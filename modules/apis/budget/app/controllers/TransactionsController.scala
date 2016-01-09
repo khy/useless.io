@@ -7,6 +7,8 @@ import play.api.mvc._
 import play.api.libs.json.Json
 import play.api.Play.current
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
+import play.api.data._
+import play.api.data.Forms._
 import org.joda.time.LocalDate
 import io.useless.play.json.DateTimeJson._
 import io.useless.play.json.MessageJson.format
@@ -15,28 +17,43 @@ import io.useless.play.pagination.PaginationController
 import controllers.budget.auth.Auth
 import services.budget.TransactionsService
 import models.budget.JsonImplicits._
+import util.FormFormats._
 
 object TransactionsController extends Controller with PaginationController {
 
   val transactionsService = TransactionsService.default()
 
+  case class IndexQuery(
+    accountGuid: Option[UUID]
+  )
+
+  val indexQueryForm = Form(
+    mapping(
+      "accountGuid" -> optional(uuid)
+    )(IndexQuery.apply)(IndexQuery.unapply)
+  )
+
   def index = Auth.async { implicit request =>
-    withRawPaginationParams { rawPaginationParams =>
-      transactionsService.findTransactions(
-        createdByAccounts = Some(Seq(request.accessToken.resourceOwner.guid)),
-        rawPaginationParams = rawPaginationParams
-      ).flatMap { result =>
-        result.fold(
-          errors => Future.successful(Conflict(Json.toJson(errors))),
-          result => {
-            transactionsService.records2models(result.items).map { transactions =>
-              val _result = result.copy(items = transactions)
-              paginatedResult(routes.TransactionsController.index, _result)
+    indexQueryForm.bindFromRequest.fold(
+      formWithErrors => Future.successful(Conflict(formWithErrors.errorsAsJson)),
+      indexQuery => withRawPaginationParams { rawPaginationParams =>
+        transactionsService.findTransactions(
+          accountGuids = indexQuery.accountGuid.map(Seq(_)),
+          createdByAccounts = Some(Seq(request.accessToken.resourceOwner.guid)),
+          rawPaginationParams = rawPaginationParams
+        ).flatMap { result =>
+          result.fold(
+            errors => Future.successful(Conflict(Json.toJson(errors))),
+            result => {
+              transactionsService.records2models(result.items).map { transactions =>
+                val _result = result.copy(items = transactions)
+                paginatedResult(routes.TransactionsController.index, _result)
+              }
             }
-          }
-        )
+          )
+        }
       }
-    }
+    )
   }
 
   case class CreateData(
