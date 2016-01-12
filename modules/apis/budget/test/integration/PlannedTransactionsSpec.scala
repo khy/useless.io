@@ -55,6 +55,58 @@ class PlannedTransactionsSpec
       plannedTransactions.head.transactionGuid mustBe Some(transaction.guid)
     }
 
+    "return only PlannedTransactions belonging to the specified account" in {
+      TestService.deletePlannedTransactions()
+
+      val includedAccount = TestService.createAccount()
+      val includedPlannedTransaction = TestService.createPlannedTransaction(
+        accountGuid = includedAccount.guid
+      )
+
+      val excludedAccount = TestService.createAccount()
+      val excludedPlannedTransaction = TestService.createPlannedTransaction(
+        accountGuid = excludedAccount.guid
+      )
+
+      val response = await {
+        authenticatedRequest("/plannedTransactions").
+          withQueryString("accountGuid" -> includedAccount.guid.toString).
+          get
+      }
+
+      val plannedTransactions = response.json.as[Seq[PlannedTransaction]]
+      plannedTransactions.length mustBe 1
+      plannedTransactions.head.guid mustBe includedPlannedTransaction.guid
+    }
+
+    "paginate the PlannedTransactions as specified" in {
+      TestService.deletePlannedTransactions()
+
+      val plannedTransaction1 = TestService.createPlannedTransaction()
+      val plannedTransaction2 = TestService.createPlannedTransaction()
+      val plannedTransaction3 = TestService.createPlannedTransaction()
+
+      val response1 = await {
+        authenticatedRequest("/plannedTransactions").
+          withQueryString("p.limit" -> "2").
+          get
+      }
+
+      val plannedTransactions1 = response1.json.as[Seq[PlannedTransaction]]
+      plannedTransactions1.length mustBe 2
+      plannedTransactions1.map(_.guid) must not contain plannedTransaction3.guid
+
+      val response2 = await {
+        authenticatedRequest("/plannedTransactions").
+          withQueryString("p.page" -> "2", "p.limit" -> "2").
+          get
+      }
+
+      val plannedTransactions2 = response2.json.as[Seq[PlannedTransaction]]
+      plannedTransactions2.length mustBe 1
+      plannedTransactions2.head.guid mustBe plannedTransaction3.guid
+    }
+
   }
 
   "POST /plannedTransactions" must {

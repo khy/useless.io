@@ -70,28 +70,57 @@ class PlannedTransactionsService(
 
   def findPlannedTransactions(
     ids: Option[Seq[Long]] = None,
+    accountGuids: Option[Seq[UUID]] = None,
     createdByAccounts: Option[Seq[UUID]] = None,
     rawPaginationParams: RawPaginationParams = RawPaginationParams()
   )(implicit ec: ExecutionContext): Future[Validation[PaginatedResult[PlannedTransaction]]] = {
     val valPaginationParams = PaginationParams.build(rawPaginationParams)
 
     ValidationUtil.future(valPaginationParams) { paginationParams =>
-      var query = PlannedTransactions.filter(_.deletedAt.isEmpty)
+      var query = PlannedTransactions.join(Accounts).on { case (plannedTxn, account) =>
+        plannedTxn.accountId === account.id
+      }.filter { case (plannedTxn, _) =>
+        plannedTxn.deletedAt.isEmpty
+      }
 
       ids.foreach { ids =>
-        query = query.filter { _.id inSet ids }
+        query = query.filter { case (plannedTxn, _) =>
+          plannedTxn.id inSet ids
+        }
+      }
+
+      accountGuids.foreach { accountGuids =>
+        query = query.filter { case (_, account) =>
+          account.guid inSet accountGuids
+        }
       }
 
       createdByAccounts.foreach { createdByAccounts =>
-        query = query.filter { _.createdByAccount inSet createdByAccounts }
+        query = query.filter { case (plannedTxn, _) =>
+          plannedTxn.createdByAccount inSet createdByAccounts
+        }
       }
 
-      query = query.sortBy(_.minDate.asc)
+      var pageQuery = query.sortBy { case (plannedTxn, _) =>
+        plannedTxn.minDate.asc
+      }
 
-      database.run(query.result).flatMap { records =>
-        records2models(records).map { plannedTransactions =>
-          PaginatedResult.build(plannedTransactions, paginationParams, None)
+      pageQuery = paginationParams match {
+        case params: OffsetBasedPaginationParams => {
+          pageQuery.drop(params.offset)
         }
+        case _ => pageQuery
+      }
+
+      pageQuery = pageQuery.take(paginationParams.limit)
+
+      for {
+        total <- database.run(query.length.result)
+        results <- database.run(pageQuery.result)
+        plannedTxnRecords = results.map { case (plannedTxnRecord, _) => plannedTxnRecord }
+        models <- records2models(plannedTxnRecords)
+      } yield {
+        PaginatedResult.build(models, paginationParams, Some(total))
       }
     }
   }

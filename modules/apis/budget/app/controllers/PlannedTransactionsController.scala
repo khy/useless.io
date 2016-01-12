@@ -7,6 +7,8 @@ import play.api.mvc._
 import play.api.libs.json.Json
 import play.api.Play.current
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
+import play.api.data._
+import play.api.data.Forms._
 import org.joda.time.LocalDate
 import io.useless.play.json.DateTimeJson._
 import io.useless.play.json.MessageJson.format
@@ -15,23 +17,40 @@ import io.useless.play.pagination.PaginationController
 import controllers.budget.auth.Auth
 import services.budget.PlannedTransactionsService
 import models.budget.JsonImplicits._
+import util.FormFormats._
 
 object PlannedTransactionsController extends Controller with PaginationController {
 
   val plannedTransactionsService = PlannedTransactionsService.default()
 
+  case class IndexQuery(
+    accountGuid: Option[UUID]
+  )
+
+  val indexQueryForm = Form(
+    mapping(
+      "accountGuid" -> optional(uuid)
+    )(IndexQuery.apply)(IndexQuery.unapply)
+  )
+
   def index = Auth.async { implicit request =>
-    withRawPaginationParams { rawPaginationParams =>
-      plannedTransactionsService.findPlannedTransactions(
-        createdByAccounts = Some(Seq(request.accessToken.resourceOwner.guid)),
-        rawPaginationParams = rawPaginationParams
-      ).map { result =>
-        result.fold(
-          errors => Conflict(Json.toJson(errors)),
-          plannedTransactions => paginatedResult(routes.PlannedTransactionsController.index, plannedTransactions)
-        )
+    indexQueryForm.bindFromRequest.fold(
+      formWithErrors => Future.successful(Conflict(formWithErrors.errorsAsJson)),
+      indexQuery => withRawPaginationParams { rawPaginationParams =>
+        withRawPaginationParams { rawPaginationParams =>
+          plannedTransactionsService.findPlannedTransactions(
+            accountGuids = indexQuery.accountGuid.map(Seq(_)),
+            createdByAccounts = Some(Seq(request.accessToken.resourceOwner.guid)),
+            rawPaginationParams = rawPaginationParams
+          ).map { result =>
+            result.fold(
+              errors => Conflict(Json.toJson(errors)),
+              plannedTransactions => paginatedResult(routes.PlannedTransactionsController.index, plannedTransactions)
+            )
+          }
+        }
       }
-    }
+    )
   }
 
   case class CreateData(
