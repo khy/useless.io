@@ -68,6 +68,34 @@ class TransactionsSpec
       transactions.head.guid mustBe includedTransaction.guid
     }
 
+    "paginate the Transactions as specified" in {
+      TestService.deleteTransactions()
+
+      val transaction1 = TestService.createTransaction()
+      val transaction2 = TestService.createTransaction()
+      val transaction3 = TestService.createTransaction()
+
+      val response1 = await {
+        authenticatedRequest("/transactions").
+          withQueryString("p.limit" -> "2").
+          get
+      }
+
+      val transactions1 = response1.json.as[Seq[Transaction]]
+      transactions1.length mustBe 2
+      transactions1.map(_.guid) must not contain transaction3.guid
+
+      val response2 = await {
+        authenticatedRequest("/transactions").
+          withQueryString("p.page" -> "2", "p.limit" -> "2").
+          get
+      }
+
+      val transactions2 = response2.json.as[Seq[Transaction]]
+      transactions2.length mustBe 1
+      transactions2.head.guid mustBe transaction3.guid
+    }
+
   }
 
   "POST /transactions" must {

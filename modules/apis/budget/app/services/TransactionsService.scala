@@ -117,13 +117,25 @@ class TransactionsService(
         }
       }
 
-      query = query.sortBy { case (txn, _) =>
+      var pageQuery = query.sortBy { case (txn, _) =>
         txn.date.desc
       }
 
-      database.run(query.result).map { results =>
+      pageQuery = paginationParams match {
+        case params: OffsetBasedPaginationParams => {
+          pageQuery.drop(params.offset)
+        }
+        case _ => pageQuery
+      }
+
+      pageQuery = pageQuery.take(paginationParams.limit)
+
+      for {
+        total <- database.run(query.length.result)
+        results <- database.run(pageQuery.result)
+      } yield {
         val transactionRecords = results.map { case (transactionRecord, _) => transactionRecord }
-        PaginatedResult.build(transactionRecords, paginationParams, None)
+        PaginatedResult.build(transactionRecords, paginationParams, Some(total))
       }
     }
   }
