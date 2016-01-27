@@ -6,6 +6,7 @@ import org.scalatestplus.play._
 import play.api.test._
 import play.api.test.Helpers._
 import play.api.libs.json._
+import play.api.libs.concurrent.Execution.Implicits.defaultContext
 
 import models.budget.{TransactionType, TransactionTypeOwnership}
 import models.budget.JsonImplicits._
@@ -89,6 +90,73 @@ class TransactionTypesSpec
       val transactionType = response.json.as[TransactionType]
       transactionType.name mustBe "Rent"
       transactionType.parentGuid mustBe Some(expense.guid)
+    }
+
+  }
+
+  "POST /transactionTypes/:guid/adjustments" must {
+
+    lazy val expense = TestService.getSystemTransactionType("Expense")
+    lazy val income = TestService.getSystemTransactionType("Income")
+
+    "return a 401 Unauthorized if the request isn't authenticated" in {
+      val transactionType = TestService.createTransactionType(
+        name = "Presents", parentGuid = Some(expense.guid)
+      )
+
+      val response = await {
+        unauthentictedRequest(s"/transactionTypes/${transactionType.guid}/adjustments").
+          post(Json.obj("name" -> "Wedding Presents"))
+      }
+      response.status mustBe UNAUTHORIZED
+    }
+
+    "return the same TransactionType with a new parent, if just changing the parent" in {
+      val transactionType = TestService.createTransactionType(
+        name = "Presents", parentGuid = Some(expense.guid)
+      )
+      val transaction = TestService.createTransaction(transactionTypeGuid = transactionType.guid)
+
+      val response = await {
+        authenticatedRequest(s"/transactionTypes/${transactionType.guid}/adjustments").
+          post(Json.obj("parentGuid" -> income.guid))
+      }
+      response.status mustBe CREATED
+      val _transactionType = response.json.as[TransactionType]
+      _transactionType.guid mustBe transactionType.guid
+      _transactionType.name mustBe "Presents"
+      _transactionType.parentGuid mustBe Some(income.guid)
+
+      val transactionsResult = await { TestService.transactionsService.findTransactions(
+        guids = Some(Seq(transaction.guid))
+      )}
+      val records = transactionsResult.toSuccess.value.items
+      val transactions = await { TestService.transactionsService.records2models(records) }
+      transactions.map(_.transactionTypeGuid).distinct mustBe Seq(transactionType.guid)
+    }
+
+    "return a new TransactionType with the same relationships, if changing the name" in {
+      val transactionType = TestService.createTransactionType(
+        name = "Presents", parentGuid = Some(expense.guid)
+      )
+      val transaction = TestService.createTransaction(transactionTypeGuid = transactionType.guid)
+
+      val response = await {
+        authenticatedRequest(s"/transactionTypes/${transactionType.guid}/adjustments").
+          post(Json.obj("name" -> "Wedding Presents"))
+      }
+      response.status mustBe CREATED
+      val _transactionType = response.json.as[TransactionType]
+      _transactionType.guid must not be transactionType.guid
+      _transactionType.name mustBe "Wedding Presents"
+      _transactionType.parentGuid mustBe Some(expense.guid)
+
+      val transactionsResult = await { TestService.transactionsService.findTransactions(
+        guids = Some(Seq(transaction.guid))
+      )}
+      val records = transactionsResult.toSuccess.value.items
+      val transactions = await { TestService.transactionsService.records2models(records) }
+      transactions.map(_.transactionTypeGuid).distinct mustBe Seq(_transactionType.guid)
     }
 
   }

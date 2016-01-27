@@ -5,6 +5,7 @@ GET     /accountTypes   controllers.budget.AccountTypesController.index
 
 GET     /transactionTypes   controllers.budget.TransactionTypesController.index
 POST    /transactionTypes   controllers.budget.TransactionTypesController.create
+POST    /transactionTypes/:guid/adjustments   controllers.budget.TransactionTypesController.adjust(guid: java.util.UUID)
 
 GET     /plannedTransactions  controllers.budget.PlannedTransactionsController.index
 POST    /plannedTransactions  controllers.budget.PlannedTransactionsController.create

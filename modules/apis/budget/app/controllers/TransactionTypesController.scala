@@ -56,4 +56,27 @@ object TransactionTypesController extends Controller with PaginationController {
     )
   }
 
+  case class AdjustData(
+    name: Option[String],
+    parentGuid: Option[UUID]
+  )
+  private implicit val adr = Json.reads[AdjustData]
+
+  def adjust(guid: UUID) = Auth.async(parse.json) { request =>
+    request.body.validate[AdjustData].fold(
+      error => Future.successful(Conflict(error.toString)),
+      data => transactionTypesService.adjustTransactionType(
+        guid = guid,
+        parentGuid = data.parentGuid,
+        name = data.name,
+        accessToken = request.accessToken
+      ).map { result =>
+        result.fold(
+          errors => Conflict(Json.toJson(errors)),
+          transactionType => Created(Json.toJson(transactionType))
+        )
+      }
+    )
+  }
+
 }
