@@ -183,29 +183,7 @@ class TransactionTypesService(
         ValidationUtil.future(valTransactionType ++ valOptParentId) { case (transactionType, optParentId) =>
           if (name.isEmpty || Some(transactionType.name) == name) {
             optParentId.map { parentId =>
-              val delete = TransactionTypeSubtypes.filter { tts =>
-                tts.childTransactionTypeId === transactionType.id &&
-                tts.deletedAt.isEmpty
-              }.map { tts =>
-                (tts.deletedAt, tts.deletedByAccount, tts.deletedByAccessToken)
-              }.update((Some(SqlUtil.now), Some(accessToken.resourceOwner.guid), Some(accessToken.guid)))
-
-              val transactionTypeSubtypes = TransactionTypeSubtypes.map { r =>
-                (r.parentTransactionTypeId, r.childTransactionTypeId, r.createdByAccount, r.createdByAccessToken)
-              }.returning(TransactionTypeSubtypes.map(_.id))
-
-              val insert = transactionTypeSubtypes += ((parentId, transactionType.id, accessToken.resourceOwner.guid, accessToken.guid))
-
-              val transaction = delete.andThen(insert).transactionally
-
-              database.run(transaction).flatMap { result =>
-                findTransactionTypes(ids = Some(Seq(transactionType.id))).map { result =>
-                  result.map(_.items.headOption) match {
-                    case Validation.Success(Some(transactionType)) => transactionType
-                    case _ => throw new ResourceUnexpectedlyNotFound("TransactionType", transactionType.id)
-                  }
-                }
-              }
+              changeTransactionTypeParent(transactionType, parentId, accessToken)
             }.getOrElse {
               records2models(Seq(transactionType)).map { transactionTypes =>
                 transactionTypes.headOption.getOrElse {
@@ -214,77 +192,116 @@ class TransactionTypesService(
               }
             }
           } else {
-            val transactionTypes = TransactionTypes.map { r =>
-              (r.guid, r.name, r.ownershipKey, r.createdByAccount, r.createdByAccessToken)
-            }.returning(TransactionTypes.map(_.id))
+            replaceTransactionType(transactionType, optParentId, name.get, accessToken)
+          }
+        }
+      }
+    }
+  }
 
-            val insertTransactionType = transactionTypes +=
-              ((UUID.randomUUID, name.getOrElse(transactionType.name), transactionType.ownershipKey, accessToken.resourceOwner.guid, accessToken.guid))
+  private def changeTransactionTypeParent(
+    transactionType: TransactionTypeRecord,
+    parentId: Long,
+    accessToken: AccessToken
+  )(implicit ec: ExecutionContext): Future[TransactionType] = {
+    val delete = TransactionTypeSubtypes.filter { tts =>
+      tts.childTransactionTypeId === transactionType.id &&
+      tts.deletedAt.isEmpty
+    }.map { tts =>
+      (tts.deletedAt, tts.deletedByAccount, tts.deletedByAccessToken)
+    }.update((Some(SqlUtil.now), Some(accessToken.resourceOwner.guid), Some(accessToken.guid)))
 
-            database.run(insertTransactionType).flatMap { newTransactionTypeId =>
-              optParentId.map { parentId =>
-                Future.successful((parentId, None))
-              }.getOrElse {
-                val query = TransactionTypeSubtypes.filter { r =>
-                  r.childTransactionTypeId === transactionType.id && r.deletedAt.isEmpty
-                }
+    val transactionTypeSubtypes = TransactionTypeSubtypes.map { r =>
+      (r.parentTransactionTypeId, r.childTransactionTypeId, r.createdByAccount, r.createdByAccessToken)
+    }.returning(TransactionTypeSubtypes.map(_.id))
 
-                database.run(query.result).map { transactionTypeSubtypes =>
-                  transactionTypeSubtypes.headOption.map { transactionTypeSubtype =>
-                    (transactionTypeSubtype.parentTransactionTypeId, Some(transactionTypeSubtype.id))
-                  }.getOrElse {
-                    throw new ResourceUnexpectedlyNotFound("Parent TransactionType", transactionType.id)
-                  }
-                }
-              }.flatMap { case (parentTransactionTypeId, optTransactionTypeSubtypeId) =>
-                val transactionTypeSubtypes = TransactionTypeSubtypes.map { r =>
-                  (r.parentTransactionTypeId, r.childTransactionTypeId, r.adjustedTransactionTypeSubtypeId, r.createdByAccount, r.createdByAccessToken)
-                }.returning(TransactionTypeSubtypes.map(_.id))
+    val insert = transactionTypeSubtypes += ((parentId, transactionType.id, accessToken.resourceOwner.guid, accessToken.guid))
 
-                val insert = transactionTypeSubtypes +=
-                  ((parentTransactionTypeId, newTransactionTypeId, optTransactionTypeSubtypeId, accessToken.resourceOwner.guid, accessToken.guid))
+    val transaction = delete.andThen(insert).transactionally
 
-                database.run(insert)
-              }.flatMap { _ =>
-                val query = TransactionTransactionTypes.filter { r =>
-                  r.transactionTypeId === transactionType.id && r.deletedAt.isEmpty
-                }
+    database.run(transaction).flatMap { result =>
+      findTransactionTypes(ids = Some(Seq(transactionType.id))).map { result =>
+        result.map(_.items.headOption) match {
+          case Validation.Success(Some(transactionType)) => transactionType
+          case _ => throw new ResourceUnexpectedlyNotFound("TransactionType", transactionType.id)
+        }
+      }
+    }
+  }
 
-                database.run(query.result).flatMap { transactionTransactionTypes =>
-                  val insertProjection = TransactionTransactionTypes.map { r =>
-                    (r.transactionId, r.transactionTypeId, r.adjustedTransactionTransactionTypeId, r.createdByAccount, r.createdByAccessToken)
-                  }.returning(TransactionTransactionTypes.map(_.id))
+  private def replaceTransactionType(
+    transactionType: TransactionTypeRecord,
+    optParentId: Option[Long],
+    name: String,
+    accessToken: AccessToken
+  )(implicit ec: ExecutionContext): Future[TransactionType] = {
+    val transactionTypes = TransactionTypes.map { r =>
+      (r.guid, r.name, r.ownershipKey, r.createdByAccount, r.createdByAccessToken)
+    }.returning(TransactionTypes.map(_.id))
 
-                  val insertTransactionTransactionTypes = insertProjection ++= transactionTransactionTypes.map { transactionTransactionType =>
-                    (transactionTransactionType.transactionId, newTransactionTypeId, Some(transactionTransactionType.id), accessToken.resourceOwner.guid, accessToken.guid)
-                  }
+    val insertTransactionType = transactionTypes +=
+      ((UUID.randomUUID, name, transactionType.ownershipKey, accessToken.resourceOwner.guid, accessToken.guid))
 
-                  val deleteTransactionTransactionTypes = TransactionTransactionTypes.filter { r =>
-                    (r.id inSet transactionTransactionTypes.map(_.id)) && r.deletedAt.isEmpty
-                  }.map { r =>
-                    (r.deletedAt, r.deletedByAccount, r.deletedByAccessToken)
-                  }.update((Some(SqlUtil.now), Some(accessToken.resourceOwner.guid), Some(accessToken.guid)))
+    database.run(insertTransactionType).flatMap { newTransactionTypeId =>
+      optParentId.map { parentId =>
+        Future.successful((parentId, None))
+      }.getOrElse {
+        val query = TransactionTypeSubtypes.filter { r =>
+          r.childTransactionTypeId === transactionType.id && r.deletedAt.isEmpty
+        }
 
-                  val deleteTransactionType = TransactionTypes.filter { tt =>
-                    tt.id === transactionType.id && tt.deletedAt.isEmpty
-                  }.map { tt =>
-                    (tt.deletedAt, tt.deletedByAccount, tt.deletedByAccessToken)
-                  }.update((Some(SqlUtil.now), Some(accessToken.resourceOwner.guid), Some(accessToken.guid)))
+        database.run(query.result).map { transactionTypeSubtypes =>
+          transactionTypeSubtypes.headOption.map { transactionTypeSubtype =>
+            (transactionTypeSubtype.parentTransactionTypeId, Some(transactionTypeSubtype.id))
+          }.getOrElse {
+            throw new ResourceUnexpectedlyNotFound("Parent TransactionType", transactionType.id)
+          }
+        }
+      }.flatMap { case (parentTransactionTypeId, optTransactionTypeSubtypeId) =>
+        val transactionTypeSubtypes = TransactionTypeSubtypes.map { r =>
+          (r.parentTransactionTypeId, r.childTransactionTypeId, r.adjustedTransactionTypeSubtypeId, r.createdByAccount, r.createdByAccessToken)
+        }.returning(TransactionTypeSubtypes.map(_.id))
 
-                  val transaction = insertTransactionTransactionTypes.
-                    andThen(deleteTransactionTransactionTypes).
-                    andThen(deleteTransactionType).
-                    transactionally
+        val insert = transactionTypeSubtypes +=
+          ((parentTransactionTypeId, newTransactionTypeId, optTransactionTypeSubtypeId, accessToken.resourceOwner.guid, accessToken.guid))
 
-                  database.run(transaction).flatMap { result =>
-                    findTransactionTypes(ids = Some(Seq(newTransactionTypeId))).map { result =>
-                      result.map(_.items.headOption) match {
-                        case Validation.Success(Some(transactionType)) => transactionType
-                        case _ => throw new ResourceUnexpectedlyNotFound("TransactionType", transactionType.id)
-                      }
-                    }
-                  }
-                }
+        database.run(insert)
+      }.flatMap { _ =>
+        val query = TransactionTransactionTypes.filter { r =>
+          r.transactionTypeId === transactionType.id && r.deletedAt.isEmpty
+        }
+
+        database.run(query.result).flatMap { transactionTransactionTypes =>
+          val insertProjection = TransactionTransactionTypes.map { r =>
+            (r.transactionId, r.transactionTypeId, r.adjustedTransactionTransactionTypeId, r.createdByAccount, r.createdByAccessToken)
+          }.returning(TransactionTransactionTypes.map(_.id))
+
+          val insertTransactionTransactionTypes = insertProjection ++= transactionTransactionTypes.map { transactionTransactionType =>
+            (transactionTransactionType.transactionId, newTransactionTypeId, Some(transactionTransactionType.id), accessToken.resourceOwner.guid, accessToken.guid)
+          }
+
+          val deleteTransactionTransactionTypes = TransactionTransactionTypes.filter { r =>
+            (r.id inSet transactionTransactionTypes.map(_.id)) && r.deletedAt.isEmpty
+          }.map { r =>
+            (r.deletedAt, r.deletedByAccount, r.deletedByAccessToken)
+          }.update((Some(SqlUtil.now), Some(accessToken.resourceOwner.guid), Some(accessToken.guid)))
+
+          val deleteTransactionType = TransactionTypes.filter { tt =>
+            tt.id === transactionType.id && tt.deletedAt.isEmpty
+          }.map { tt =>
+            (tt.deletedAt, tt.deletedByAccount, tt.deletedByAccessToken)
+          }.update((Some(SqlUtil.now), Some(accessToken.resourceOwner.guid), Some(accessToken.guid)))
+
+          val transaction = insertTransactionTransactionTypes.
+            andThen(deleteTransactionTransactionTypes).
+            andThen(deleteTransactionType).
+            transactionally
+
+          database.run(transaction).flatMap { result =>
+            findTransactionTypes(ids = Some(Seq(newTransactionTypeId))).map { result =>
+              result.map(_.items.headOption) match {
+                case Validation.Success(Some(transactionType)) => transactionType
+                case _ => throw new ResourceUnexpectedlyNotFound("TransactionType", transactionType.id)
               }
             }
           }
