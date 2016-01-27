@@ -152,8 +152,8 @@ class TransactionTypesService(
 
   def adjustTransactionType(
     guid: UUID,
-    name: Option[String],
-    parentGuid: Option[UUID],
+    optParentGuid: Option[UUID],
+    optName: Option[String],
     accessToken: AccessToken
   )(implicit ec: ExecutionContext): Future[Validation[TransactionType]] = {
     val transactionTypeQuery = TransactionTypes.filter { r => r.guid === guid && r.deletedAt.isEmpty }
@@ -165,7 +165,7 @@ class TransactionTypesService(
       }
     }
 
-    val futValOptParentId = parentGuid.map { parentGuid =>
+    val futValOptParentId = optParentGuid.map { parentGuid =>
       val transactionTypeQuery = TransactionTypes.filter { r => r.guid === parentGuid && r.deletedAt.isEmpty }
       database.run(transactionTypeQuery.result).map { transactionTypes =>
         transactionTypes.headOption.map { transactionType =>
@@ -181,7 +181,7 @@ class TransactionTypesService(
     futValTransactionType.flatMap { valTransactionType =>
       futValOptParentId.flatMap { valOptParentId =>
         ValidationUtil.future(valTransactionType ++ valOptParentId) { case (transactionType, optParentId) =>
-          if (name.isEmpty || Some(transactionType.name) == name) {
+          if (optName.isEmpty || optName == Some(transactionType.name)) {
             optParentId.map { parentId =>
               changeTransactionTypeParent(transactionType, parentId, accessToken)
             }.getOrElse {
@@ -192,7 +192,7 @@ class TransactionTypesService(
               }
             }
           } else {
-            replaceTransactionType(transactionType, optParentId, name.get, accessToken)
+            replaceTransactionType(transactionType, optParentId, optName.get, accessToken)
           }
         }
       }

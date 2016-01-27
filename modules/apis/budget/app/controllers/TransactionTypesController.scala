@@ -67,8 +67,8 @@ object TransactionTypesController extends Controller with PaginationController {
       error => Future.successful(Conflict(error.toString)),
       data => transactionTypesService.adjustTransactionType(
         guid = guid,
-        parentGuid = data.parentGuid,
-        name = data.name,
+        optParentGuid = data.parentGuid,
+        optName = data.name,
         accessToken = request.accessToken
       ).map { result =>
         result.fold(
