@@ -127,19 +127,18 @@ class TransactionTypesSpec
       _transactionType.name mustBe "Presents"
       _transactionType.parentGuid mustBe Some(income.guid)
 
-      val transactionsResult = await { TestService.transactionsService.findTransactions(
-        guids = Some(Seq(transaction.guid))
-      )}
-      val records = transactionsResult.toSuccess.value.items
-      val transactions = await { TestService.transactionsService.records2models(records) }
-      transactions.map(_.transactionTypeGuid).distinct mustBe Seq(transactionType.guid)
+      assertTransactionsType(
+        transactionGuids = Seq(transaction.guid),
+        typeGuid = transactionType.guid
+      )
     }
 
     "return a new TransactionType with the same relationships, if changing the name" in {
       val transactionType = TestService.createTransactionType(
         name = "Presents", parentGuid = Some(expense.guid)
       )
-      val transaction = TestService.createTransaction(transactionTypeGuid = transactionType.guid)
+      val transaction1 = TestService.createTransaction(transactionTypeGuid = transactionType.guid)
+      val transaction2 = TestService.createTransaction(transactionTypeGuid = transactionType.guid)
 
       val response = await {
         authenticatedRequest(s"/transactionTypes/${transactionType.guid}/adjustments").
@@ -151,12 +150,41 @@ class TransactionTypesSpec
       _transactionType.name mustBe "Wedding Presents"
       _transactionType.parentGuid mustBe Some(expense.guid)
 
-      val transactionsResult = await { TestService.transactionsService.findTransactions(
-        guids = Some(Seq(transaction.guid))
-      )}
-      val records = transactionsResult.toSuccess.value.items
+      assertTransactionsType(
+        transactionGuids = Seq(transaction1.guid, transaction2.guid),
+        typeGuid = _transactionType.guid
+      )
+    }
+
+    "return a new TransactionType with a new parent, but same Transactions, if changing both name and parent" in {
+      val transactionType = TestService.createTransactionType(
+        name = "Presents", parentGuid = Some(expense.guid)
+      )
+      val transaction1 = TestService.createTransaction(transactionTypeGuid = transactionType.guid)
+      val transaction2 = TestService.createTransaction(transactionTypeGuid = transactionType.guid)
+
+      val response = await {
+        authenticatedRequest(s"/transactionTypes/${transactionType.guid}/adjustments").
+          post(Json.obj("name" -> "Wedding Presents", "parentGuid" -> income.guid))
+      }
+      response.status mustBe CREATED
+      val _transactionType = response.json.as[TransactionType]
+      _transactionType.guid must not be transactionType.guid
+      _transactionType.name mustBe "Wedding Presents"
+      _transactionType.parentGuid mustBe Some(income.guid)
+
+      assertTransactionsType(
+        transactionGuids = Seq(transaction1.guid, transaction2.guid),
+        typeGuid = _transactionType.guid
+      )
+    }
+
+    def assertTransactionsType(transactionGuids: Seq[UUID], typeGuid: UUID) {
+      val records = await { TestService.transactionsService.findTransactions(
+        guids = Some(transactionGuids)
+      )}.toSuccess.value.items
       val transactions = await { TestService.transactionsService.records2models(records) }
-      transactions.map(_.transactionTypeGuid).distinct mustBe Seq(_transactionType.guid)
+      transactions.map(_.transactionTypeGuid).distinct mustBe Seq(typeGuid)
     }
 
   }
