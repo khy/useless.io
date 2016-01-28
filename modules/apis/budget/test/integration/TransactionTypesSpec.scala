@@ -111,6 +111,18 @@ class TransactionTypesSpec
       response.status mustBe UNAUTHORIZED
     }
 
+    "return a 409 Conflict if the specified TransactionType is a 'system' TransactionType" in {
+      val response = await {
+        authenticatedRequest(s"/transactionTypes/${expense.guid}/adjustments").
+          post(Json.obj("name" -> "Expense!!!!"))
+      }
+      response.status mustBe CONFLICT
+      ((response.json \ "guid")(0) \ "key").as[String] mustBe "useless.error.systemTransactionType"
+
+      val _expense = TestService.getSystemTransactionType("Expense")
+      expense mustBe _expense
+    }
+
     "return the same TransactionType with a new parent, if just changing the parent" in {
       val transactionType = TestService.createTransactionType(
         name = "Presents", parentGuid = Some(expense.guid)

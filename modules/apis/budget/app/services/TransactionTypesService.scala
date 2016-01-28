@@ -157,9 +157,14 @@ class TransactionTypesService(
     accessToken: AccessToken
   )(implicit ec: ExecutionContext): Future[Validation[TransactionType]] = {
     val transactionTypeQuery = TransactionTypes.filter { r => r.guid === guid && r.deletedAt.isEmpty }
+
     val futValTransactionType = database.run(transactionTypeQuery.result).map { transactionTypes =>
       transactionTypes.headOption.map { transactionType =>
-        Validation.success(transactionType)
+        transactionType.ownershipKey match {
+          case TransactionTypeOwnership.System.key => Validation.failure("guid", "useless.error.systemTransactionType")
+          case TransactionTypeOwnership.User.key => Validation.success(transactionType)
+          case key => throw new RuntimeException(s"unknown enum key [${key}]")
+        }
       }.getOrElse {
         Validation.failure("guid", "useless.error.unknownGuid", "specified" -> guid.toString)
       }
