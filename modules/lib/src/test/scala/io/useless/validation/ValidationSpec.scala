@@ -90,6 +90,34 @@ class ValidationSpec
 
   }
 
+  "Validation#flatMap" must {
+
+    "return Validation.Success if the validation and the function result are Validation.Success" in {
+      val validation = Validation.success(1)
+      val _validation = validation.flatMap { i => Validation.success(i.toString) }
+      _validation.toSuccess.value mustBe "1"
+    }
+
+    "return Validation.Failure if the validation is Validation.Success, but the function returns Validation.Failure" in {
+      val validation = Validation.success(1)
+      val _validation = validation.flatMap { i => Validation.failure[Int]("resourceKey", "is.invalid") }
+      _validation.toFailure.errors("resourceKey").head.key mustBe "is.invalid"
+    }
+
+    "return Validation.Failure if the validation and the function result are Validation.Failure" in {
+      val validation = Validation.failure[Int]("resourceKey", "is.invalid")
+      val _validation = validation.flatMap { i => Validation.failure[Int]("resourceKey", "is.also.invalid") }
+      _validation.toFailure.errors("resourceKey").head.key mustBe "is.invalid"
+    }
+
+    "return Validation.Failure if the validation is Validation.Failure, but the function returns Validation.Success" in {
+      val validation = Validation.failure[Int]("resourceKey", "is.invalid")
+      val _validation = validation.flatMap { i => Validation.success(i.toString) }
+      _validation.toFailure.errors("resourceKey").head.key mustBe "is.invalid"
+    }
+
+  }
+
   "Validation#fold" must {
 
     "return the result of the first function if the validation is a Validation.Failure" in {

@@ -56,6 +56,11 @@ sealed trait Validation[+T] {
     case Failure(errors) => failure(errors)
   }
 
+  def flatMap[S](f: T => Validation[S]): Validation[S] = this match {
+    case Success(value) => f(value)
+    case Failure(errors) => failure(errors)
+  }
+
   def fold[S](
     onFailure: Errors => S,
     onSuccess: T => S
