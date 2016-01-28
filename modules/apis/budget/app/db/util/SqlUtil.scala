@@ -5,6 +5,6 @@ import java.sql
 
 object SqlUtil {
 
-  val now = new sql.Timestamp((new Date).getTime)
+  def now() = new sql.Timestamp((new Date).getTime)
 
 }
