@@ -242,12 +242,12 @@ class TransactionTypesService(
   )(implicit ec: ExecutionContext): Future[TransactionType] = {
     // First, create the new TransactionType,
     val transactionTypes = TransactionTypes.map { r =>
-      (r.guid, r.name, r.ownershipKey, r.createdByAccount, r.createdByAccessToken)
+      (r.guid, r.name, r.ownershipKey, r.adjustedTransactionTypeId, r.createdByAccount, r.createdByAccessToken)
     }.returning(TransactionTypes.map(_.id))
 
     // preserving the old ownership key.
     val insertTransactionType = transactionTypes +=
-      ((UUID.randomUUID, name, oldTransactionType.ownershipKey, accessToken.resourceOwner.guid, accessToken.guid))
+      ((UUID.randomUUID, name, oldTransactionType.ownershipKey, Some(oldTransactionType.id), accessToken.resourceOwner.guid, accessToken.guid))
 
     database.run(insertTransactionType).flatMap { newTransactionTypeId =>
       // If a parent ID is specified, use it -

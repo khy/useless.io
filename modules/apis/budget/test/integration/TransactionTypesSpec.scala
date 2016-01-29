@@ -230,14 +230,20 @@ class TransactionTypesSpec
       val transaction1 = TestService.createTransaction(transactionTypeGuid = transactionType.guid)
       val transaction2 = TestService.createTransaction(transactionTypeGuid = transactionType.guid)
 
-      await {
+      val adjustResponse = await {
         authenticatedRequest(s"/transactionTypes/${transactionType.guid}/adjustments").
           post(Json.obj("name" -> "Wedding Presents", "parentGuid" -> income.guid))
       }
+      val adjustedTransactionType = adjustResponse.json.as[TransactionType]
 
-      val ttQuery = TransactionTypes.filter(_.guid === transactionType.guid)
-      val oldTransactionType = await { database.run(ttQuery.result) }.head
+      val newTtQuery = TransactionTypes.filter(_.guid === adjustedTransactionType.guid)
+      val newTransactionType = await { database.run(newTtQuery.result) }.head
+
+      val oldTtQuery = TransactionTypes.filter(_.guid === transactionType.guid)
+      val oldTransactionType = await { database.run(oldTtQuery.result) }.head
       oldTransactionType.deletedAt mustBe 'defined
+
+      newTransactionType.adjustedTransactionTypeId mustBe Some(oldTransactionType.id)
 
       val tttQuery = TransactionTransactionTypes.filter(_.transactionTypeId === oldTransactionType.id)
       val transactionTransactionTypes = await { database.run(tttQuery.result) }
