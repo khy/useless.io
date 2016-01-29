@@ -269,6 +269,10 @@ class TransactionTypesService(
       }.flatMap { case (parentTransactionTypeId, optTransactionTypeSubtypeId) =>
         // Now that we have the parent ID, create the appropriate
         // TransactionTypeSubtype record for the new TransactionType.
+
+        // Notice that we don't delete the old TransactionType's
+        // TransactionTypeSubtype because that relationship is technically
+        // still valid.
         val transactionTypeSubtypes = TransactionTypeSubtypes.map { r =>
           (r.parentTransactionTypeId, r.childTransactionTypeId, r.adjustedTransactionTypeSubtypeId, r.createdByAccount, r.createdByAccessToken)
         }.returning(TransactionTypeSubtypes.map(_.id))

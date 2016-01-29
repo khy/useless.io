@@ -7,16 +7,20 @@ import play.api.test._
 import play.api.test.Helpers._
 import play.api.libs.json._
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
+import slick.driver.PostgresDriver.api._
 
 import models.budget.{TransactionType, TransactionTypeOwnership}
 import models.budget.JsonImplicits._
 import services.budget.TestService
+import db.budget._
+import db.budget.util.DatabaseAccessor
 import test.budget.integration.util.IntegrationHelper
 
 class TransactionTypesSpec
   extends PlaySpec
   with OneServerPerSuite
   with IntegrationHelper
+  with DatabaseAccessor
 {
 
   "GET /transactionTypes" must {
@@ -189,6 +193,36 @@ class TransactionTypesSpec
         transactionGuids = Seq(transaction1.guid, transaction2.guid),
         typeGuid = _transactionType.guid
       )
+    }
+
+    "maintain historical records" in {
+      val transactionType = TestService.createTransactionType(
+        name = "Books", parentGuid = Some(expense.guid)
+      )
+      val transaction1 = TestService.createTransaction(transactionTypeGuid = transactionType.guid)
+      val transaction2 = TestService.createTransaction(transactionTypeGuid = transactionType.guid)
+
+      await {
+        authenticatedRequest(s"/transactionTypes/${transactionType.guid}/adjustments").
+          post(Json.obj("name" -> "Wedding Presents", "parentGuid" -> income.guid))
+      }
+
+      val ttQuery = TransactionTypes.filter(_.guid === transactionType.guid)
+      val oldTransactionType = await { database.run(ttQuery.result) }.head
+      oldTransactionType.deletedAt mustBe 'defined
+
+      val tttQuery = TransactionTransactionTypes.filter(_.transactionTypeId === oldTransactionType.id)
+      val transactionTransactionTypes = await { database.run(tttQuery.result) }
+      transactionTransactionTypes.length mustBe 2
+      transactionTransactionTypes.foreach { transactionTransactionType =>
+        transactionTransactionType.deletedAt mustBe 'defined
+      }
+
+      // We intentionally do not delete the old TransactionType's
+      // TransactionTypeSubtype - see the TransactionTypeService
+      val ttsQuery = TransactionTypeSubtypes.filter(_.childTransactionTypeId === oldTransactionType.id)
+      val transactionTypeSubtype = await { database.run(ttsQuery.result) }.head
+      transactionTypeSubtype.deletedAt mustBe 'empty
     }
 
     def assertTransactionsType(transactionGuids: Seq[UUID], typeGuid: UUID) {
