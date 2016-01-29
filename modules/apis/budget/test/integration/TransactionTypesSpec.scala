@@ -64,6 +64,34 @@ class TransactionTypesSpec
       transactionTypeNames must not contain ("Rent")
     }
 
+    "not return any soft-deleted transactions" in {
+      TestService.deleteTransactionTypes()
+      val expense = TestService.getSystemTransactionType("Expense")
+      val income = TestService.getSystemTransactionType("Income")
+
+      val rent = TestService.createTransactionType(
+        name = "Rent",
+        parentGuid = Some(expense.guid)
+      )
+
+      val salary = TestService.createTransactionType(
+        name = "Salary",
+        parentGuid = Some(income.guid)
+      )
+
+      val adjustResponse = await {
+        authenticatedRequest(s"/transactionTypes/${rent.guid}/adjustments").
+          post(Json.obj("name" -> "RENT"))
+      }
+      val adjustedRent = adjustResponse.json.as[TransactionType]
+
+      val response = await { authenticatedRequest("/transactionTypes").get }
+      val transactionTypeGuids = response.json.as[Seq[TransactionType]].map(_.guid)
+      transactionTypeGuids must contain (salary.guid)
+      transactionTypeGuids must contain (adjustedRent.guid)
+      transactionTypeGuids must not contain (rent.guid)
+    }
+
   }
 
   "POST /transactionTypes" must {

@@ -68,7 +68,7 @@ class TransactionTypesService(
     val valPaginationParams = PaginationParams.build(rawPaginationParams)
 
     ValidationUtil.future(valPaginationParams) { paginationParams =>
-      var query = TransactionTypes.filter { r => r.id === r.id }
+      var query = TransactionTypes.filter { r => r.deletedAt.isEmpty }
 
       ids.foreach { ids =>
         query = query.filter { _.id inSet ids }
