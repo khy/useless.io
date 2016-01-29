@@ -250,23 +250,26 @@ class TransactionTypesService(
       ((UUID.randomUUID, name, oldTransactionType.ownershipKey, Some(oldTransactionType.id), accessToken.resourceOwner.guid, accessToken.guid))
 
     database.run(insertTransactionType).flatMap { newTransactionTypeId =>
-      // If a parent ID is specified, use it -
-      optParentId.map { parentId =>
-        Future.successful((parentId, None))
-      }.getOrElse {
-        // otherwise, use the old TransactionType's parent.
-        val query = TransactionTypeSubtypes.filter { r =>
-          r.childTransactionTypeId === oldTransactionType.id && r.deletedAt.isEmpty
-        }
+      // We'll get the old TransactionTypeSubtype even if we have a parent ID
+      // specified so that we can record that we replaced it.
+      val query = TransactionTypeSubtypes.filter { r =>
+        r.childTransactionTypeId === oldTransactionType.id && r.deletedAt.isEmpty
+      }
 
-        database.run(query.result).map { transactionTypeSubtypes =>
-          transactionTypeSubtypes.headOption.map { transactionTypeSubtype =>
-            (transactionTypeSubtype.parentTransactionTypeId, Some(transactionTypeSubtype.id))
-          }.getOrElse {
-            throw new ResourceUnexpectedlyNotFound("Parent TransactionType", oldTransactionType.id)
+      database.run(query.result).map { transactionTypeSubtypes =>
+        transactionTypeSubtypes.headOption.map { transactionTypeSubtype =>
+          // If the parent ID is specified, use it - otherwise, use the old TransactionType's parent.
+          val parentTransactionTypeId = optParentId.getOrElse {
+            transactionTypeSubtype.parentTransactionTypeId
           }
+
+          (parentTransactionTypeId, transactionTypeSubtype.id)
+        }.getOrElse {
+          // We expect to always have a parent, because root TransactionTypes
+          // can only have 'system' ownership, and those can't be adjusted.
+          throw new ResourceUnexpectedlyNotFound("Parent TransactionType", oldTransactionType.id)
         }
-      }.flatMap { case (parentTransactionTypeId, optTransactionTypeSubtypeId) =>
+      }.flatMap { case (parentTransactionTypeId, oldTransactionTypeSubtypeId) =>
         // Now that we have the parent ID, create the appropriate
         // TransactionTypeSubtype record for the new TransactionType.
 
@@ -278,7 +281,7 @@ class TransactionTypesService(
         }.returning(TransactionTypeSubtypes.map(_.id))
 
         val insert = transactionTypeSubtypes +=
-          ((parentTransactionTypeId, newTransactionTypeId, optTransactionTypeSubtypeId, accessToken.resourceOwner.guid, accessToken.guid))
+          ((parentTransactionTypeId, newTransactionTypeId, Some(oldTransactionTypeSubtypeId), accessToken.resourceOwner.guid, accessToken.guid))
 
         database.run(insert)
       }.flatMap { _ =>

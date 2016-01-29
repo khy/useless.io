@@ -245,18 +245,27 @@ class TransactionTypesSpec
 
       newTransactionType.adjustedTransactionTypeId mustBe Some(oldTransactionType.id)
 
-      val tttQuery = TransactionTransactionTypes.filter(_.transactionTypeId === oldTransactionType.id)
-      val transactionTransactionTypes = await { database.run(tttQuery.result) }
-      transactionTransactionTypes.length mustBe 2
-      transactionTransactionTypes.foreach { transactionTransactionType =>
+      val oldTttQuery = TransactionTransactionTypes.filter(_.transactionTypeId === oldTransactionType.id)
+      val oldTransactionTransactionTypes = await { database.run(oldTttQuery.result) }
+      oldTransactionTransactionTypes.length mustBe 2
+      oldTransactionTransactionTypes.foreach { transactionTransactionType =>
         transactionTransactionType.deletedAt mustBe 'defined
       }
 
+      val newTttQuery = TransactionTransactionTypes.filter(_.transactionTypeId === newTransactionType.id)
+      val newTransactionTransactionTypes = await { database.run(newTttQuery.result) }
+      newTransactionTransactionTypes.map(_.adjustedTransactionTransactionTypeId) mustBe
+        oldTransactionTransactionTypes.map { ttt => Some(ttt.id) }
+
       // We intentionally do not delete the old TransactionType's
       // TransactionTypeSubtype - see the TransactionTypeService
-      val ttsQuery = TransactionTypeSubtypes.filter(_.childTransactionTypeId === oldTransactionType.id)
-      val transactionTypeSubtype = await { database.run(ttsQuery.result) }.head
-      transactionTypeSubtype.deletedAt mustBe 'empty
+      val oldTtsQuery = TransactionTypeSubtypes.filter(_.childTransactionTypeId === oldTransactionType.id)
+      val oldTransactionTypeSubtype = await { database.run(oldTtsQuery.result) }.head
+      oldTransactionTypeSubtype.deletedAt mustBe 'empty
+
+      val newTtsQuery = TransactionTypeSubtypes.filter(_.childTransactionTypeId === newTransactionType.id)
+      val newTransactionTypeSubtype = await { database.run(newTtsQuery.result) }.head
+      newTransactionTypeSubtype.adjustedTransactionTypeSubtypeId mustBe Some(oldTransactionTypeSubtype.id)
     }
 
     def assertTransactionsType(transactionGuids: Seq[UUID], typeGuid: UUID) {
