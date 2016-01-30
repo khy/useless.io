@@ -181,6 +181,9 @@ class TransactionTypesSpec
       val transactionType = TestService.createTransactionType(
         name = "Presents", parentGuid = Some(expense.guid)
       )
+      val subTransactionType = TestService.createTransactionType(
+        name = "Birthday Presents", parentGuid = Some(transactionType.guid)
+      )
       val transaction1 = TestService.createTransaction(transactionTypeGuid = transactionType.guid)
       val transaction2 = TestService.createTransaction(transactionTypeGuid = transactionType.guid)
 
@@ -193,6 +196,11 @@ class TransactionTypesSpec
       _transactionType.guid must not be transactionType.guid
       _transactionType.name mustBe "Wedding Presents"
       _transactionType.parentGuid mustBe Some(expense.guid)
+
+      val _subTransactionType = await {
+        TestService.transactionTypesService.findTransactionTypes(guids = Some(Seq(subTransactionType.guid)))
+      }.toSuccess.value.items.head
+      _subTransactionType.parentGuid mustBe Some(_transactionType.guid)
 
       assertTransactionsType(
         transactionGuids = Seq(transaction1.guid, transaction2.guid),
