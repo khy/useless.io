@@ -29,13 +29,8 @@ class TransactionsService(
     val userGuids = records.map(_.createdByAccount)
     val futUsers = usersHelper.getUsers(userGuids)
 
-    val transactionTypesQuery = TransactionTransactionTypes.join(TransactionTypes).on { case (ttt, tt) =>
-      ttt.transactionTypeId === tt.id
-    }.filter { case (ttt, _) =>
-      ttt.deletedAt.isEmpty &&
-      (ttt.transactionId inSet records.map(_.id))
-    }.map { case (ttt, tt) =>
-      (ttt.transactionId, tt.guid)
+    val transactionTypesQuery = TransactionTypes.filter { tt =>
+      tt.id inSet records.map(_.transactionTypeId)
     }
     val futTransactionTypes = database.run(transactionTypesQuery.result)
 
@@ -58,12 +53,8 @@ class TransactionsService(
       records.map { record =>
         Transaction(
           guid = record.guid,
-          transactionTypeGuid = transactionTypes.find { case (transactionId, _) =>
-            transactionId == record.id
-          }.map { case (_, transactionTypeGuid) =>
-            transactionTypeGuid
-          }.getOrElse {
-            throw new ResourceUnexpectedlyNotFound("TransactionTransactionTypes", record.id)
+          transactionTypeGuid = transactionTypes.find(_.id == record.transactionTypeId).map(_.guid).getOrElse {
+            throw new ResourceUnexpectedlyNotFound("TransactionType", record.transactionTypeId)
           },
           accountGuid = accounts.find(_.id == record.accountId).map(_.guid).getOrElse {
             throw new ResourceUnexpectedlyNotFound("Account", record.accountId)
@@ -231,11 +222,12 @@ class TransactionsService(
     accessToken: AccessToken
   )(implicit ec: ExecutionContext): Future[TransactionRecord] = {
     val transactions = Transactions.map { r =>
-      (r.guid, r.accountId, r.amount, r.date, r.name, r.plannedTransactionId, r.adjustedTransactionId, r.createdByAccount, r.createdByAccessToken)
+      (r.guid, r.transactionTypeId, r.accountId, r.amount, r.date, r.name, r.plannedTransactionId, r.adjustedTransactionId, r.createdByAccount, r.createdByAccessToken)
     }.returning(Transactions.map(_.id))
 
     val insert = transactions += ((
       UUID.randomUUID,
+      transactionTypeId,
       accountId,
       amount,
       new sql.Date(date.toDate.getTime),
@@ -247,18 +239,10 @@ class TransactionsService(
     ))
 
     database.run(insert).flatMap { id =>
-      val ttts = TransactionTransactionTypes.map { r =>
-        (r.transactionId, r.transactionTypeId, r.createdByAccount, r.createdByAccessToken)
-      }.returning(TransactionTransactionTypes.map(_.id))
-
-      val insert = ttts += ((id, transactionTypeId, accessToken.resourceOwner.guid, accessToken.guid))
-
-      database.run(insert).flatMap { _ =>
-        findTransactions(ids = Some(Seq(id))).map { result =>
-          result.map(_.items.headOption) match {
-            case Validation.Success(Some(transaction)) => transaction
-            case _ => throw new ResourceUnexpectedlyNotFound("Transaction", id)
-          }
+      findTransactions(ids = Some(Seq(id))).map { result =>
+        result.map(_.items.headOption) match {
+          case Validation.Success(Some(transaction)) => transaction
+          case _ => throw new ResourceUnexpectedlyNotFound("Transaction", id)
         }
       }
     }

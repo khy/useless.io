@@ -191,185 +191,42 @@ class TransactionTypesService(
     futValTransactionType.flatMap { valTransactionType =>
       futValOptParentId.flatMap { valOptParentId =>
         ValidationUtil.future(valTransactionType ++ valOptParentId) { case (transactionType, optParentId) =>
-          if (optName.isEmpty || optName == Some(transactionType.name)) {
-            optParentId.map { parentId =>
-              changeTransactionTypeParent(transactionType, parentId, accessToken)
-            }.getOrElse {
-              records2models(Seq(transactionType)).map { transactionTypes =>
-                transactionTypes.headOption.getOrElse {
-                  throw new ResourceUnexpectedlyNotFound("TransactionType", transactionType.id)
-                }
+
+          val optUpdateName = optName.filter { name =>
+            name != transactionType.name
+          }.map { name =>
+            TransactionTypes.filter(_.id === transactionType.id).map(_.name).update(name)
+          }
+
+          val optChangeParent = optParentId.map { parentId =>
+            TransactionTypeSubtypes.filter { tts =>
+             tts.childTransactionTypeId === transactionType.id && tts.deletedAt.isEmpty
+           }.result.flatMap { transactionTypeSubtypes =>
+             val removeOldParent = TransactionTypeSubtypes.filter { tts =>
+               tts.id inSet transactionTypeSubtypes.map(_.id)
+             }.map { tts =>
+               (tts.deletedAt, tts.deletedByAccount, tts.deletedByAccessToken)
+             }.update((Some(SqlUtil.now), Some(accessToken.resourceOwner.guid), Some(accessToken.guid)))
+
+             val insertProjection = TransactionTypeSubtypes.map { r =>
+               (r.parentTransactionTypeId, r.childTransactionTypeId, r.createdByAccount, r.createdByAccessToken)
+             }.returning(TransactionTypeSubtypes.map(_.id))
+
+             val insertNewParent = insertProjection +=
+               ((parentId, transactionType.id, accessToken.resourceOwner.guid, accessToken.guid))
+
+             removeOldParent andThen insertNewParent
+           }
+          }
+
+          val dbTransaction = DBIO.sequence(optUpdateName.toSeq ++ optChangeParent.toSeq).transactionally
+
+          database.run(dbTransaction).flatMap { result =>
+            findTransactionTypes(ids = Some(Seq(transactionType.id))).map { result =>
+              result.map(_.items.headOption) match {
+                case Validation.Success(Some(transactionType)) => transactionType
+                case _ => throw new ResourceUnexpectedlyNotFound("TransactionType", transactionType.id)
               }
-            }
-          } else {
-            replaceTransactionType(transactionType, optParentId, optName.get, accessToken)
-          }
-        }
-      }
-    }
-  }
-
-  private def changeTransactionTypeParent(
-    transactionType: TransactionTypeRecord,
-    parentId: Long,
-    accessToken: AccessToken
-  )(implicit ec: ExecutionContext): Future[TransactionType] = {
-    val query = TransactionTypeSubtypes.filter { tts =>
-      tts.childTransactionTypeId === transactionType.id &&
-      tts.deletedAt.isEmpty
-    }
-
-    database.run(query.result).flatMap { results =>
-      val oldTransactionTypeSubtype = results.headOption.getOrElse {
-        throw new ResourceUnexpectedlyNotFound("Parent TransactionType", transactionType.id)
-      }
-
-      val delete = TransactionTypeSubtypes.filter(_.id === oldTransactionTypeSubtype.id).map { tts =>
-        (tts.deletedAt, tts.deletedByAccount, tts.deletedByAccessToken)
-      }.update((Some(SqlUtil.now), Some(accessToken.resourceOwner.guid), Some(accessToken.guid)))
-
-      val transactionTypeSubtypes = TransactionTypeSubtypes.map { r =>
-        (r.parentTransactionTypeId, r.childTransactionTypeId, r.adjustedTransactionTypeSubtypeId, r.createdByAccount, r.createdByAccessToken)
-      }.returning(TransactionTypeSubtypes.map(_.id))
-
-      val insert = transactionTypeSubtypes +=
-        ((parentId, transactionType.id, Some(oldTransactionTypeSubtype.id), accessToken.resourceOwner.guid, accessToken.guid))
-
-      val transaction = delete.andThen(insert).transactionally
-
-      database.run(transaction).flatMap { result =>
-        findTransactionTypes(ids = Some(Seq(transactionType.id))).map { result =>
-          result.map(_.items.headOption) match {
-            case Validation.Success(Some(transactionType)) => transactionType
-            case _ => throw new ResourceUnexpectedlyNotFound("TransactionType", transactionType.id)
-          }
-        }
-      }
-    }
-  }
-
-  private def replaceTransactionType(
-    oldTransactionType: TransactionTypeRecord,
-    optParentId: Option[Long],
-    name: String,
-    accessToken: AccessToken
-  )(implicit ec: ExecutionContext): Future[TransactionType] = {
-    // First, create the new TransactionType,
-    val transactionTypes = TransactionTypes.map { r =>
-      (r.guid, r.name, r.ownershipKey, r.adjustedTransactionTypeId, r.createdByAccount, r.createdByAccessToken)
-    }.returning(TransactionTypes.map(_.id))
-
-    // preserving the old ownership key.
-    val insertTransactionType = transactionTypes +=
-      ((UUID.randomUUID, name, oldTransactionType.ownershipKey, Some(oldTransactionType.id), accessToken.resourceOwner.guid, accessToken.guid))
-
-    database.run(insertTransactionType).flatMap { newTransactionTypeId =>
-      // We'll get the old TransactionTypeSubtype even if we have a parent ID
-      // specified so that we can record that we replaced it.
-      val query = TransactionTypeSubtypes.filter { r =>
-        r.childTransactionTypeId === oldTransactionType.id && r.deletedAt.isEmpty
-      }
-
-      database.run(query.result).map { transactionTypeSubtypes =>
-        transactionTypeSubtypes.headOption.map { transactionTypeSubtype =>
-          // If the parent ID is specified, use it - otherwise, use the old TransactionType's parent.
-          val parentTransactionTypeId = optParentId.getOrElse {
-            transactionTypeSubtype.parentTransactionTypeId
-          }
-
-          (parentTransactionTypeId, transactionTypeSubtype.id)
-        }.getOrElse {
-          // We expect to always have a parent, because root TransactionTypes
-          // can only have 'system' ownership, and those can't be adjusted.
-          throw new ResourceUnexpectedlyNotFound("Parent TransactionType", oldTransactionType.id)
-        }
-      }.flatMap { case (parentTransactionTypeId, oldTransactionTypeSubtypeId) =>
-        // Now that we have the parent ID, create the appropriate
-        // TransactionTypeSubtype record for the new TransactionType.
-
-        // Notice that we don't delete the old TransactionType's
-        // TransactionTypeSubtype because that relationship is technically
-        // still valid.
-        val transactionTypeSubtypes = TransactionTypeSubtypes.map { r =>
-          (r.parentTransactionTypeId, r.childTransactionTypeId, r.adjustedTransactionTypeSubtypeId, r.createdByAccount, r.createdByAccessToken)
-        }.returning(TransactionTypeSubtypes.map(_.id))
-
-        val insert = transactionTypeSubtypes +=
-          ((parentTransactionTypeId, newTransactionTypeId, Some(oldTransactionTypeSubtypeId), accessToken.resourceOwner.guid, accessToken.guid))
-
-        database.run(insert)
-      }.flatMap { _ =>
-        // Now we have to do all of the following in a single DB transaction:
-        // 1. for all the old TransactionType's TransactionTransactionTypes:
-        val moveTransactionTransactionTypes = TransactionTransactionTypes.filter { r =>
-          r.transactionTypeId === oldTransactionType.id && r.deletedAt.isEmpty
-        }.result.flatMap { transactionTransactionTypes =>
-          val insertProjection = TransactionTransactionTypes.map { r =>
-            (r.transactionId, r.transactionTypeId, r.adjustedTransactionTransactionTypeId, r.createdByAccount, r.createdByAccessToken)
-          }.returning(TransactionTransactionTypes.map(_.id))
-
-          // 1a. add new TransactionTransactionTypes for the same Transaction's,
-          //    but pointing to the new TransactionType
-          val insertNewTransactionTransactionTypes = insertProjection ++= transactionTransactionTypes.map { transactionTransactionType =>
-            (transactionTransactionType.transactionId, newTransactionTypeId, Some(transactionTransactionType.id), accessToken.resourceOwner.guid, accessToken.guid)
-          }
-
-          // 1b. soft-delete the old TransactionTransactionTypes that pointed to
-          //    the old TransactionType.
-          val deleteOldTransactionTransactionTypes = TransactionTransactionTypes.filter { r =>
-            (r.id inSet transactionTransactionTypes.map(_.id)) && r.deletedAt.isEmpty
-          }.map { r =>
-            (r.deletedAt, r.deletedByAccount, r.deletedByAccessToken)
-          }.update((Some(SqlUtil.now), Some(accessToken.resourceOwner.guid), Some(accessToken.guid)))
-
-          insertNewTransactionTransactionTypes >> deleteOldTransactionTransactionTypes
-        }
-
-        // 2. for all the old TransactioType's TransactionTypeSubtypes:
-        val moveTransactionTypeSubtypes = TransactionTypeSubtypes.filter { r =>
-          r.parentTransactionTypeId === oldTransactionType.id && r.deletedAt.isEmpty
-        }.result.flatMap { transactionTypeSubtypes =>
-          val insertProjection = TransactionTypeSubtypes.map { r =>
-            (r.parentTransactionTypeId, r.childTransactionTypeId, r.adjustedTransactionTypeSubtypeId, r.createdByAccount, r.createdByAccessToken)
-          }.returning(TransactionTypeSubtypes.map(_.id))
-
-          // 2a. add new TransactionTypeSubtypes for the same child TransactionTypes,
-          //    but pointing to the new parent TransactionType
-          val insertNewTransactionTypeSubtypes = insertProjection ++= transactionTypeSubtypes.map { transactionTypeSubtype =>
-            (newTransactionTypeId, transactionTypeSubtype.childTransactionTypeId, Some(transactionTypeSubtype.id), accessToken.resourceOwner.guid, accessToken.guid)
-          }
-
-          // 2b. soft-delete the old TransactionTypeSubtypes that pointed to the
-          //     old TransactionType
-          val deleteOldTransactionTypeSubtypes = TransactionTypeSubtypes.filter { r =>
-            (r.id inSet transactionTypeSubtypes.map(_.id)) && r.deletedAt.isEmpty
-          }.map { r =>
-            (r.deletedAt, r.deletedByAccount, r.deletedByAccessToken)
-          }.update((Some(SqlUtil.now), Some(accessToken.resourceOwner.guid), Some(accessToken.guid)))
-
-          insertNewTransactionTypeSubtypes >> deleteOldTransactionTypeSubtypes
-        }
-
-        // 3. soft-delete the old TransactionType.
-        val deleteTransactionType = TransactionTypes.filter { tt =>
-          tt.id === oldTransactionType.id && tt.deletedAt.isEmpty
-        }.map { tt =>
-          (tt.deletedAt, tt.deletedByAccount, tt.deletedByAccessToken)
-        }.update((Some(SqlUtil.now), Some(accessToken.resourceOwner.guid), Some(accessToken.guid)))
-
-        val transaction = (
-          moveTransactionTransactionTypes >>
-          moveTransactionTypeSubtypes >>
-          deleteTransactionType
-        ).transactionally
-
-        // Run the DB transaction
-        database.run(transaction).flatMap { result =>
-          // and load the full model for the new TransactionType.
-          findTransactionTypes(ids = Some(Seq(newTransactionTypeId))).map { result =>
-            result.map(_.items.headOption) match {
-              case Validation.Success(Some(transactionType)) => transactionType
-              case _ => throw new ResourceUnexpectedlyNotFound("TransactionType", newTransactionTypeId)
             }
           }
         }

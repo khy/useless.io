@@ -64,34 +64,6 @@ class TransactionTypesSpec
       transactionTypeNames must not contain ("Rent")
     }
 
-    "not return any soft-deleted transactions" in {
-      TestService.deleteTransactionTypes()
-      val expense = TestService.getSystemTransactionType("Expense")
-      val income = TestService.getSystemTransactionType("Income")
-
-      val rent = TestService.createTransactionType(
-        name = "Rent",
-        parentGuid = Some(expense.guid)
-      )
-
-      val salary = TestService.createTransactionType(
-        name = "Salary",
-        parentGuid = Some(income.guid)
-      )
-
-      val adjustResponse = await {
-        authenticatedRequest(s"/transactionTypes/${rent.guid}/adjustments").
-          post(Json.obj("name" -> "RENT"))
-      }
-      val adjustedRent = adjustResponse.json.as[TransactionType]
-
-      val response = await { authenticatedRequest("/transactionTypes").get }
-      val transactionTypeGuids = response.json.as[Seq[TransactionType]].map(_.guid)
-      transactionTypeGuids must contain (salary.guid)
-      transactionTypeGuids must contain (adjustedRent.guid)
-      transactionTypeGuids must not contain (rent.guid)
-    }
-
   }
 
   "POST /transactionTypes" must {
@@ -155,7 +127,7 @@ class TransactionTypesSpec
       expense mustBe _expense
     }
 
-    "return the same TransactionType with a new parent, if just changing the parent" in {
+    "return the same TransactionType with a new parent and new name" in {
       val transactionType = TestService.createTransactionType(
         name = "Presents", parentGuid = Some(expense.guid)
       )
@@ -163,149 +135,26 @@ class TransactionTypesSpec
 
       val response = await {
         authenticatedRequest(s"/transactionTypes/${transactionType.guid}/adjustments").
-          post(Json.obj("parentGuid" -> income.guid))
+          post(Json.obj("parentGuid" -> income.guid, "name" -> "Wedding Presents"))
       }
       response.status mustBe CREATED
       val _transactionType = response.json.as[TransactionType]
       _transactionType.guid mustBe transactionType.guid
-      _transactionType.name mustBe "Presents"
-      _transactionType.parentGuid mustBe Some(income.guid)
-
-      assertTransactionsType(
-        transactionGuids = Seq(transaction.guid),
-        typeGuid = transactionType.guid
-      )
-    }
-
-    "return a new TransactionType with the same relationships, if changing the name" in {
-      val transactionType = TestService.createTransactionType(
-        name = "Presents", parentGuid = Some(expense.guid)
-      )
-      val subTransactionType = TestService.createTransactionType(
-        name = "Birthday Presents", parentGuid = Some(transactionType.guid)
-      )
-      val transaction1 = TestService.createTransaction(transactionTypeGuid = transactionType.guid)
-      val transaction2 = TestService.createTransaction(transactionTypeGuid = transactionType.guid)
-
-      val response = await {
-        authenticatedRequest(s"/transactionTypes/${transactionType.guid}/adjustments").
-          post(Json.obj("name" -> "Wedding Presents"))
-      }
-      response.status mustBe CREATED
-      val _transactionType = response.json.as[TransactionType]
-      _transactionType.guid must not be transactionType.guid
-      _transactionType.name mustBe "Wedding Presents"
-      _transactionType.parentGuid mustBe Some(expense.guid)
-
-      val _subTransactionType = await {
-        TestService.transactionTypesService.findTransactionTypes(guids = Some(Seq(subTransactionType.guid)))
-      }.toSuccess.value.items.head
-      _subTransactionType.parentGuid mustBe Some(_transactionType.guid)
-
-      assertTransactionsType(
-        transactionGuids = Seq(transaction1.guid, transaction2.guid),
-        typeGuid = _transactionType.guid
-      )
-    }
-
-    "return a new TransactionType with a new parent, but same Transactions, if changing both name and parent" in {
-      val transactionType = TestService.createTransactionType(
-        name = "Presents", parentGuid = Some(expense.guid)
-      )
-      val transaction1 = TestService.createTransaction(transactionTypeGuid = transactionType.guid)
-      val transaction2 = TestService.createTransaction(transactionTypeGuid = transactionType.guid)
-
-      val response = await {
-        authenticatedRequest(s"/transactionTypes/${transactionType.guid}/adjustments").
-          post(Json.obj("name" -> "Wedding Presents", "parentGuid" -> income.guid))
-      }
-      response.status mustBe CREATED
-      val _transactionType = response.json.as[TransactionType]
-      _transactionType.guid must not be transactionType.guid
       _transactionType.name mustBe "Wedding Presents"
       _transactionType.parentGuid mustBe Some(income.guid)
 
-      assertTransactionsType(
-        transactionGuids = Seq(transaction1.guid, transaction2.guid),
-        typeGuid = _transactionType.guid
-      )
-    }
-
-    "maintain historical records, when just changing parent" in {
-      val tt = TestService.createTransactionType(
-        name = "Books", parentGuid = Some(expense.guid)
-      )
-
-      val adjustResponse = await {
-        authenticatedRequest(s"/transactionTypes/${tt.guid}/adjustments").
-          post(Json.obj("parentGuid" -> income.guid))
-      }
-      val adjustedTransactionType = adjustResponse.json.as[TransactionType]
-
-      val transactionType = getTransactionTypeRecord(tt.guid)
-      val transactionTypeSubtypes = getTransactionTypeSubtypesForChild(transactionType.id)
+      val transactionTypeRecord = await { database.run(TransactionTypes.filter(_.guid === transactionType.guid).result) }.head
+      val ttsQuery = TransactionTypeSubtypes.filter(_.childTransactionTypeId === transactionTypeRecord.id)
+      val transactionTypeSubtypes = await { database.run(ttsQuery.result) }
       transactionTypeSubtypes.length mustBe 2
+      transactionTypeSubtypes.filter(_.deletedAt.isDefined).headOption mustBe 'defined
+      transactionTypeSubtypes.filter(_.deletedAt.isEmpty).headOption mustBe 'defined
 
-      val oldTransactionTypeSubtype = transactionTypeSubtypes.filter(_.deletedAt.isDefined).head
-      val newTransactionTypeSubtype = transactionTypeSubtypes.filter(_.deletedAt.isEmpty).head
-      newTransactionTypeSubtype.adjustedTransactionTypeSubtypeId mustBe Some(oldTransactionTypeSubtype.id)
-    }
-
-    "maintain historical records, when changing name" in {
-      val transactionType = TestService.createTransactionType(
-        name = "Books", parentGuid = Some(expense.guid)
-      )
-      val transaction1 = TestService.createTransaction(transactionTypeGuid = transactionType.guid)
-      val transaction2 = TestService.createTransaction(transactionTypeGuid = transactionType.guid)
-
-      val adjustResponse = await {
-        authenticatedRequest(s"/transactionTypes/${transactionType.guid}/adjustments").
-          post(Json.obj("name" -> "Wedding Presents", "parentGuid" -> income.guid))
-      }
-      val adjustedTransactionType = adjustResponse.json.as[TransactionType]
-
-      val oldTransactionType = getTransactionTypeRecord(transactionType.guid)
-      val newTransactionType = getTransactionTypeRecord(adjustedTransactionType.guid)
-
-      oldTransactionType.deletedAt mustBe 'defined
-      newTransactionType.adjustedTransactionTypeId mustBe Some(oldTransactionType.id)
-
-      val oldTttQuery = TransactionTransactionTypes.filter(_.transactionTypeId === oldTransactionType.id)
-      val oldTransactionTransactionTypes = await { database.run(oldTttQuery.result) }
-      oldTransactionTransactionTypes.length mustBe 2
-      oldTransactionTransactionTypes.foreach { transactionTransactionType =>
-        transactionTransactionType.deletedAt mustBe 'defined
-      }
-
-      val newTttQuery = TransactionTransactionTypes.filter(_.transactionTypeId === newTransactionType.id)
-      val newTransactionTransactionTypes = await { database.run(newTttQuery.result) }
-      newTransactionTransactionTypes.map(_.adjustedTransactionTransactionTypeId) mustBe
-        oldTransactionTransactionTypes.map { ttt => Some(ttt.id) }
-
-      val oldTransactionTypeSubtype = getTransactionTypeSubtypesForChild(oldTransactionType.id).head
-      val newTransactionTypeSubtype = getTransactionTypeSubtypesForChild(newTransactionType.id).head
-
-      // We intentionally do not delete the old TransactionType's
-      // TransactionTypeSubtype - see the TransactionTypeService
-      oldTransactionTypeSubtype.deletedAt mustBe 'empty
-      newTransactionTypeSubtype.adjustedTransactionTypeSubtypeId mustBe Some(oldTransactionTypeSubtype.id)
-    }
-
-    def assertTransactionsType(transactionGuids: Seq[UUID], typeGuid: UUID) {
       val records = await { TestService.transactionsService.findTransactions(
-        guids = Some(transactionGuids)
+        guids = Some(Seq(transaction.guid))
       )}.toSuccess.value.items
       val transactions = await { TestService.transactionsService.records2models(records) }
-      transactions.map(_.transactionTypeGuid).distinct mustBe Seq(typeGuid)
-    }
-
-    def getTransactionTypeRecord(guid: UUID) = await {
-      database.run(TransactionTypes.filter(_.guid === guid).result)
-    }.head
-
-    def getTransactionTypeSubtypesForChild(id: Long) = {
-      val query = TransactionTypeSubtypes.filter(_.childTransactionTypeId === id)
-      await { database.run(query.result) }
+      transactions.map(_.transactionTypeGuid).distinct mustBe Seq(transactionType.guid)
     }
 
   }
