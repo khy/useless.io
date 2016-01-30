@@ -7,6 +7,7 @@ import io.useless.account.User
 import io.useless.play.json.DateTimeJson._
 
 import models.budget.util.NamedEnumJson
+import models.budget.aggregates._
 
 object JsonImplicits {
 
@@ -38,5 +39,6 @@ object JsonImplicits {
   implicit val transactionFormat = Json.format[Transaction]
   implicit val transferFormat = Json.format[Transfer]
   implicit val projectionFormat = Json.format[Projection]
+  implicit val transactionTypeRollupFormat = Json.format[TransactionTypeRollup]
 
 }
