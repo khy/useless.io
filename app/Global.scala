@@ -8,6 +8,7 @@ import daos.account.AuthorizationDao
 
 object Global
   extends WithFilters(
+    CorsFilter,
     new HttpsRedirectFilter,
     new AccessLogFilter,
     new RequestTimeFilter
