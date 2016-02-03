@@ -7,7 +7,7 @@ import play.api.libs.concurrent.Execution.Implicits.defaultContext
 object CorsFilter extends Filter {
 
   private val AllowedMethods = Seq("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
-  private val AllowedHeaders = Seq("Content-Type", "Authorization")
+  private val AllowedHeaders = Seq("Accept", "Authorization", "Content-Type")
 
   private val Headers = Seq(
     "Access-Control-Allow-Origin" -> "*",

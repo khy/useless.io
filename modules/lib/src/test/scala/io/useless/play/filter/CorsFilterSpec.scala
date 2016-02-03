@@ -28,7 +28,7 @@ class CorsFilterSpec
       response.status mustBe OK
       response.header("Access-Control-Allow-Origin") mustBe Some("*")
       response.header("Access-Control-Allow-Methods") mustBe Some("GET,POST,PUT,PATCH,DELETE,OPTIONS")
-      response.header("Access-Control-Allow-Headers") mustBe Some("Content-Type,Authorization")
+      response.header("Access-Control-Allow-Headers") mustBe Some("Accept,Authorization,Content-Type")
     }
 
     "return appropriate CORS headers for regular requests" in {
@@ -36,7 +36,7 @@ class CorsFilterSpec
       response.status mustBe OK
       response.header("Access-Control-Allow-Origin") mustBe Some("*")
       response.header("Access-Control-Allow-Methods") mustBe Some("GET,POST,PUT,PATCH,DELETE,OPTIONS")
-      response.header("Access-Control-Allow-Headers") mustBe Some("Content-Type,Authorization")
+      response.header("Access-Control-Allow-Headers") mustBe Some("Accept,Authorization,Content-Type")
     }
 
   }
