@@ -16,6 +16,7 @@ import db.budget.util.DatabaseAccessor
 
 object TestService extends DatabaseAccessor {
 
+  lazy val contextsService = ContextsService.default()
   lazy val accountsService = AccountsService.default()
   lazy val transactionTypesService = TransactionTypesService.default()
   lazy val plannedTransactionsService = PlannedTransactionsService.default()
@@ -43,13 +44,24 @@ object TestService extends DatabaseAccessor {
     scopes = Seq()
   )
 
+  def createContext(
+    name: String = "Default",
+    userGuids: Seq[UUID] = Seq(accessToken.resourceOwner.guid)
+  ): Context = await {
+    val futResult = contextsService.createContext(name, userGuids, accessToken)
+    futResult.flatMap { result =>
+      contextsService.records2models(Seq(result.toSuccess.value))
+    }
+  }.head
+
   def createAccount(
+    contextGuid: UUID = createContext().guid,
     accountType: AccountType = AccountType.Checking,
     name: String = "Test Account",
     initialBalance: BigDecimal = 100.10,
     accessToken: AccessToken = accessToken
   ): Account = await {
-    accountsService.createAccount(accountType, name, initialBalance, accessToken)
+    accountsService.createAccount(contextGuid, accountType, name, initialBalance, accessToken)
   }.toSuccess.value
 
   def deleteAccounts() {

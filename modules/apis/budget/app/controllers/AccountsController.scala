@@ -1,5 +1,6 @@
 package controllers.budget
 
+import java.util.UUID
 import scala.concurrent.Future
 import play.api._
 import play.api.mvc._
@@ -34,6 +35,7 @@ object AccountsController extends Controller with PaginationController {
   }
 
   case class CreateData(
+    contextGuid: UUID,
     accountType: AccountType,
     name: String,
     initialBalance: BigDecimal
@@ -44,6 +46,7 @@ object AccountsController extends Controller with PaginationController {
     request.body.validate[CreateData].fold(
       error => Future.successful(Conflict(error.toString)),
       data => accountsService.createAccount(
+        contextGuid = data.contextGuid,
         accountType = data.accountType,
         name = data.name,
         initialBalance = data.initialBalance,

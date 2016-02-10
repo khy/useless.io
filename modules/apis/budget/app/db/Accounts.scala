@@ -8,6 +8,7 @@ import slick.driver.PostgresDriver.api._
 case class AccountRecord(
   id: Long,
   guid: UUID,
+  contextId: Long,
   accountTypeKey: String,
   name: String,
   initialBalance: BigDecimal,
@@ -24,6 +25,7 @@ class AccountsTable(tag: Tag)
 {
   def id = column[Long]("id")
   def guid = column[UUID]("guid")
+  def contextId = column[Long]("context_id")
   def accountTypeKey = column[String]("account_type_key")
   def name = column[String]("name")
   def initialBalance = column[BigDecimal]("initial_balance")
@@ -34,7 +36,7 @@ class AccountsTable(tag: Tag)
   def deletedByAccount = column[Option[UUID]]("deleted_by_account")
   def deletedByAccessToken = column[Option[UUID]]("deleted_by_access_token")
 
-  def * = (id, guid, accountTypeKey, name, initialBalance, createdAt, createdByAccount, createdByAccessToken, deletedAt, deletedByAccount, deletedByAccessToken) <> (AccountRecord.tupled, AccountRecord.unapply)
+  def * = (id, guid, contextId, accountTypeKey, name, initialBalance, createdAt, createdByAccount, createdByAccessToken, deletedAt, deletedByAccount, deletedByAccessToken) <> (AccountRecord.tupled, AccountRecord.unapply)
 }
 
 object Accounts extends TableQuery(new AccountsTable(_))

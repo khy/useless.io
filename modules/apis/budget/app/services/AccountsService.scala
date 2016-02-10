@@ -87,22 +87,36 @@ class AccountsService(
   }
 
   def createAccount(
+    contextGuid: UUID,
     accountType: AccountType,
     name: String,
     initialBalance: BigDecimal,
     accessToken: AccessToken
   )(implicit ec: ExecutionContext): Future[Validation[Account]] = {
-    val accounts = Accounts.map { a =>
-      (a.guid, a.accountTypeKey, a.name, a.initialBalance, a.createdByAccount, a.createdByAccessToken)
-    }.returning(Accounts.map(_.id))
+    val contextQuery = Contexts.filter { _.guid === contextGuid }
+    val futValContextId = database.run(contextQuery.result).map { contexts =>
+      contexts.headOption.map { context =>
+        Validation.success(context.id)
+      }.getOrElse {
+        Validation.failure("contextGuid", "useless.error.unknownGuid", "specified" -> contextGuid.toString)
+      }
+    }
 
-    val insert = accounts += (UUID.randomUUID, accountType.key, name, initialBalance, accessToken.resourceOwner.guid, accessToken.guid)
+    futValContextId.flatMap { valContextId =>
+      ValidationUtil.future(valContextId) { contextId =>
+        val accounts = Accounts.map { a =>
+          (a.guid, a.contextId, a.accountTypeKey, a.name, a.initialBalance, a.createdByAccount, a.createdByAccessToken)
+        }.returning(Accounts.map(_.id))
 
-    database.run(insert).flatMap { id =>
-      findAccounts(ids = Some(Seq(id))).map { result =>
-        result.map(_.items.headOption) match {
-          case Validation.Success(Some(account)) => Validation.success(account)
-          case _ => throw new ResourceUnexpectedlyNotFound("Account", id)
+        val insert = accounts += (UUID.randomUUID, contextId, accountType.key, name, initialBalance, accessToken.resourceOwner.guid, accessToken.guid)
+
+        database.run(insert).flatMap { id =>
+          findAccounts(ids = Some(Seq(id))).map { result =>
+            result.map(_.items.headOption) match {
+              case Validation.Success(Some(account)) => account
+              case _ => throw new ResourceUnexpectedlyNotFound("Account", id)
+            }
+          }
         }
       }
     }

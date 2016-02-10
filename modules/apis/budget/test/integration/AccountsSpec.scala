@@ -70,7 +70,10 @@ class AccountsSpec
 
   "POST /accounts" must {
 
-    val json = Json.obj(
+    lazy val context = TestService.createContext()
+
+    lazy val json = Json.obj(
+      "contextGuid" -> context.guid,
       "accountType" -> AccountType.Checking.key,
       "name" -> "Shared Checking",
       "initialBalance" -> 100.75
