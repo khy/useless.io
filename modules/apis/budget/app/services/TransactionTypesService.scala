@@ -39,13 +39,23 @@ class TransactionTypesService(
     }
     val futParents = database.run(parentQuery.result)
 
+    val contextIds = records.map(_.contextId).filter(_.isDefined).map(_.get)
+    val contextsQuery = Contexts.filter { context =>
+      context.id.inSet(contextIds) && context.deletedAt.isEmpty
+    }
+    val futContexts = database.run(contextsQuery.result)
+
     for {
       users <- futUsers
       parents <- futParents
+      contexts <- futContexts
     } yield {
       records.map { record =>
         TransactionType(
           guid = record.guid,
+          contextGuid = contexts.find { context =>
+            record.contextId.map { contextId => contextId == contextId }.getOrElse(false)
+          }.map(_.guid),
           name = record.name,
           parentGuid = parents.find { case (childTransactionTypeId, _) =>
             childTransactionTypeId == record.id

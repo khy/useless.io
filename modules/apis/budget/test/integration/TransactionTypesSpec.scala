@@ -94,6 +94,7 @@ class TransactionTypesSpec
       response.status mustBe CREATED
 
       val transactionType = response.json.as[TransactionType]
+      transactionType.contextGuid mustBe Some(context.guid)
       transactionType.name mustBe "Rent"
       transactionType.parentGuid mustBe Some(expense.guid)
     }
