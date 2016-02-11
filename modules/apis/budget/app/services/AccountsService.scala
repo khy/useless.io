@@ -26,6 +26,7 @@ class AccountsService(
 
   def records2models(records: Seq[AccountRecord])(implicit ec: ExecutionContext): Future[Seq[Account]] = {
     val userGuids = records.map(_.createdByAccount)
+    val futUsers = usersHelper.getUsers(userGuids)
 
     val transactionSumsQuery = Transactions.filter { transaction =>
       transaction.accountId.inSet(records.map(_.id)) &&
@@ -37,9 +38,16 @@ class AccountsService(
     }
     val futTransactionSums = database.run(transactionSumsQuery.result)
 
+    val contextsQuery = Contexts.filter { context =>
+      context.id.inSet(records.map(_.contextId)) &&
+      context.deletedAt.isEmpty
+    }
+    val futContexts = database.run(contextsQuery.result)
+
     for {
-      users <- usersHelper.getUsers(userGuids)
+      users <- futUsers
       transactionSums <- futTransactionSums
+      contexts <- futContexts
     } yield {
       records.map { record =>
         val transactionSum: BigDecimal = transactionSums.
@@ -47,8 +55,13 @@ class AccountsService(
           flatMap { case (_, sum) => sum }.
           getOrElse(0.0)
 
+        val contextGuid = contexts.find(_.id == record.contextId).map(_.guid).getOrElse {
+          throw new ResourceUnexpectedlyNotFound("Context", record.contextId)
+        }
+
         Account(
           guid = record.guid,
+          contextGuid = contextGuid,
           accountType = AccountType(record.accountTypeKey),
           name = record.name,
           initialBalance = record.initialBalance,

@@ -6,6 +6,7 @@ import io.useless.account.User
 
 case class Account(
   guid: UUID,
+  contextGuid: UUID,
   accountType: AccountType,
   name: String,
   initialBalance: BigDecimal,

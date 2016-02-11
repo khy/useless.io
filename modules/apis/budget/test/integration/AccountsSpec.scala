@@ -96,6 +96,7 @@ class AccountsSpec
       response.status mustBe CREATED
 
       val account = response.json.as[Account]
+      account.contextGuid mustBe context.guid
       account.accountType mustBe AccountType.Checking
       account.name mustBe "Shared Checking"
       account.initialBalance mustBe 100.75
