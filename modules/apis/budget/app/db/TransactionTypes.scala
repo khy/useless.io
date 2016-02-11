@@ -7,6 +7,7 @@ import slick.driver.PostgresDriver.api._
 case class TransactionTypeRecord(
   id: Long,
   guid: UUID,
+  contextId: Option[Long],
   name: String,
   ownershipKey: String,
   createdAt: Timestamp,
@@ -22,6 +23,7 @@ class TransactionTypesTable(tag: Tag)
 {
   def id = column[Long]("id")
   def guid = column[UUID]("guid")
+  def contextId = column[Option[Long]]("context_id")
   def name = column[String]("name")
   def ownershipKey = column[String]("ownership_key")
   def createdAt = column[Timestamp]("created_at")
@@ -31,7 +33,7 @@ class TransactionTypesTable(tag: Tag)
   def deletedByAccount = column[Option[UUID]]("deleted_by_account")
   def deletedByAccessToken = column[Option[UUID]]("deleted_by_access_token")
 
-  def * = (id, guid, name, ownershipKey, createdAt, createdByAccount, createdByAccessToken, deletedAt, deletedByAccount, deletedByAccessToken) <> (TransactionTypeRecord.tupled, TransactionTypeRecord.unapply)
+  def * = (id, guid, contextId, name, ownershipKey, createdAt, createdByAccount, createdByAccessToken, deletedAt, deletedByAccount, deletedByAccessToken) <> (TransactionTypeRecord.tupled, TransactionTypeRecord.unapply)
 }
 
 object TransactionTypes extends TableQuery(new TransactionTypesTable(_))

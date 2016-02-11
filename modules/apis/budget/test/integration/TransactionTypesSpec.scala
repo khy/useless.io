@@ -69,8 +69,10 @@ class TransactionTypesSpec
   "POST /transactionTypes" must {
 
     lazy val expense = TestService.getSystemTransactionType("Expense")
+    lazy val context = TestService.createContext()
 
     lazy val json = Json.obj(
+      "contextGuid" -> context.guid,
       "name" -> "Rent",
       "parentGuid" -> expense.guid
     )

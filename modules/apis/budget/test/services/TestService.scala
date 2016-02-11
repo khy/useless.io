@@ -71,12 +71,13 @@ object TestService extends DatabaseAccessor {
   }
 
   def createTransactionType(
+    contextGuid: UUID = createContext().guid,
     name: String = "Rent",
     parentGuid: Option[UUID] = None,
     ownership: TransactionTypeOwnership = TransactionTypeOwnership.User,
     accessToken: AccessToken = accessToken
   ): TransactionType = await {
-    transactionTypesService.createTransactionType(name, parentGuid, ownership, accessToken)
+    transactionTypesService.createTransactionType(contextGuid, name, parentGuid, ownership, accessToken)
   }.toSuccess.value
 
   def getSystemTransactionType(name: String): TransactionType = await {

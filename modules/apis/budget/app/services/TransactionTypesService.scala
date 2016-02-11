@@ -103,6 +103,7 @@ class TransactionTypesService(
   }
 
   def createTransactionType(
+    contextGuid: UUID,
     name: String,
     parentGuid: Option[UUID],
     ownership: TransactionTypeOwnership,
@@ -121,13 +122,24 @@ class TransactionTypesService(
       Future.successful(Validation.success(None))
     }
 
-    futValOptParentId.flatMap { valOptParentId =>
-      ValidationUtil.future(valOptParentId) { case (optParentId) =>
+    val contextQuery = Contexts.filter { _.guid === contextGuid }
+    val futValContextId = database.run(contextQuery.result).map { contexts =>
+      contexts.headOption.map { context =>
+        Validation.success(context.id)
+      }.getOrElse {
+        Validation.failure("contextGuid", "useless.error.unknownGuid", "specified" -> contextGuid.toString)
+      }
+    }
+
+    for {
+      valOptParentId <- futValOptParentId
+      valContextId <- futValContextId
+      valTransactionType <- ValidationUtil.future(valOptParentId ++ valContextId) { case (optParentId, contextId) =>
         val transactionTypes = TransactionTypes.map { r =>
-          (r.guid, r.name, r.ownershipKey, r.createdByAccount, r.createdByAccessToken)
+          (r.guid, r.contextId, r.name, r.ownershipKey, r.createdByAccount, r.createdByAccessToken)
         }.returning(TransactionTypes.map(_.id))
 
-        val insert = transactionTypes += ((UUID.randomUUID, name, ownership.key, accessToken.resourceOwner.guid, accessToken.guid))
+        val insert = transactionTypes += ((UUID.randomUUID, Some(contextId), name, ownership.key, accessToken.resourceOwner.guid, accessToken.guid))
 
         database.run(insert).flatMap { id =>
           val futParentInsert = optParentId.map { parentId =>
@@ -152,7 +164,7 @@ class TransactionTypesService(
           }
         }
       }
-    }
+    } yield valTransactionType
   }
 
   def adjustTransactionType(

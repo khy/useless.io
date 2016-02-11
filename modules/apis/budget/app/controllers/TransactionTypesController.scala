@@ -34,6 +34,7 @@ object TransactionTypesController extends Controller with PaginationController {
   }
 
   case class CreateData(
+    contextGuid: UUID,
     name: String,
     parentGuid: UUID
   )
@@ -43,8 +44,9 @@ object TransactionTypesController extends Controller with PaginationController {
     request.body.validate[CreateData].fold(
       error => Future.successful(Conflict(error.toString)),
       data => transactionTypesService.createTransactionType(
-        parentGuid = Some(data.parentGuid),
+        contextGuid = data.contextGuid,
         name = data.name,
+        parentGuid = Some(data.parentGuid),
         ownership = TransactionTypeOwnership.User,
         accessToken = request.accessToken
       ).map { result =>
