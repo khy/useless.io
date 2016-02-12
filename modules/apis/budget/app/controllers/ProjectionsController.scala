@@ -29,7 +29,7 @@ object ProjectionsController extends Controller {
     optDate.map { date =>
       projectionsService.getProjections(
         date = date,
-        coreAccountGuid = request.accessToken.resourceOwner.guid,
+        userGuid = request.accessToken.resourceOwner.guid,
         accountGuids = request.queryString.get("accountGuid").
           map { rawGuids => rawGuids.map(UUID.fromString) }
       ).map { result =>

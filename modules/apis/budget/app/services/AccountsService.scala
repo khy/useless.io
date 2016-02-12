@@ -75,7 +75,7 @@ class AccountsService(
 
   def findAccounts(
     ids: Option[Seq[Long]] = None,
-    createdByAccounts: Option[Seq[UUID]] = None,
+    userGuids: Option[Seq[UUID]] = None,
     rawPaginationParams: RawPaginationParams = RawPaginationParams()
   )(implicit ec: ExecutionContext): Future[Validation[PaginatedResult[Account]]] = {
     val valPaginationParams = PaginationParams.build(rawPaginationParams)
@@ -87,8 +87,12 @@ class AccountsService(
         query = query.filter { _.id inSet ids }
       }
 
-      createdByAccounts.foreach { createdByAccounts =>
-        query = query.filter { _.createdByAccount inSet createdByAccounts }
+      userGuids.foreach { userGuids =>
+        val subQuery = ContextUsers.filter { contextUser =>
+          contextUser.userGuid.inSet(userGuids) && contextUser.deletedAt.isEmpty
+        }.map(_.contextId)
+
+        query = query.filter { _.contextId in subQuery }
       }
 
       database.run(query.result).flatMap { records =>

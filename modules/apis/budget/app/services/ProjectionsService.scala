@@ -43,10 +43,10 @@ class ProjectionsService(
    */
   def getProjections(
     date: LocalDate,
-    coreAccountGuid: UUID,
+    userGuid: UUID,
     accountGuids: Option[Seq[UUID]] = None
   )(implicit ec: ExecutionContext): Future[Validation[Seq[Projection]]] = {
-    accountsService.findAccounts(createdByAccounts = Some(Seq(coreAccountGuid))).flatMap { result =>
+    accountsService.findAccounts(userGuids = Some(Seq(userGuid))).flatMap { result =>
       val accounts = result.toSuccess.value.items
 
       val sqlDate = new sql.Date(date.toDate.getTime)

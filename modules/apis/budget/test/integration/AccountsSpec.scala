@@ -26,23 +26,48 @@ class AccountsSpec
       response.status mustBe UNAUTHORIZED
     }
 
-    "return only Accounts belonging to the authenticated user" in {
+    "return only Accounts belonging to contexts that the authenticated user belongs to" in {
       TestService.deleteAccounts()
 
-      val includedAccount = TestService.createAccount(
+      val context1 = TestService.createContext(
+        userGuids = Seq(TestService.accessToken.resourceOwner.guid)
+      )
+
+      val context2 = TestService.createContext(
+        userGuids = Seq(
+          TestService.accessToken.resourceOwner.guid,
+          TestService.otherAccessToken.resourceOwner.guid
+        )
+      )
+
+      val context3 = TestService.createContext(
+        userGuids = Seq(TestService.otherAccessToken.resourceOwner.guid)
+      )
+
+      val includedAccount1 = TestService.createAccount(
+        contextGuid = context1.guid,
         name = "My Account",
         accessToken = TestService.accessToken
       )
 
+      val includedAccount2 = TestService.createAccount(
+        contextGuid = context2.guid,
+        name = "My Account",
+        accessToken = TestService.otherAccessToken
+      )
+
       val excludedAccount = TestService.createAccount(
+        contextGuid = context3.guid,
         name = "Another Account",
         accessToken = TestService.otherAccessToken
       )
 
       val response = await { authenticatedRequest("/accounts").get }
-      val accounts = response.json.as[Seq[Account]]
-      accounts.length mustBe 1
-      accounts.head.guid mustBe includedAccount.guid
+      val accountGuids = response.json.as[Seq[Account]].map(_.guid)
+      accountGuids.length mustBe 2
+      accountGuids must contain (includedAccount1.guid)
+      accountGuids must contain (includedAccount2.guid)
+      accountGuids must not contain (excludedAccount.guid)
     }
 
     "return Accounts with the appropriate balance (ignoring soft-deleted transactions)" in {
