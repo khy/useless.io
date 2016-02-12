@@ -9,14 +9,32 @@ import play.api.Play.current
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import io.useless.play.json.DateTimeJson._
 import io.useless.play.json.MessageJson.format
+import io.useless.play.pagination.PaginationController
 
 import controllers.budget.auth.Auth
 import services.budget.ContextsService
 import models.budget.JsonImplicits._
 
-object ContextsController extends Controller {
+object ContextsController extends Controller with PaginationController {
 
   val contextsService = ContextsService.default()
+
+  def index = Auth.async { implicit request =>
+    withRawPaginationParams { rawPaginationParams =>
+      contextsService.findContexts(
+        userGuids = Some(Seq(request.accessToken.resourceOwner.guid)),
+        rawPaginationParams = rawPaginationParams
+      ).flatMap { result =>
+        result.fold(
+          errors => Future.successful(Conflict(Json.toJson(errors))),
+          result => contextsService.records2models(result.items).map { contexts =>
+            val _result = result.copy(items = contexts)
+            paginatedResult(routes.ContextsController.index, _result)
+          }
+        )
+      }
+    }
+  }
 
   case class CreateData(
     name: String,

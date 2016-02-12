@@ -70,19 +70,34 @@ class ContextsService(
   }
 
   def findContexts(
-    ids: Option[Seq[Long]],
+    ids: Option[Seq[Long]] = None,
+    userGuids: Option[Seq[UUID]] = None,
     rawPaginationParams: RawPaginationParams = RawPaginationParams()
   )(implicit ec: ExecutionContext): Future[Validation[PaginatedResult[ContextRecord]]] = {
     val valPaginationParams = PaginationParams.build(rawPaginationParams)
 
     ValidationUtil.future(valPaginationParams) { paginationParams =>
-      var query = Contexts.filter(_.deletedAt.isEmpty)
-
-      ids.foreach { ids =>
-        query = query.filter { _.id inSet ids }
+      var query = Contexts.join(ContextUsers).on { case (context, contextUser) =>
+        context.id === contextUser.contextId &&
+        contextUser.deletedAt.isEmpty
+      }.filter { case (context, _) =>
+        context.deletedAt.isEmpty
       }
 
-      database.run(query.result).map { contextRecords =>
+      ids.foreach { ids =>
+        query = query.filter { case (context, _) =>
+          context.id inSet ids
+        }
+      }
+
+      userGuids.foreach { userGuids =>
+        query = query.filter { case (_, contextUser) =>
+          contextUser.userGuid inSet userGuids
+        }
+      }
+
+      database.run(query.result).map { results =>
+        val contextRecords = results.map { case (contextRecord, _) => contextRecord }
         PaginatedResult.build(contextRecords, paginationParams, None)
       }
     }
