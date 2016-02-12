@@ -71,7 +71,7 @@ class PlannedTransactionsService(
   def findPlannedTransactions(
     ids: Option[Seq[Long]] = None,
     accountGuids: Option[Seq[UUID]] = None,
-    createdByAccounts: Option[Seq[UUID]] = None,
+    userGuids: Option[Seq[UUID]] = None,
     rawPaginationParams: RawPaginationParams = RawPaginationParams()
   )(implicit ec: ExecutionContext): Future[Validation[PaginatedResult[PlannedTransaction]]] = {
     val valPaginationParams = PaginationParams.build(rawPaginationParams)
@@ -95,9 +95,17 @@ class PlannedTransactionsService(
         }
       }
 
-      createdByAccounts.foreach { createdByAccounts =>
+      userGuids.foreach { userGuids =>
+        val subQuery = Accounts.join(ContextUsers).on { case (account, contextUser) =>
+          account.contextId === contextUser.contextId && contextUser.deletedAt.isEmpty
+        }.filter { case (_, contextUser) =>
+          contextUser.userGuid inSet userGuids
+        }.map { case (account, _) =>
+          account.id
+        }
+
         query = query.filter { case (plannedTxn, _) =>
-          plannedTxn.createdByAccount inSet createdByAccounts
+          plannedTxn.accountId in subQuery
         }
       }
 

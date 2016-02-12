@@ -28,21 +28,49 @@ class PlannedTransactionsSpec
       response.status mustBe UNAUTHORIZED
     }
 
-    "return only PlannedTransactions belonging to the authenticated user" in {
+    "return only PlannedTransactions for accounts in contexts that the authenticated user belongs to" in {
       TestService.deletePlannedTransactions()
 
-      val includedPlannedTransaction = TestService.createPlannedTransaction(
+      val context1 = TestService.createContext(
+        userGuids = Seq(TestService.accessToken.resourceOwner.guid)
+      )
+
+      val context2 = TestService.createContext(
+        userGuids = Seq(
+          TestService.accessToken.resourceOwner.guid,
+          TestService.otherAccessToken.resourceOwner.guid
+        )
+      )
+
+      val context3 = TestService.createContext(
+        userGuids = Seq(TestService.otherAccessToken.resourceOwner.guid)
+      )
+
+      val account1 = TestService.createAccount(contextGuid = context1.guid)
+      val account2 = TestService.createAccount(contextGuid = context2.guid)
+      val account3 = TestService.createAccount(contextGuid = context3.guid)
+
+      val includedPlannedTransaction1 = TestService.createPlannedTransaction(
+        accountGuid = account1.guid,
         accessToken = TestService.accessToken
       )
 
+      val includedPlannedTransaction2 = TestService.createPlannedTransaction(
+        accountGuid = account2.guid,
+        accessToken = TestService.otherAccessToken
+      )
+
       val excludedPlannedTransaction = TestService.createPlannedTransaction(
+        accountGuid = account3.guid,
         accessToken = TestService.otherAccessToken
       )
 
       val response = await { authenticatedRequest("/plannedTransactions").get }
-      val plannedTransactions = response.json.as[Seq[PlannedTransaction]]
-      plannedTransactions.length mustBe 1
-      plannedTransactions.head.guid mustBe includedPlannedTransaction.guid
+      val plannedTransactionGuids = response.json.as[Seq[PlannedTransaction]].map(_.guid)
+      plannedTransactionGuids.length mustBe 2
+      plannedTransactionGuids must contain (includedPlannedTransaction1.guid)
+      plannedTransactionGuids must contain (includedPlannedTransaction2.guid)
+      plannedTransactionGuids must not contain (excludedPlannedTransaction.guid)
     }
 
     "return the transaction GUID that the planned transaction has been associated with, if any" in {

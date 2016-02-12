@@ -40,7 +40,7 @@ object PlannedTransactionsController extends Controller with PaginationControlle
         withRawPaginationParams { rawPaginationParams =>
           plannedTransactionsService.findPlannedTransactions(
             accountGuids = indexQuery.accountGuid.map(Seq(_)),
-            createdByAccounts = Some(Seq(request.accessToken.resourceOwner.guid)),
+            userGuids = Some(Seq(request.accessToken.resourceOwner.guid)),
             rawPaginationParams = rawPaginationParams
           ).map { result =>
             result.fold(
