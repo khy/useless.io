@@ -71,6 +71,7 @@ class TransactionTypesService(
   def findTransactionTypes(
     ids: Option[Seq[Long]] = None,
     guids: Option[Seq[UUID]] = None,
+    contextGuids: Option[Seq[UUID]] = None,
     names: Option[Seq[String]] = None,
     ownerships: Option[Seq[TransactionTypeOwnership]] = None,
     userGuids: Option[Seq[UUID]] = None,
@@ -87,6 +88,17 @@ class TransactionTypesService(
 
       guids.foreach { guids =>
         query = query.filter { _.guid inSet guids }
+      }
+
+      contextGuids.foreach { contextGuids =>
+        val subQuery = Contexts.filter { context =>
+          context.guid.inSet(contextGuids) && context.deletedAt.isEmpty
+        }.map(_.id)
+
+        query = query.filter { transactionType =>
+          transactionType.contextId.in(subQuery) ||
+          transactionType.ownershipKey === TransactionTypeOwnership.System.key
+        }
       }
 
       names.foreach { names =>

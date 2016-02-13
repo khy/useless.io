@@ -20,8 +20,12 @@ object TransactionTypesController extends Controller with PaginationController {
   val transactionTypesService = TransactionTypesService.default()
 
   def index = Auth.async { implicit request =>
+    val contextGuids = request.queryString.get("context").
+      map { rawUuids => rawUuids.map(UUID.fromString) }
+
     withRawPaginationParams { rawPaginationParams =>
       transactionTypesService.findTransactionTypes(
+        contextGuids = contextGuids,
         userGuids = Some(Seq(request.accessToken.resourceOwner.guid)),
         rawPaginationParams = rawPaginationParams
       ).map { result =>

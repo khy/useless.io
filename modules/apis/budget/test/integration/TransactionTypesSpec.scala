@@ -30,11 +30,11 @@ class TransactionTypesSpec
       response.status mustBe UNAUTHORIZED
     }
 
+    lazy val expense = TestService.getSystemTransactionType("Expense")
+    lazy val income = TestService.getSystemTransactionType("Income")
+
     "return 200 OK with transaction types for accounts in the user's contexts, along with system transaction types" in {
       TestService.deleteTransactionTypes()
-
-      val expense = TestService.getSystemTransactionType("Expense")
-      val income = TestService.getSystemTransactionType("Income")
 
       TestService.createTransactionType(
         contextGuid = TestService.otherContext.guid,
@@ -74,6 +74,35 @@ class TransactionTypesSpec
       transactionTypeNames must contain ("Kevin's Salary")
       transactionTypeNames must contain ("Dominos")
       transactionTypeNames must not contain ("Rent")
+    }
+
+    "return transaction types limited to the specified context" in {
+      TestService.deleteTransactionTypes()
+
+      TestService.createTransactionType(
+        contextGuid = TestService.sharedContext.guid,
+        name = "Rent",
+        parentGuid = Some(expense.guid),
+        ownership = TransactionTypeOwnership.User,
+        accessToken = TestService.otherAccessToken
+      )
+
+      TestService.createTransactionType(
+        contextGuid = TestService.myContext.guid,
+        name = "Groceries",
+        parentGuid = Some(expense.guid),
+        ownership = TransactionTypeOwnership.User,
+        accessToken = TestService.accessToken
+      )
+
+      val response = await {
+        authenticatedRequest("/transactionTypes").withQueryString(
+          "context" -> TestService.sharedContext.guid.toString
+        ).get
+      }
+      val transactionTypeNames = response.json.as[Seq[TransactionType]].map(_.name)
+      transactionTypeNames must contain ("Rent")
+      transactionTypeNames must not contain ("Groceries")
     }
 
   }
