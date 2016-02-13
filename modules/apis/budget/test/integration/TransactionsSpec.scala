@@ -30,24 +30,9 @@ class TransactionsSpec
     "return only Transactions for accounts in contexts that the authenticated user belongs to" in {
       TestService.deleteTransactions()
 
-      val context1 = TestService.createContext(
-        userGuids = Seq(TestService.accessToken.resourceOwner.guid)
-      )
-
-      val context2 = TestService.createContext(
-        userGuids = Seq(
-          TestService.accessToken.resourceOwner.guid,
-          TestService.otherAccessToken.resourceOwner.guid
-        )
-      )
-
-      val context3 = TestService.createContext(
-        userGuids = Seq(TestService.otherAccessToken.resourceOwner.guid)
-      )
-
-      val account1 = TestService.createAccount(contextGuid = context1.guid)
-      val account2 = TestService.createAccount(contextGuid = context2.guid)
-      val account3 = TestService.createAccount(contextGuid = context3.guid)
+      val account1 = TestService.createAccount(contextGuid = TestService.myContext.guid)
+      val account2 = TestService.createAccount(contextGuid = TestService.sharedContext.guid)
+      val account3 = TestService.createAccount(contextGuid = TestService.otherContext.guid)
 
       val includedTransaction1 = TestService.createTransaction(
         accountGuid = account1.guid,

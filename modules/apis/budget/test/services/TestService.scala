@@ -54,18 +54,18 @@ object TestService extends DatabaseAccessor {
     }
   }.head
 
-  def myContext = createContext(
+  lazy val myContext = createContext(
     userGuids = Seq(accessToken.resourceOwner.guid)
   )
 
-  def sharedContext = createContext(
+  lazy val sharedContext = createContext(
     userGuids = Seq(
       accessToken.resourceOwner.guid,
       otherAccessToken.resourceOwner.guid
     )
   )
 
-  def otherContext = createContext(
+  lazy val otherContext = createContext(
     userGuids = Seq(otherAccessToken.resourceOwner.guid)
   )
 

@@ -36,23 +36,8 @@ class TransactionTypesSpec
       val expense = TestService.getSystemTransactionType("Expense")
       val income = TestService.getSystemTransactionType("Income")
 
-      val context1 = TestService.createContext(
-        userGuids = Seq(TestService.accessToken.resourceOwner.guid)
-      )
-
-      val context2 = TestService.createContext(
-        userGuids = Seq(
-          TestService.accessToken.resourceOwner.guid,
-          TestService.otherAccessToken.resourceOwner.guid
-        )
-      )
-
-      val context3 = TestService.createContext(
-        userGuids = Seq(TestService.otherAccessToken.resourceOwner.guid)
-      )
-
       TestService.createTransactionType(
-        contextGuid = context3.guid,
+        contextGuid = TestService.otherContext.guid,
         name = "Rent",
         parentGuid = Some(expense.guid),
         ownership = TransactionTypeOwnership.User,
@@ -67,7 +52,7 @@ class TransactionTypesSpec
       )
 
       TestService.createTransactionType(
-        contextGuid = context2.guid,
+        contextGuid = TestService.sharedContext.guid,
         name = "Kevin's Salary",
         parentGuid = Some(income.guid),
         ownership = TransactionTypeOwnership.User,
@@ -75,7 +60,7 @@ class TransactionTypesSpec
       )
 
       TestService.createTransactionType(
-        contextGuid = context1.guid,
+        contextGuid = TestService.myContext.guid,
         name = "Dominos",
         parentGuid = Some(expense.guid),
         ownership = TransactionTypeOwnership.User,

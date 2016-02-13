@@ -29,35 +29,20 @@ class AccountsSpec
     "return only Accounts belonging to contexts that the authenticated user belongs to" in {
       TestService.deleteAccounts()
 
-      val context1 = TestService.createContext(
-        userGuids = Seq(TestService.accessToken.resourceOwner.guid)
-      )
-
-      val context2 = TestService.createContext(
-        userGuids = Seq(
-          TestService.accessToken.resourceOwner.guid,
-          TestService.otherAccessToken.resourceOwner.guid
-        )
-      )
-
-      val context3 = TestService.createContext(
-        userGuids = Seq(TestService.otherAccessToken.resourceOwner.guid)
-      )
-
       val includedAccount1 = TestService.createAccount(
-        contextGuid = context1.guid,
+        contextGuid = TestService.myContext.guid,
         name = "My Account",
         accessToken = TestService.accessToken
       )
 
       val includedAccount2 = TestService.createAccount(
-        contextGuid = context2.guid,
+        contextGuid = TestService.sharedContext.guid,
         name = "My Account",
         accessToken = TestService.otherAccessToken
       )
 
       val excludedAccount = TestService.createAccount(
-        contextGuid = context3.guid,
+        contextGuid = TestService.otherContext.guid,
         name = "Another Account",
         accessToken = TestService.otherAccessToken
       )
@@ -94,24 +79,21 @@ class AccountsSpec
     "return accounts limited to the specified context" in {
       TestService.deleteAccounts()
 
-      val myContext = TestService.myContext
-      val sharedContext = TestService.sharedContext
-
       val excludedAccount = TestService.createAccount(
-        contextGuid = myContext.guid,
+        contextGuid = TestService.myContext.guid,
         name = "My Account",
         accessToken = TestService.accessToken
       )
 
       val includedAccount = TestService.createAccount(
-        contextGuid = sharedContext.guid,
+        contextGuid = TestService.sharedContext.guid,
         name = "Shared Account",
         accessToken = TestService.otherAccessToken
       )
 
       val response = await {
         authenticatedRequest("/accounts").withQueryString(
-          "context" -> sharedContext.guid.toString
+          "context" -> TestService.sharedContext.guid.toString
         ).get
       }
 
