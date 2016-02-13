@@ -73,7 +73,7 @@ class TransactionTypesService(
     guids: Option[Seq[UUID]] = None,
     names: Option[Seq[String]] = None,
     ownerships: Option[Seq[TransactionTypeOwnership]] = None,
-    createdByAccounts: Option[Seq[UUID]] = None,
+    userGuids: Option[Seq[UUID]] = None,
     rawPaginationParams: RawPaginationParams = RawPaginationParams()
   )(implicit ec: ExecutionContext): Future[Validation[PaginatedResult[TransactionType]]] = {
     val valPaginationParams = PaginationParams.build(rawPaginationParams)
@@ -97,9 +97,13 @@ class TransactionTypesService(
         query = query.filter { _.ownershipKey inSet ownerships.map(_.key)}
       }
 
-      createdByAccounts.foreach { createdByAccounts =>
+      userGuids.foreach { userGuids =>
+        val subQuery = ContextUsers.filter { contextUser =>
+          contextUser.userGuid.inSet(userGuids) && contextUser.deletedAt.isEmpty
+        }.map(_.contextId)
+
         query = query.filter { transactionType =>
-          transactionType.createdByAccount.inSet(createdByAccounts) ||
+          transactionType.contextId.in(subQuery) ||
           transactionType.ownershipKey === TransactionTypeOwnership.System.key
         }
       }

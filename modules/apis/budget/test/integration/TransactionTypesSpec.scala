@@ -30,12 +30,29 @@ class TransactionTypesSpec
       response.status mustBe UNAUTHORIZED
     }
 
-    "return 200 OK with transaction types that the requestor owns, along with system transaction types" in {
+    "return 200 OK with transaction types for accounts in the user's contexts, along with system transaction types" in {
       TestService.deleteTransactionTypes()
+
       val expense = TestService.getSystemTransactionType("Expense")
       val income = TestService.getSystemTransactionType("Income")
 
+      val context1 = TestService.createContext(
+        userGuids = Seq(TestService.accessToken.resourceOwner.guid)
+      )
+
+      val context2 = TestService.createContext(
+        userGuids = Seq(
+          TestService.accessToken.resourceOwner.guid,
+          TestService.otherAccessToken.resourceOwner.guid
+        )
+      )
+
+      val context3 = TestService.createContext(
+        userGuids = Seq(TestService.otherAccessToken.resourceOwner.guid)
+      )
+
       TestService.createTransactionType(
+        contextGuid = context3.guid,
         name = "Rent",
         parentGuid = Some(expense.guid),
         ownership = TransactionTypeOwnership.User,
@@ -50,6 +67,15 @@ class TransactionTypesSpec
       )
 
       TestService.createTransactionType(
+        contextGuid = context2.guid,
+        name = "Kevin's Salary",
+        parentGuid = Some(income.guid),
+        ownership = TransactionTypeOwnership.User,
+        accessToken = TestService.otherAccessToken
+      )
+
+      TestService.createTransactionType(
+        contextGuid = context1.guid,
         name = "Dominos",
         parentGuid = Some(expense.guid),
         ownership = TransactionTypeOwnership.User,
@@ -60,6 +86,7 @@ class TransactionTypesSpec
       response.status mustBe OK
       val transactionTypeNames = response.json.as[Seq[TransactionType]].map(_.name)
       transactionTypeNames must contain ("Salary")
+      transactionTypeNames must contain ("Kevin's Salary")
       transactionTypeNames must contain ("Dominos")
       transactionTypeNames must not contain ("Rent")
     }

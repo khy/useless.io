@@ -22,7 +22,7 @@ object TransactionTypesController extends Controller with PaginationController {
   def index = Auth.async { implicit request =>
     withRawPaginationParams { rawPaginationParams =>
       transactionTypesService.findTransactionTypes(
-        createdByAccounts = Some(Seq(request.accessToken.resourceOwner.guid)),
+        userGuids = Some(Seq(request.accessToken.resourceOwner.guid)),
         rawPaginationParams = rawPaginationParams
       ).map { result =>
         result.fold(
