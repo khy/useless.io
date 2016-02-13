@@ -99,54 +99,84 @@ class TransfersService(
       }
     }
 
-    for {
-      transferGuid <- futTransferGuid
-      valFromTransaction <- transactionService.createTransaction(
-        transactionTypeGuid = transferGuid,
-        accountGuid = fromAccountGuid,
-        amount = -amount,
-        date = date,
-        name = None,
-        plannedTransactionGuid = None,
-        adjustedTransactionGuid = None,
-        accessToken = accessToken
-      )
-      valToTransaction <- transactionService.createTransaction(
-        transactionTypeGuid = transferGuid,
-        accountGuid = toAccountGuid,
-        amount = amount,
-        date = date,
-        name = None,
-        plannedTransactionGuid = None,
-        adjustedTransactionGuid = None,
-        accessToken = accessToken
-      )
-      valTransfer <- ValidationUtil.future(valFromTransaction ++ valToTransaction) {
-        case (fromTransaction, toTransaction) =>
+    val futFromContextIds = database.run {
+      Accounts.filter { _.guid === fromAccountGuid }.map { _.contextId }.result
+    }
 
-        val transfers = Transfers.map { r =>
-          (r.guid, r.fromTransactionId, r.toTransactionId, r.createdByAccount, r.createdByAccessToken)
-        }.returning(Transfers.map(_.id))
+    val futToContextIds = database.run {
+      Accounts.filter { _.guid === toAccountGuid }.map { _.contextId }.result
+    }
 
-        val insert = transfers += ((
-          UUID.randomUUID,
-          fromTransaction.id,
-          toTransaction.id,
-          accessToken.resourceOwner.guid,
-          accessToken.guid
-        ))
-
-        database.run(insert).flatMap { id =>
-          findTransfers(ids = Some(Seq(id))).map { result =>
-            result.map(_.items.headOption) match {
-              case Validation.Success(Some(transfer)) => transfer
-              case _ => throw new ResourceUnexpectedlyNotFound("Transfer", id)
-            }
+    val futValToAccount = for {
+      fromContextIds <- futFromContextIds
+      toContextIds <- futToContextIds
+    } yield {
+      fromContextIds.headOption.flatMap { fromContextId =>
+        toContextIds.headOption.map { toContextId =>
+          if (fromContextId != toContextId) {
+            Validation.failure(
+              "toAccountGuid",
+              "useless.error.budget.invalidTransferToAccount",
+              "specified" -> toAccountGuid.toString
+            )
+          } else {
+            Validation.success(Unit)
           }
         }
-      }
-    } yield valTransfer
+      }.getOrElse { Validation.success(Unit) }
+    }
 
+    futValToAccount.flatMap { valToAccount =>
+      ValidationUtil.flatMapFuture(valToAccount) { _ =>
+        for {
+          transferGuid <- futTransferGuid
+          valFromTransaction <- transactionService.createTransaction(
+            transactionTypeGuid = transferGuid,
+            accountGuid = fromAccountGuid,
+            amount = -amount,
+            date = date,
+            name = None,
+            plannedTransactionGuid = None,
+            adjustedTransactionGuid = None,
+            accessToken = accessToken
+          )
+          valToTransaction <- transactionService.createTransaction(
+            transactionTypeGuid = transferGuid,
+            accountGuid = toAccountGuid,
+            amount = amount,
+            date = date,
+            name = None,
+            plannedTransactionGuid = None,
+            adjustedTransactionGuid = None,
+            accessToken = accessToken
+          )
+          valTransfer <- ValidationUtil.future(valFromTransaction ++ valToTransaction) {
+            case (fromTransaction, toTransaction) =>
+
+            val transfers = Transfers.map { r =>
+              (r.guid, r.fromTransactionId, r.toTransactionId, r.createdByAccount, r.createdByAccessToken)
+            }.returning(Transfers.map(_.id))
+
+            val insert = transfers += ((
+              UUID.randomUUID,
+              fromTransaction.id,
+              toTransaction.id,
+              accessToken.resourceOwner.guid,
+              accessToken.guid
+            ))
+
+            database.run(insert).flatMap { id =>
+              findTransfers(ids = Some(Seq(id))).map { result =>
+                result.map(_.items.headOption) match {
+                  case Validation.Success(Some(transfer)) => transfer
+                  case _ => throw new ResourceUnexpectedlyNotFound("Transfer", id)
+                }
+              }
+            }
+          }
+        } yield valTransfer
+      }
+    }
   }
 
 }

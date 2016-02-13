@@ -22,8 +22,9 @@ class TransfersSpec
 
   "POST /transfers" must {
 
-    lazy val fromAccount = TestService.createAccount()
-    lazy val toAccount = TestService.createAccount()
+    lazy val context = TestService.createContext()
+    lazy val fromAccount = TestService.createAccount(contextGuid = context.guid)
+    lazy val toAccount = TestService.createAccount(contextGuid = context.guid)
     val date = LocalDate.now
 
     lazy val json = Json.obj(
@@ -38,11 +39,18 @@ class TransfersSpec
       response.status mustBe UNAUTHORIZED
     }
 
-    "return a 409 Conflict any required fields aren't specified" in {
+    "return a 409 Conflict if any required fields aren't specified" in {
       Seq("fromAccountGuid", "toAccountGuid", "amount", "date").foreach { field =>
         val response = await { authenticatedRequest("/transfers").post(json - field) }
         response.status mustBe CONFLICT
       }
+    }
+
+    "return a 409 Conflict if the two accounts are not in the same context" in {
+      val otherAccount = TestService.createAccount()
+      val _json = json ++ Json.obj("toAccountGuid" -> otherAccount.guid)
+      val response = await { authenticatedRequest("/transfers").post(_json) }
+      response.status mustBe CONFLICT
     }
 
     "return a new Transfer if authorized and valid" in {
