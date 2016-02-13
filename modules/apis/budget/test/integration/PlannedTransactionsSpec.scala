@@ -92,6 +92,30 @@ class PlannedTransactionsSpec
       plannedTransactions.head.guid mustBe includedPlannedTransaction.guid
     }
 
+    "return only PlannedTransactions belonging to the specified context" in {
+      TestService.deletePlannedTransactions()
+
+      val account1 = TestService.createAccount(contextGuid = TestService.myContext.guid)
+      val excludedPlannedTransaction = TestService.createPlannedTransaction(
+        accountGuid = account1.guid
+      )
+
+      val account2 = TestService.createAccount(contextGuid = TestService.sharedContext.guid)
+      val includedPlannedTransaction = TestService.createPlannedTransaction(
+        accountGuid = account2.guid
+      )
+
+      val response = await {
+        authenticatedRequest("/plannedTransactions").withQueryString(
+          "context" -> TestService.sharedContext.guid.toString
+        ).get
+      }
+
+      val plannedTransactionGuids = response.json.as[Seq[PlannedTransaction]].map(_.guid)
+      plannedTransactionGuids must contain (includedPlannedTransaction.guid)
+      plannedTransactionGuids must not contain (excludedPlannedTransaction.guid)
+    }
+
     "paginate the PlannedTransactions as specified" in {
       TestService.deletePlannedTransactions()
 

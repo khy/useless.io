@@ -70,6 +70,7 @@ class PlannedTransactionsService(
 
   def findPlannedTransactions(
     ids: Option[Seq[Long]] = None,
+    contextGuids: Option[Seq[UUID]] = None,
     accountGuids: Option[Seq[UUID]] = None,
     userGuids: Option[Seq[UUID]] = None,
     rawPaginationParams: RawPaginationParams = RawPaginationParams()
@@ -92,6 +93,20 @@ class PlannedTransactionsService(
       accountGuids.foreach { accountGuids =>
         query = query.filter { case (_, account) =>
           account.guid inSet accountGuids
+        }
+      }
+
+      contextGuids.foreach { contextGuids =>
+        val subQuery = Accounts.join(Contexts).on { case (account, context) =>
+          account.contextId === context.id && context.deletedAt.isEmpty
+        }.filter { case (_, context) =>
+          context.guid inSet contextGuids
+        }.map { case (account, _) =>
+          account.id
+        }
+
+        query = query.filter { case (plannedTxn, _) =>
+          plannedTxn.accountId in subQuery
         }
       }
 
