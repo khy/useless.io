@@ -39,7 +39,7 @@ object TransactionsController extends Controller with PaginationController {
       indexQuery => withRawPaginationParams { rawPaginationParams =>
         transactionsService.findTransactions(
           accountGuids = indexQuery.accountGuid.map(Seq(_)),
-          createdByAccounts = Some(Seq(request.accessToken.resourceOwner.guid)),
+          userGuids = Some(Seq(request.accessToken.resourceOwner.guid)),
           rawPaginationParams = rawPaginationParams
         ).flatMap { result =>
           result.fold(

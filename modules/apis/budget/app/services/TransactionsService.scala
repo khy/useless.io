@@ -83,7 +83,7 @@ class TransactionsService(
     ids: Option[Seq[Long]] = None,
     guids: Option[Seq[UUID]] = None,
     accountGuids: Option[Seq[UUID]] = None,
-    createdByAccounts: Option[Seq[UUID]] = None,
+    userGuids: Option[Seq[UUID]] = None,
     rawPaginationParams: RawPaginationParams = RawPaginationParams()
   )(implicit ec: ExecutionContext): Future[Validation[PaginatedResult[TransactionRecord]]] = {
     val valPaginationParams = PaginationParams.build(rawPaginationParams)
@@ -113,9 +113,17 @@ class TransactionsService(
         }
       }
 
-      createdByAccounts.foreach { createdByAccounts =>
+      userGuids.foreach { userGuids =>
+        val subQuery = Accounts.join(ContextUsers).on { case (account, contextUser) =>
+          account.contextId === contextUser.contextId && contextUser.deletedAt.isEmpty
+        }.filter { case (_, contextUser) =>
+          contextUser.userGuid inSet userGuids
+        }.map { case (account, _) =>
+          account.id
+        }
+
         query = query.filter { case (txn, _) =>
-          txn.createdByAccount inSet createdByAccounts
+          txn.accountId in subQuery
         }
       }
 

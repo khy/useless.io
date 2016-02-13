@@ -27,21 +27,49 @@ class TransactionsSpec
       response.status mustBe UNAUTHORIZED
     }
 
-    "return only Transactions belonging to the authenticated user" in {
+    "return only Transactions for accounts in contexts that the authenticated user belongs to" in {
       TestService.deleteTransactions()
 
-      val includedAccount = TestService.createTransaction(
+      val context1 = TestService.createContext(
+        userGuids = Seq(TestService.accessToken.resourceOwner.guid)
+      )
+
+      val context2 = TestService.createContext(
+        userGuids = Seq(
+          TestService.accessToken.resourceOwner.guid,
+          TestService.otherAccessToken.resourceOwner.guid
+        )
+      )
+
+      val context3 = TestService.createContext(
+        userGuids = Seq(TestService.otherAccessToken.resourceOwner.guid)
+      )
+
+      val account1 = TestService.createAccount(contextGuid = context1.guid)
+      val account2 = TestService.createAccount(contextGuid = context2.guid)
+      val account3 = TestService.createAccount(contextGuid = context3.guid)
+
+      val includedTransaction1 = TestService.createTransaction(
+        accountGuid = account1.guid,
         accessToken = TestService.accessToken
       )
 
-      val excludedAccount = TestService.createTransaction(
+      val includedTransaction2 = TestService.createTransaction(
+        accountGuid = account2.guid,
+        accessToken = TestService.otherAccessToken
+      )
+
+      val excludedTransaction = TestService.createTransaction(
+        accountGuid = account3.guid,
         accessToken = TestService.otherAccessToken
       )
 
       val response = await { authenticatedRequest("/transactions").get }
-      val transactions = response.json.as[Seq[Transaction]]
-      transactions.length mustBe 1
-      transactions.head.guid mustBe includedAccount.guid
+      val transactionGuids = response.json.as[Seq[Transaction]].map(_.guid)
+      transactionGuids.length mustBe 2
+      transactionGuids must contain (includedTransaction1.guid)
+      transactionGuids must contain (includedTransaction2.guid)
+      transactionGuids must not contain (excludedTransaction.guid)
     }
 
     "return only Transactions belonging to the specified account" in {
