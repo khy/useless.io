@@ -36,7 +36,8 @@ CREATE INDEX context_users_user_guid_idx
   ON context_users (user_guid);
 
 INSERT INTO contexts (guid, name, created_by_account, created_by_access_token)
-  SELECT gen_random_uuid(), 'Default', created_by_account, created_by_access_token FROM accounts;
+  SELECT gen_random_uuid(), 'Default', created_by_account, created_by_access_token
+  FROM accounts GROUP BY created_by_account, created_by_access_token;
 
 INSERT INTO context_users (context_id, user_guid, created_by_account, created_by_access_token)
   SELECT id, created_by_account, created_by_account, created_by_access_token FROM contexts WHERE name = 'Default';
