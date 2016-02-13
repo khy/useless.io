@@ -21,8 +21,12 @@ object AccountsController extends Controller with PaginationController {
   val accountsService = AccountsService.default()
 
   def index = Auth.async { implicit request =>
+    val contextGuids = request.queryString.get("context").
+      map { rawUuids => rawUuids.map(UUID.fromString) }
+
     withRawPaginationParams { rawPaginationParams =>
       accountsService.findAccounts(
+        contextGuids = contextGuids,
         userGuids = Some(Seq(request.accessToken.resourceOwner.guid)),
         rawPaginationParams = rawPaginationParams
       ).map { result =>

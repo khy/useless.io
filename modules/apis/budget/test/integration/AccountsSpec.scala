@@ -91,6 +91,35 @@ class AccountsSpec
       _account2.balance mustBe 0.0
     }
 
+    "return accounts limited to the specified context" in {
+      TestService.deleteAccounts()
+
+      val myContext = TestService.myContext
+      val sharedContext = TestService.sharedContext
+
+      val excludedAccount = TestService.createAccount(
+        contextGuid = myContext.guid,
+        name = "My Account",
+        accessToken = TestService.accessToken
+      )
+
+      val includedAccount = TestService.createAccount(
+        contextGuid = sharedContext.guid,
+        name = "Shared Account",
+        accessToken = TestService.otherAccessToken
+      )
+
+      val response = await {
+        authenticatedRequest("/accounts").withQueryString(
+          "context" -> sharedContext.guid.toString
+        ).get
+      }
+
+      val accountGuids = response.json.as[Seq[Account]].map(_.guid)
+      accountGuids must contain (includedAccount.guid)
+      accountGuids must not contain (excludedAccount.guid)
+    }
+
   }
 
   "POST /accounts" must {

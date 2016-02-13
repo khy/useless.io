@@ -54,6 +54,21 @@ object TestService extends DatabaseAccessor {
     }
   }.head
 
+  def myContext = createContext(
+    userGuids = Seq(accessToken.resourceOwner.guid)
+  )
+
+  def sharedContext = createContext(
+    userGuids = Seq(
+      accessToken.resourceOwner.guid,
+      otherAccessToken.resourceOwner.guid
+    )
+  )
+
+  def otherContext = createContext(
+    userGuids = Seq(otherAccessToken.resourceOwner.guid)
+  )
+
   def createAccount(
     contextGuid: UUID = createContext().guid,
     accountType: AccountType = AccountType.Checking,
