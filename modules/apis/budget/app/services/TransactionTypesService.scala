@@ -78,7 +78,7 @@ class TransactionTypesService(
   )(implicit ec: ExecutionContext): Future[Validation[PaginatedResult[TransactionType]]] = {
     val valPaginationParams = PaginationParams.build(rawPaginationParams)
 
-    ValidationUtil.future(valPaginationParams) { paginationParams =>
+    ValidationUtil.mapFuture(valPaginationParams) { paginationParams =>
       var query = TransactionTypes.filter { r => r.deletedAt.isEmpty }
 
       ids.foreach { ids =>
@@ -148,7 +148,7 @@ class TransactionTypesService(
     for {
       valOptParentId <- futValOptParentId
       valContextId <- futValContextId
-      valTransactionType <- ValidationUtil.future(valOptParentId ++ valContextId) { case (optParentId, contextId) =>
+      valTransactionType <- ValidationUtil.mapFuture(valOptParentId ++ valContextId) { case (optParentId, contextId) =>
         val transactionTypes = TransactionTypes.map { r =>
           (r.guid, r.contextId, r.name, r.ownershipKey, r.createdByAccount, r.createdByAccessToken)
         }.returning(TransactionTypes.map(_.id))
@@ -216,7 +216,7 @@ class TransactionTypesService(
 
     futValTransactionType.flatMap { valTransactionType =>
       futValOptParentId.flatMap { valOptParentId =>
-        ValidationUtil.future(valTransactionType ++ valOptParentId) { case (transactionType, optParentId) =>
+        ValidationUtil.mapFuture(valTransactionType ++ valOptParentId) { case (transactionType, optParentId) =>
 
           val optUpdateName = optName.filter { name =>
             name != transactionType.name

@@ -76,7 +76,7 @@ class ContextsService(
   )(implicit ec: ExecutionContext): Future[Validation[PaginatedResult[ContextRecord]]] = {
     val valPaginationParams = PaginationParams.build(rawPaginationParams)
 
-    ValidationUtil.future(valPaginationParams) { paginationParams =>
+    ValidationUtil.mapFuture(valPaginationParams) { paginationParams =>
       var query = Contexts.join(ContextUsers).on { case (context, contextUser) =>
         context.id === contextUser.contextId &&
         contextUser.deletedAt.isEmpty

@@ -80,7 +80,7 @@ class AccountsService(
   )(implicit ec: ExecutionContext): Future[Validation[PaginatedResult[Account]]] = {
     val valPaginationParams = PaginationParams.build(rawPaginationParams)
 
-    ValidationUtil.future(valPaginationParams) { paginationParams =>
+    ValidationUtil.mapFuture(valPaginationParams) { paginationParams =>
       var query = Accounts.filter { a => a.id === a.id }
 
       ids.foreach { ids =>
@@ -120,7 +120,7 @@ class AccountsService(
     }
 
     futValContextId.flatMap { valContextId =>
-      ValidationUtil.future(valContextId) { contextId =>
+      ValidationUtil.mapFuture(valContextId) { contextId =>
         val accounts = Accounts.map { a =>
           (a.guid, a.contextId, a.accountTypeKey, a.name, a.initialBalance, a.createdByAccount, a.createdByAccessToken)
         }.returning(Accounts.map(_.id))

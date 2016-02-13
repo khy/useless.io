@@ -72,7 +72,7 @@ class TransfersService(
   )(implicit ec: ExecutionContext): Future[Validation[PaginatedResult[TransferRecord]]] = {
     val valPaginationParams = PaginationParams.build(rawPaginationParams)
 
-    ValidationUtil.future(valPaginationParams) { paginationParams =>
+    ValidationUtil.mapFuture(valPaginationParams) { paginationParams =>
       var query = Transfers.filter(_.deletedAt.isEmpty)
 
       ids.foreach { ids =>
@@ -150,7 +150,7 @@ class TransfersService(
             adjustedTransactionGuid = None,
             accessToken = accessToken
           )
-          valTransfer <- ValidationUtil.future(valFromTransaction ++ valToTransaction) {
+          valTransfer <- ValidationUtil.mapFuture(valFromTransaction ++ valToTransaction) {
             case (fromTransaction, toTransaction) =>
 
             val transfers = Transfers.map { r =>

@@ -39,7 +39,7 @@ object NoteService extends BaseService with Configuration {
   ): Future[Validation[PaginatedResult[Note]]] = {
     val valPaginationParams = PaginationParams.build(rawPaginationParams, paginationConfig)
 
-    ValidationUtil.future(valPaginationParams) { paginationParams =>
+    ValidationUtil.mapFuture(valPaginationParams) { paginationParams =>
       // It's unclear to me why, but sortBy needs to go first.
       var query = Notes.sortBy { sort =>
         paginationParams.order match {

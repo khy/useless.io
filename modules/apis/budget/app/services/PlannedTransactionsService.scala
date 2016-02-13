@@ -76,7 +76,7 @@ class PlannedTransactionsService(
   )(implicit ec: ExecutionContext): Future[Validation[PaginatedResult[PlannedTransaction]]] = {
     val valPaginationParams = PaginationParams.build(rawPaginationParams)
 
-    ValidationUtil.future(valPaginationParams) { paginationParams =>
+    ValidationUtil.mapFuture(valPaginationParams) { paginationParams =>
       var query = PlannedTransactions.join(Accounts).on { case (plannedTxn, account) =>
         plannedTxn.accountId === account.id
       }.filter { case (plannedTxn, _) =>
@@ -163,7 +163,7 @@ class PlannedTransactionsService(
 
     futValTransactionTypeId.flatMap { valTransactionTypeId =>
       futValAccountId.flatMap { valAccountId =>
-        ValidationUtil.future(valTransactionTypeId ++ valAccountId) { case (transactionTypeId, accountId) =>
+        ValidationUtil.mapFuture(valTransactionTypeId ++ valAccountId) { case (transactionTypeId, accountId) =>
           val plannedTransactions = PlannedTransactions.map { r =>
             (r.guid, r.transactionTypeId, r.accountId, r.minAmount, r.maxAmount, r.minDate, r.maxDate, r.name, r.createdByAccount, r.createdByAccessToken)
           }.returning(PlannedTransactions.map(_.id))

@@ -51,7 +51,7 @@ object HaikuService extends Configuration {
   ): Future[Validation[PaginatedResult[Haiku]]] = {
     val valPaginationParams = PaginationParams.build(rawPaginationParams, paginationConfig)
 
-    ValidationUtil.future(valPaginationParams) { paginationParams =>
+    ValidationUtil.mapFuture(valPaginationParams) { paginationParams =>
       userQuery(optUserHandle).flatMap { userQuery =>
         paginationQuery(paginationParams).flatMap { paginationQuery =>
           val query = userQuery.add(paginationQuery)
@@ -206,7 +206,7 @@ object HaikuService extends Configuration {
     }
 
     futValOptInResponseTo.flatMap { valOptInResponseTo =>
-      ValidationUtil.future(valLines ++ valOptInResponseTo) { case (lines, optInResponseTo) =>
+      ValidationUtil.mapFuture(valLines ++ valOptInResponseTo) { case (lines, optInResponseTo) =>
         val document = new HaikuDocument(
           guid = UUID.randomUUID,
           inResponseToGuid = inResponseToGuid,
