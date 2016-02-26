@@ -77,7 +77,7 @@ class ContextsService(
     val valPaginationParams = PaginationParams.build(rawPaginationParams)
 
     ValidationUtil.mapFuture(valPaginationParams) { paginationParams =>
-      var query = Contexts.join(ContextUsers).on { case (context, contextUser) =>
+      var query = Contexts.joinLeft(ContextUsers).on { case (context, contextUser) =>
         context.id === contextUser.contextId &&
         contextUser.deletedAt.isEmpty
       }.filter { case (context, _) =>
@@ -92,7 +92,9 @@ class ContextsService(
 
       userGuids.foreach { userGuids =>
         query = query.filter { case (_, contextUser) =>
-          contextUser.userGuid inSet userGuids
+          contextUser.map { contextUser =>
+            contextUser.userGuid inSet userGuids
+          }
         }
       }
 
@@ -130,6 +132,38 @@ class ContextsService(
             case _ => throw new ResourceUnexpectedlyNotFound("Context", contextId)
           }
         }
+      }
+    }
+  }
+
+  def addContextUser(
+    guid: UUID,
+    userGuid: UUID,
+    accessToken: AccessToken
+  )(implicit ec: ExecutionContext): Future[Validation[ContextRecord]] = {
+    val query = Contexts.filter(_.guid === guid).map(_.id)
+
+    database.run(query.result).flatMap { contextIds =>
+      contextIds.headOption.map { contextId =>
+        val insertProjection = ContextUsers.map { r =>
+          (r.contextId, r.userGuid, r.createdByAccount, r.createdByAccessToken)
+        }
+
+        val contextUsersInsert = insertProjection +=
+          (contextId, userGuid, accessToken.resourceOwner.guid, accessToken.guid)
+
+        database.run(contextUsersInsert).flatMap { _ =>
+          findContexts(ids = Some(Seq(contextId))).map { result =>
+            result.map(_.items.headOption) match {
+              case Validation.Success(Some(context)) => Validation.success(context)
+              case _ => throw new ResourceUnexpectedlyNotFound("Context", contextId)
+            }
+          }
+        }
+      }.getOrElse {
+        Future.successful(Validation.failure("guid", "useless.error.unknownGuid",
+          "specified" -> guid.toString
+        ))
       }
     }
   }

@@ -71,13 +71,44 @@ class ContextsSpec
       }
     }
 
-    "return a new Transfer if authorized and valid" in {
+    "return a new Conflict if authorized and valid" in {
       val response = await { authenticatedRequest("/contexts").post(json) }
       response.status mustBe CREATED
 
       val context = response.json.as[Context]
       context.name mustBe "Default"
       context.users.map(_.guid.toString) mustBe Seq("00000000-1111-1111-1111-111111111111")
+    }
+
+  }
+
+  "POST /contexts/:guid/users" must {
+
+    lazy val json = Json.obj(
+      "userGuid" -> "00000000-1111-1111-1111-111111111111"
+    )
+
+    "return a 401 Unauthorized if the request isn't authenticated" in {
+      val context = TestService.createContext(userGuids = Seq.empty)
+      val response = await { unauthentictedRequest(s"/contexts/${context.guid}/users").post(json) }
+      response.status mustBe UNAUTHORIZED
+    }
+
+    "return a 409 Conflict any required fields aren't specified" in {
+      val context = TestService.createContext(userGuids = Seq.empty)
+      Seq("userGuid").foreach { field =>
+        val response = await { authenticatedRequest(s"/contexts/${context.guid}/users").post(json - field) }
+        response.status mustBe CONFLICT
+      }
+    }
+
+    "return a new Conflict if authorized and valid" in {
+      val context = TestService.createContext(userGuids = Seq.empty)
+      val response = await { authenticatedRequest(s"/contexts/${context.guid}/users").post(json) }
+      response.status mustBe CREATED
+
+      val newContext = response.json.as[Context]
+      newContext.users.map(_.guid.toString) mustBe Seq("00000000-1111-1111-1111-111111111111")
     }
 
   }

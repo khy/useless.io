@@ -62,4 +62,27 @@ object ContextsController extends Controller with PaginationController {
     )
   }
 
+  case class AddUserData(userGuid: UUID)
+  private implicit val audr = Json.reads[AddUserData]
+
+  def addUser(guid: UUID) = Auth.async(parse.json) { request =>
+    request.body.validate[AddUserData].fold(
+      error => Future.successful(Conflict(error.toString)),
+      data => contextsService.addContextUser(
+        guid = guid,
+        userGuid = data.userGuid,
+        accessToken = request.accessToken
+      ).flatMap { result =>
+        result.fold(
+          errors => Future.successful(Conflict(Json.toJson(errors))),
+          contextRecord => {
+            contextsService.records2models(Seq(contextRecord)).map { contexts =>
+              Created(Json.toJson(contexts.head))
+            }
+          }
+        )
+      }
+    )
+  }
+
 }

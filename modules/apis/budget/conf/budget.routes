@@ -5,6 +5,7 @@ GET     /accountTypes   controllers.budget.AccountTypesController.index
 
 GET     /contexts   controllers.budget.ContextsController.index
 POST    /contexts   controllers.budget.ContextsController.create
+POST    /contexts/:guid/users   controllers.budget.ContextsController.addUser(guid: java.util.UUID)
 
 GET     /transactionTypes   controllers.budget.TransactionTypesController.index
 POST    /transactionTypes   controllers.budget.TransactionTypesController.create
