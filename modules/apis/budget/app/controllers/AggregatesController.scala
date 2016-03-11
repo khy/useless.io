@@ -9,15 +9,18 @@ import play.api.Play.current
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import org.joda.time.LocalDate
 import io.useless.play.json.MessageJson.format
+import io.useless.play.pagination.PaginationController
 
 import models.budget.JsonImplicits._
 import controllers.budget.auth.Auth
-import services.budget.aggregates.TransactionTypeRollupsService
+import services.budget.aggregates._
 
-object AggregatesController extends Controller {
+// TODO: Simple query string helpers.
+object AggregatesController extends Controller with PaginationController {
 
   val transactionTypeRollupsService = TransactionTypeRollupsService.default()
 
+  // TODO: Scope to a context.
   def transactionTypeRollups = Auth.async { implicit request =>
     transactionTypeRollupsService.getTransactionTypeRollups(
       fromDate = request.queryString.get("fromDate").
@@ -32,6 +35,25 @@ object AggregatesController extends Controller {
         errors => Conflict(Json.toJson(errors)),
         rollups => Ok(Json.toJson(rollups))
       )
+    }
+  }
+
+  val monthRollupsService = MonthRollupsService.default()
+
+  def monthRollups = Auth.async { implicit request =>
+    withRawPaginationParams { rawPaginationParams =>
+      monthRollupsService.getMonthRollups(
+        contextGuids = request.queryString.get("contextGuid").map { rawGuids =>
+          rawGuids.map(UUID.fromString)
+        },
+        accessToken = request.accessToken,
+        rawPaginationParams = rawPaginationParams
+      ).map { result =>
+        result.fold(
+          errors => Conflict(Json.toJson(errors)),
+          result => paginatedResult(routes.AggregatesController.monthRollups, result)
+        )
+      }
     }
   }
 

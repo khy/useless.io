@@ -24,3 +24,4 @@ POST    /transfers  controllers.budget.TransfersController.create
 
 GET     /projections  controllers.budget.ProjectionsController.index
 GET     /aggregates/transactionTypeRollups   controllers.budget.AggregatesController.transactionTypeRollups
+GET     /aggregates/monthRollups   controllers.budget.AggregatesController.monthRollups
