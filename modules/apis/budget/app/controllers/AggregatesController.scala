@@ -46,7 +46,7 @@ object AggregatesController extends Controller with PaginationController {
         contextGuids = request.queryString.get("contextGuid").map { rawGuids =>
           rawGuids.map(UUID.fromString)
         },
-        accessToken = request.accessToken,
+        userGuids = Some(Seq(request.accessToken.resourceOwner.guid)),
         rawPaginationParams = rawPaginationParams
       ).map { result =>
         result.fold(

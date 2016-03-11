@@ -9,8 +9,8 @@ import io.useless.accesstoken.AccessToken
 import io.useless.pagination._
 import io.useless.validation._
 
+import db.budget._
 import db.budget.util.DatabaseAccessor
-import db.budget.{Transactions, TransactionTypes}
 import services.budget.TransactionTypesService
 import services.budget.util.ResourceUnexpectedlyNotFound
 import models.budget.aggregates.MonthRollup
@@ -26,7 +26,7 @@ class MonthRollupsService() extends DatabaseAccessor {
 
   def getMonthRollups(
     contextGuids: Option[Seq[UUID]],
-    accessToken: AccessToken,
+    userGuids: Option[Seq[UUID]],
     rawPaginationParams: RawPaginationParams = RawPaginationParams()
   )(implicit ec: ExecutionContext): Future[Validation[PaginatedResult[MonthRollup]]] = {
     val valPaginationParams = PaginationParams.build(rawPaginationParams)
@@ -34,6 +34,20 @@ class MonthRollupsService() extends DatabaseAccessor {
     ValidationUtil.mapFuture(valPaginationParams) { paginationParams =>
       var query = Transactions.filter { transaction =>
         transaction.deletedAt.isEmpty
+      }
+
+      userGuids.foreach { userGuids =>
+        val subQuery = Accounts.join(ContextUsers).on { case (account, contextUser) =>
+          account.contextId === contextUser.contextId && contextUser.deletedAt.isEmpty
+        }.filter { case (_, contextUser) =>
+          contextUser.userGuid inSet userGuids
+        }.map { case (account, _) =>
+          account.id
+        }
+
+        query = query.filter { txn =>
+          txn.accountId in subQuery
+        }
       }
 
       database.run(query.result).map { transactions =>
