@@ -75,6 +75,37 @@ class MonthRollupsSpec
       } mustBe 'defined
     }
 
+    "return rollups only for the specified context" in {
+      TestService.deleteAccounts()
+      TestService.deleteTransactions()
+      val account = TestService.createAccount(contextGuid = TestService.myContext.guid)
+      val sharedAccount = TestService.createAccount(contextGuid = TestService.sharedContext.guid)
+
+      TestService.createTransaction(
+        accountGuid = account.guid,
+        date = new LocalDate(2015, 12, 15)
+      )
+
+      TestService.createTransaction(
+        accountGuid = sharedAccount.guid,
+        date = new LocalDate(2016, 1, 15)
+      )
+
+      val response = await {
+        authenticatedRequest("/aggregates/monthRollups").
+          withQueryString(
+            "contextGuid" -> TestService.myContext.guid.toString
+          ).get()
+      }
+
+      response.status mustBe OK
+      val rollups = response.json.as[Seq[MonthRollup]]
+      rollups.length mustBe 1
+
+      rollups(0).year mustBe 2015
+      rollups(0).month mustBe 12
+    }
+
   }
 
 }

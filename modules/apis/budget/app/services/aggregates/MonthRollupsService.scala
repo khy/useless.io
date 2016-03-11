@@ -36,6 +36,20 @@ class MonthRollupsService() extends DatabaseAccessor {
         transaction.deletedAt.isEmpty
       }
 
+      contextGuids.foreach { contextGuids =>
+        val subQuery = Accounts.join(Contexts).on { case (account, context) =>
+          account.contextId === context.id && context.deletedAt.isEmpty
+        }.filter { case (_, context) =>
+          context.guid inSet contextGuids
+        }.map { case (account, _) =>
+          account.id
+        }
+
+        query = query.filter { txn=>
+          txn.accountId in subQuery
+        }
+      }
+
       userGuids.foreach { userGuids =>
         val subQuery = Accounts.join(ContextUsers).on { case (account, contextUser) =>
           account.contextId === contextUser.contextId && contextUser.deletedAt.isEmpty
