@@ -29,24 +29,29 @@ class TransactionTypeRollupsSpec
     "return rollups for all of the requestors transaction types, between the specified dates" in {
       TestService.deleteAccounts()
       TestService.deleteTransactions()
-      val account = TestService.createAccount()
+      val account = TestService.createAccount(contextGuid = TestService.myContext.guid)
+      val sharedAccount = TestService.createAccount(contextGuid = TestService.sharedContext.guid)
 
       lazy val expense = TestService.getSystemTransactionType("Expense")
       lazy val income = TestService.getSystemTransactionType("Income")
 
       val salary = TestService.createTransactionType(
+        contextGuid = TestService.myContext.guid,
         name = "Salary",
         parentGuid = Some(income.guid)
       )
 
       val car = TestService.createTransactionType(
+        contextGuid = TestService.myContext.guid,
         name = "Car",
         parentGuid = Some(expense.guid)
       )
 
       val parkingGarage = TestService.createTransactionType(
+        contextGuid = TestService.sharedContext.guid,
         name = "Parking Garage",
-        parentGuid = Some(car.guid)
+        parentGuid = Some(car.guid),
+        accessToken = TestService.otherAccessToken
       )
 
       TestService.createTransaction(

@@ -29,7 +29,7 @@ object AggregatesController extends Controller with PaginationController {
       toDate = request.queryString.get("toDate").
         flatMap(_.headOption).
         map { raw => new LocalDate(raw) },
-      accessToken = request.accessToken
+      userGuids = Some(Seq(request.accessToken.resourceOwner.guid))
     ).map { result =>
       result.fold(
         errors => Conflict(Json.toJson(errors)),

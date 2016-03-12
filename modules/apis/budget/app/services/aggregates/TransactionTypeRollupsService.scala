@@ -1,5 +1,6 @@
 package services.budget.aggregates
 
+import java.util.UUID
 import java.sql.Date
 import scala.concurrent.{Future, ExecutionContext}
 import play.api.Application
@@ -8,8 +9,8 @@ import org.joda.time.LocalDate
 import io.useless.accesstoken.AccessToken
 import io.useless.validation._
 
+import db.budget._
 import db.budget.util.DatabaseAccessor
-import db.budget.{Transactions, TransactionTypes}
 import services.budget.TransactionTypesService
 import services.budget.util.ResourceUnexpectedlyNotFound
 import models.budget.aggregates.TransactionTypeRollup
@@ -30,13 +31,25 @@ class TransactionTypeRollupsService(
   def getTransactionTypeRollups(
     fromDate: Option[LocalDate],
     toDate: Option[LocalDate],
-    accessToken: AccessToken
+    userGuids: Option[Seq[UUID]]
   )(implicit ec: ExecutionContext): Future[Validation[Seq[TransactionTypeRollup]]] = {
-    val ttQuery = TransactionTypes.filter { transactionType =>
-      transactionType.createdByAccount === accessToken.resourceOwner.guid
+    var query = TransactionTypes.filter { txnType =>
+      txnType.deletedAt.isEmpty
     }
 
-    database.run(ttQuery.result).flatMap { transactionTypeRecords =>
+    userGuids.foreach { userGuids =>
+      val subQuery = ContextUsers.filter { contextUser =>
+        contextUser.userGuid inSet userGuids
+      }.map { contextUser =>
+        contextUser.contextId
+      }
+
+      query = query.filter { txnType =>
+        txnType.contextId in subQuery
+      }
+    }
+
+    database.run(query.result).flatMap { transactionTypeRecords =>
       var query = Transactions.filter { transaction =>
         transaction.transactionTypeId inSet transactionTypeRecords.map(_.id)
       }
