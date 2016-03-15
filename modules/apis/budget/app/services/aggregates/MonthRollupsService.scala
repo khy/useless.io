@@ -70,7 +70,9 @@ class MonthRollupsService() extends DatabaseAccessor {
           (createdAt.getYear, createdAt.getMonthOfYear)
         }.map { case ((year, month), group) =>
           MonthRollup(UUID.randomUUID, year, month)
-        }.toSeq
+        }.toSeq.sortWith { case (a, b) =>
+          a.year > b.year || (a.year == b.year && a.month > b.month)
+        }
 
         PaginatedResult.build(rollups, paginationParams, None)
       }

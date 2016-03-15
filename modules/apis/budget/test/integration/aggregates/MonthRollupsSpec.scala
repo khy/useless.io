@@ -35,23 +35,23 @@ class MonthRollupsSpec
       val otherAccount = TestService.createAccount(contextGuid = TestService.otherContext.guid)
 
       TestService.createTransaction(
-        accountGuid = account1.guid,
-        date = new LocalDate(2015, 12, 15)
-      )
-
-      TestService.createTransaction(
         accountGuid = account2.guid,
         date = new LocalDate(2016, 1, 15)
       )
 
       TestService.createTransaction(
-        accountGuid = otherAccount.guid,
-        date = new LocalDate(2016, 2, 15)
+        accountGuid = sharedAccount.guid,
+        date = new LocalDate(2016, 3, 15)
       )
 
       TestService.createTransaction(
-        accountGuid = sharedAccount.guid,
-        date = new LocalDate(2016, 3, 15)
+        accountGuid = account1.guid,
+        date = new LocalDate(2015, 12, 15)
+      )
+
+      TestService.createTransaction(
+        accountGuid = otherAccount.guid,
+        date = new LocalDate(2016, 2, 15)
       )
 
       val response = await {
@@ -62,17 +62,17 @@ class MonthRollupsSpec
       val rollups = response.json.as[Seq[MonthRollup]]
       rollups.length mustBe 3
 
-      rollups.find { rollup =>
-        rollup.year == 2015 && rollup.month == 12
-      } mustBe 'defined
+      val march = rollups(0)
+      march.year mustBe 2016
+      march.month mustBe 3
 
-      rollups.find { rollup =>
-        rollup.year == 2016 && rollup.month == 1
-      } mustBe 'defined
+      val january = rollups(1)
+      january.year mustBe 2016
+      january.month mustBe 1
 
-      rollups.find { rollup =>
-        rollup.year == 2016 && rollup.month == 3
-      } mustBe 'defined
+      val december = rollups(2)
+      december.year mustBe 2015
+      december.month mustBe 12
     }
 
     "return rollups only for the specified context" in {
