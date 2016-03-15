@@ -5,5 +5,6 @@ import java.util.UUID
 case class MonthRollup(
   guid: UUID,
   year: Int,
-  month: Int
+  month: Int,
+  transactionCount: Int
 )

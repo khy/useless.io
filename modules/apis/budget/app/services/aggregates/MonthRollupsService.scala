@@ -69,7 +69,12 @@ class MonthRollupsService() extends DatabaseAccessor {
           val createdAt = new LocalDate(transaction.date)
           (createdAt.getYear, createdAt.getMonthOfYear)
         }.map { case ((year, month), group) =>
-          MonthRollup(UUID.randomUUID, year, month)
+          MonthRollup(
+            guid = UUID.randomUUID,
+            year = year,
+            month = month,
+            transactionCount = group.length
+          )
         }.toSeq.sortWith { case (a, b) =>
           a.year > b.year || (a.year == b.year && a.month > b.month)
         }

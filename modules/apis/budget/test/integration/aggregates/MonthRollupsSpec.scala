@@ -50,6 +50,11 @@ class MonthRollupsSpec
       )
 
       TestService.createTransaction(
+        accountGuid = account1.guid,
+        date = new LocalDate(2015, 12, 15)
+      )
+
+      TestService.createTransaction(
         accountGuid = otherAccount.guid,
         date = new LocalDate(2016, 2, 15)
       )
@@ -65,14 +70,17 @@ class MonthRollupsSpec
       val march = rollups(0)
       march.year mustBe 2016
       march.month mustBe 3
+      march.transactionCount mustBe 1
 
       val january = rollups(1)
       january.year mustBe 2016
       january.month mustBe 1
+      january.transactionCount mustBe 1
 
       val december = rollups(2)
       december.year mustBe 2015
       december.month mustBe 12
+      december.transactionCount mustBe 2
     }
 
     "return rollups only for the specified context" in {
