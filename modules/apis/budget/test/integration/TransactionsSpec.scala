@@ -57,6 +57,23 @@ class TransactionsSpec
       transactionGuids must not contain (excludedTransaction.guid)
     }
 
+    "return only the Transaction with the specified guid" in {
+      TestService.deleteTransactions()
+
+      val includedTransaction = TestService.createTransaction()
+      val excludedTransaction = TestService.createTransaction()
+
+      val response = await {
+        authenticatedRequest("/transactions").
+          withQueryString("guid" -> includedTransaction.guid.toString).
+          get
+      }
+
+      val transactions = response.json.as[Seq[Transaction]]
+      transactions.length mustBe 1
+      transactions.head.guid mustBe includedTransaction.guid
+    }
+
     "return only Transactions belonging to the specified account" in {
       TestService.deleteTransactions()
 
