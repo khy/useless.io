@@ -26,7 +26,7 @@ object PlannedTransactionsController extends Controller with PaginationControlle
   case class IndexQuery(
     guid: Option[UUID],
     context: Option[UUID],
-    accountGuid: Option[UUID],
+    account: Option[UUID],
     transactionType: Option[UUID]
   )
 
@@ -34,7 +34,7 @@ object PlannedTransactionsController extends Controller with PaginationControlle
     mapping(
       "guid" -> optional(uuid),
       "context" -> optional(uuid),
-      "accountGuid" -> optional(uuid),
+      "account" -> optional(uuid),
       "transactionType" -> optional(uuid)
     )(IndexQuery.apply)(IndexQuery.unapply)
   )
@@ -47,7 +47,7 @@ object PlannedTransactionsController extends Controller with PaginationControlle
           plannedTransactionsService.findPlannedTransactions(
             guids = indexQuery.guid.map(Seq(_)),
             contextGuids = indexQuery.context.map(Seq(_)),
-            accountGuids = indexQuery.accountGuid.map(Seq(_)),
+            accountGuids = indexQuery.account.map(Seq(_)),
             transactionTypeGuids = indexQuery.transactionType.map(Seq(_)),
             userGuids = Some(Seq(request.accessToken.resourceOwner.guid)),
             rawPaginationParams = rawPaginationParams

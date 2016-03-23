@@ -100,7 +100,7 @@ class PlannedTransactionsSpec
 
       val response = await {
         authenticatedRequest("/plannedTransactions").
-          withQueryString("accountGuid" -> includedAccount.guid.toString).
+          withQueryString("account" -> includedAccount.guid.toString).
           get
       }
 

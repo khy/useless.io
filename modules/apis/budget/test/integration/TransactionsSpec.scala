@@ -89,7 +89,7 @@ class TransactionsSpec
 
       val response = await {
         authenticatedRequest("/transactions").
-          withQueryString("accountGuid" -> includedAccount.guid.toString).
+          withQueryString("account" -> includedAccount.guid.toString).
           get
       }
 
