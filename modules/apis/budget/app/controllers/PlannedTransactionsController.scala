@@ -24,6 +24,7 @@ object PlannedTransactionsController extends Controller with PaginationControlle
   val plannedTransactionsService = PlannedTransactionsService.default()
 
   case class IndexQuery(
+    guid: Option[UUID],
     context: Option[UUID],
     accountGuid: Option[UUID],
     transactionType: Option[UUID]
@@ -31,6 +32,7 @@ object PlannedTransactionsController extends Controller with PaginationControlle
 
   val indexQueryForm = Form(
     mapping(
+      "guid" -> optional(uuid),
       "context" -> optional(uuid),
       "accountGuid" -> optional(uuid),
       "transactionType" -> optional(uuid)
@@ -43,6 +45,7 @@ object PlannedTransactionsController extends Controller with PaginationControlle
       indexQuery => withRawPaginationParams { rawPaginationParams =>
         withRawPaginationParams { rawPaginationParams =>
           plannedTransactionsService.findPlannedTransactions(
+            guids = indexQuery.guid.map(Seq(_)),
             contextGuids = indexQuery.context.map(Seq(_)),
             accountGuids = indexQuery.accountGuid.map(Seq(_)),
             transactionTypeGuids = indexQuery.transactionType.map(Seq(_)),

@@ -70,6 +70,7 @@ class PlannedTransactionsService(
 
   def findPlannedTransactions(
     ids: Option[Seq[Long]] = None,
+    guids: Option[Seq[UUID]] = None,
     contextGuids: Option[Seq[UUID]] = None,
     accountGuids: Option[Seq[UUID]] = None,
     transactionTypeGuids: Option[Seq[UUID]] = None,
@@ -88,6 +89,12 @@ class PlannedTransactionsService(
       ids.foreach { ids =>
         query = query.filter { case (plannedTxn, _) =>
           plannedTxn.id inSet ids
+        }
+      }
+
+      guids.foreach { guids =>
+        query = query.filter { case (plannedTxn, _) =>
+          plannedTxn.guid inSet guids
         }
       }
 

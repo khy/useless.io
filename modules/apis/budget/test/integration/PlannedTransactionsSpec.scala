@@ -58,6 +58,23 @@ class PlannedTransactionsSpec
       plannedTransactionGuids must not contain (excludedPlannedTransaction.guid)
     }
 
+    "return only the PlannedTransaction with the specified guid" in {
+      TestService.deletePlannedTransactions()
+
+      val includedPlannedTransaction = TestService.createPlannedTransaction()
+      val excludedPlannedTransaction = TestService.createPlannedTransaction()
+
+      val response = await {
+        authenticatedRequest("/plannedTransactions").
+          withQueryString("guid" -> includedPlannedTransaction.guid.toString).
+          get
+      }
+
+      val plannedTransactions = response.json.as[Seq[PlannedTransaction]]
+      plannedTransactions.length mustBe 1
+      plannedTransactions.head.guid mustBe includedPlannedTransaction.guid
+    }
+
     "return the transaction GUID that the planned transaction has been associated with, if any" in {
       TestService.deletePlannedTransactions()
       val plannedTransaction = TestService.createPlannedTransaction()
