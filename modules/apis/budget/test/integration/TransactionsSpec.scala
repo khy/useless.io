@@ -149,6 +149,36 @@ class TransactionsSpec
       transactionGuids must not contain (excludedTransaction.guid)
     }
 
+    "return only Transactions belonging to the specified plannedTransaction" in {
+      TestService.deleteTransactions()
+      val excludedPlannedTransaction = TestService.createPlannedTransaction()
+      val includedPlannedTransaction = TestService.createPlannedTransaction()
+
+      val excludedTransaction1 = TestService.createTransaction(
+        plannedTransactionGuid = None
+      )
+
+      val excludedTransaction2 = TestService.createTransaction(
+        plannedTransactionGuid = Some(excludedPlannedTransaction.guid)
+      )
+
+      val includedTransaction = TestService.createTransaction(
+        plannedTransactionGuid = Some(includedPlannedTransaction.guid)
+      )
+
+      val response = await {
+        authenticatedRequest("/transactions").withQueryString(
+          "plannedTransaction" -> includedPlannedTransaction.guid.toString
+        ).get
+      }
+
+      val transactionGuids = response.json.as[Seq[Transaction]].map(_.guid)
+      transactionGuids.length mustBe 1
+      transactionGuids must contain (includedTransaction.guid)
+      transactionGuids must not contain (excludedTransaction1.guid)
+      transactionGuids must not contain (excludedTransaction2.guid)
+    }
+
     "paginate the Transactions as specified" in {
       TestService.deleteTransactions()
 

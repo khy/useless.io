@@ -85,6 +85,7 @@ class TransactionsService(
     contextGuids: Option[Seq[UUID]] = None,
     accountGuids: Option[Seq[UUID]] = None,
     transactionTypeGuids: Option[Seq[UUID]] = None,
+    plannedTransactionGuids: Option[Seq[UUID]] = None,
     userGuids: Option[Seq[UUID]] = None,
     rawPaginationParams: RawPaginationParams = RawPaginationParams()
   )(implicit ec: ExecutionContext): Future[Validation[PaginatedResult[TransactionRecord]]] = {
@@ -136,6 +137,16 @@ class TransactionsService(
 
         query = query.filter { case (txn, _) =>
           txn.transactionTypeId in transactionTypeIdsSubQuery
+        }
+      }
+
+      plannedTransactionGuids.foreach { plannedTransactionGuids =>
+        val plannedTransactionIdsSubQuery = PlannedTransactions.
+          filter(_.guid inSet plannedTransactionGuids).
+          map(_.id)
+
+        query = query.filter { case (txn, _) =>
+          txn.plannedTransactionId in plannedTransactionIdsSubQuery
         }
       }
 

@@ -27,7 +27,8 @@ object TransactionsController extends Controller with PaginationController {
     guid: Option[UUID],
     context: Option[UUID],
     account: Option[UUID],
-    transactionType: Option[UUID]
+    transactionType: Option[UUID],
+    plannedTransaction: Option[UUID]
   )
 
   val indexQueryForm = Form(
@@ -35,7 +36,8 @@ object TransactionsController extends Controller with PaginationController {
       "guid" -> optional(uuid),
       "context" -> optional(uuid),
       "account" -> optional(uuid),
-      "transactionType" -> optional(uuid)
+      "transactionType" -> optional(uuid),
+      "plannedTransaction" -> optional(uuid)
     )(IndexQuery.apply)(IndexQuery.unapply)
   )
 
@@ -48,6 +50,7 @@ object TransactionsController extends Controller with PaginationController {
           contextGuids = indexQuery.context.map(Seq(_)),
           accountGuids = indexQuery.account.map(Seq(_)),
           transactionTypeGuids = indexQuery.transactionType.map(Seq(_)),
+          plannedTransactionGuids = indexQuery.plannedTransaction.map(Seq(_)),
           userGuids = Some(Seq(request.accessToken.resourceOwner.guid)),
           rawPaginationParams = rawPaginationParams
         ).flatMap { result =>
