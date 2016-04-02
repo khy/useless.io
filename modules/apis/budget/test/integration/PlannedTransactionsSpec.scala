@@ -78,11 +78,12 @@ class PlannedTransactionsSpec
     "return the transaction GUID that the planned transaction has been associated with, if any" in {
       TestService.deletePlannedTransactions()
       val plannedTransaction = TestService.createPlannedTransaction()
-      val transaction = TestService.createTransaction(plannedTransactionGuid = Some(plannedTransaction.guid))
+      val transaction1 = TestService.createTransaction(plannedTransactionGuid = Some(plannedTransaction.guid))
+      val transaction2 = TestService.createTransaction(plannedTransactionGuid = Some(plannedTransaction.guid))
 
       val response = await { authenticatedRequest("/plannedTransactions").get }
       val plannedTransactions = response.json.as[Seq[PlannedTransaction]]
-      plannedTransactions.head.transactions.head.guid mustBe transaction.guid
+      plannedTransactions.head.transactions.map(_.guid) must contain theSameElementsAs Seq(transaction1.guid, transaction2.guid)
     }
 
     "return only PlannedTransactions belonging to the specified account" in {
