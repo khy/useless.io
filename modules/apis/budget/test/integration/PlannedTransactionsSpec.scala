@@ -82,7 +82,7 @@ class PlannedTransactionsSpec
 
       val response = await { authenticatedRequest("/plannedTransactions").get }
       val plannedTransactions = response.json.as[Seq[PlannedTransaction]]
-      plannedTransactions.head.transactionGuid mustBe Some(transaction.guid)
+      plannedTransactions.head.transactions.head.guid mustBe transaction.guid
     }
 
     "return only PlannedTransactions belonging to the specified account" in {

@@ -13,7 +13,7 @@ case class PlannedTransaction(
   minDate: Option[LocalDate],
   maxDate: Option[LocalDate],
   name: Option[String],
-  transactionGuid: Option[UUID],
+  transactions: Seq[Transaction],
   createdBy: User,
   createdAt: DateTime
 )

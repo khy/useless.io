@@ -36,8 +36,8 @@ object JsonImplicits {
   implicit val transactionTypeOwnershipFormat = NamedEnumJson.keyFormat(TransactionTypeOwnership)
   implicit val accountFormat = Json.format[Account]
   implicit val transactionTypeFormat = Json.format[TransactionType]
-  implicit val plannedTransactionFormat = Json.format[PlannedTransaction]
   implicit val transactionFormat = Json.format[Transaction]
+  implicit val plannedTransactionFormat = Json.format[PlannedTransaction]
   implicit val transferFormat = Json.format[Transfer]
   implicit val projectionFormat = Json.format[Projection]
   implicit val monthRollupFormat = Json.format[MonthRollup]

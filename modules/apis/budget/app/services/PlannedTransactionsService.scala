@@ -17,11 +17,17 @@ import services.budget.util._
 
 object PlannedTransactionsService {
 
-  def default()(implicit app: Application) = new PlannedTransactionsService(UsersHelper.default())
+  def default()(implicit app: Application) = {
+    new PlannedTransactionsService(
+      transactionService = TransactionsService.default(),
+      usersHelper = UsersHelper.default()
+    )
+  }
 
 }
 
 class PlannedTransactionsService(
+  transactionService: TransactionsService,
   usersHelper: UsersHelper
 ) extends DatabaseAccessor {
 
@@ -38,7 +44,17 @@ class PlannedTransactionsService(
     val futAccounts = database.run(accountQuery.result)
 
     val transactionsQuery = Transactions.filter { _.plannedTransactionId inSet records.map(_.id) }
-    val futTransactions = database.run(transactionsQuery.result)
+    val futTransactions = database.run(transactionsQuery.result).flatMap { records =>
+      transactionService.records2models(records).map { models =>
+        models.map { model =>
+          val record = records.find(_.guid == model.guid).getOrElse {
+            throw new ResourceUnexpectedlyNotFound("Transaction", model.guid)
+          }
+
+          (record.plannedTransactionId, model)
+        }
+      }
+    }
 
     for {
       users <- futUsers
@@ -60,7 +76,9 @@ class PlannedTransactionsService(
           minDate = record.minDate.map { new LocalDate(_) },
           maxDate = record.maxDate.map { new LocalDate(_) },
           name = record.name,
-          transactionGuid = transactions.find(_.plannedTransactionId == Some(record.id)).map(_.guid),
+          transactions = transactions.filter { case (plannedTransactionId, _) =>
+            plannedTransactionId == Some(record.id)
+          }.map { case (_, transaction) => transaction },
           createdBy = users.find(_.guid == record.createdByAccount).getOrElse(UsersHelper.AnonUser),
           createdAt = new DateTime(record.createdAt)
         )
