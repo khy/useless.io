@@ -94,6 +94,8 @@ class PlannedTransactionsService(
     transactionTypeGuids: Option[Seq[UUID]] = None,
     minDateFrom: Option[LocalDate] = None,
     minDateTo: Option[LocalDate] = None,
+    maxDateFrom: Option[LocalDate] = None,
+    maxDateTo: Option[LocalDate] = None,
     userGuids: Option[Seq[UUID]] = None,
     rawPaginationParams: RawPaginationParams = RawPaginationParams()
   )(implicit ec: ExecutionContext): Future[Validation[PaginatedResult[PlannedTransaction]]] = {
@@ -157,6 +159,18 @@ class PlannedTransactionsService(
       minDateTo.foreach { minDateTo =>
         query = query.filter { case (plannedTransaction, _) =>
           plannedTransaction.minDate <= new sql.Date(minDateTo.toDateTimeAtStartOfDay.getMillis)
+        }
+      }
+
+      maxDateFrom.foreach { maxDateFrom =>
+        query = query.filter { case (plannedTransaction, _) =>
+          plannedTransaction.maxDate >= new sql.Date(maxDateFrom.toDateTimeAtStartOfDay.getMillis)
+        }
+      }
+
+      maxDateTo.foreach { maxDateTo =>
+        query = query.filter { case (plannedTransaction, _) =>
+          plannedTransaction.maxDate <= new sql.Date(maxDateTo.toDateTimeAtStartOfDay.getMillis)
         }
       }
 

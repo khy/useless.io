@@ -211,6 +211,56 @@ class PlannedTransactionsSpec
       plannedTransactionGuids3 must not contain (excludedPlannedTransaction2.guid)
     }
 
+    "return only PlannedTransactions in the specified maxDate range" in {
+      TestService.deletePlannedTransactions()
+
+      val excludedPlannedTransaction1 = TestService.createPlannedTransaction(
+        maxDate = Some(LocalDate.now.plusDays(1))
+      )
+
+      val excludedPlannedTransaction2 = TestService.createPlannedTransaction(
+        maxDate = Some(LocalDate.now.plusDays(5))
+      )
+
+      val includedPlannedTransaction = TestService.createPlannedTransaction(
+        maxDate = Some(LocalDate.now.plusDays(3))
+      )
+
+      val response1 = await {
+        authenticatedRequest("/plannedTransactions").withQueryString(
+          "maxDateFrom" -> LocalDate.now.plusDays(2).toString,
+          "maxDateTo" -> LocalDate.now.plusDays(4).toString
+        ).get
+      }
+
+      val plannedTransactionGuids1 = response1.json.as[Seq[PlannedTransaction]].map(_.guid)
+      plannedTransactionGuids1 must contain (includedPlannedTransaction.guid)
+      plannedTransactionGuids1 must not contain (excludedPlannedTransaction1.guid)
+      plannedTransactionGuids1 must not contain (excludedPlannedTransaction2.guid)
+
+      val response2 = await {
+        authenticatedRequest("/plannedTransactions").withQueryString(
+          "maxDateFrom" -> LocalDate.now.plusDays(2).toString
+        ).get
+      }
+
+      val plannedTransactionGuids2 = response2.json.as[Seq[PlannedTransaction]].map(_.guid)
+      plannedTransactionGuids2 must contain (includedPlannedTransaction.guid)
+      plannedTransactionGuids2 must not contain (excludedPlannedTransaction1.guid)
+      plannedTransactionGuids2 must contain (excludedPlannedTransaction2.guid)
+
+      val response3 = await {
+        authenticatedRequest("/plannedTransactions").withQueryString(
+          "maxDateTo" -> LocalDate.now.plusDays(4).toString
+        ).get
+      }
+
+      val plannedTransactionGuids3 = response3.json.as[Seq[PlannedTransaction]].map(_.guid)
+      plannedTransactionGuids3 must contain (includedPlannedTransaction.guid)
+      plannedTransactionGuids3 must contain (excludedPlannedTransaction1.guid)
+      plannedTransactionGuids3 must not contain (excludedPlannedTransaction2.guid)
+    }
+
     "paginate the PlannedTransactions as specified" in {
       TestService.deletePlannedTransactions()
 
