@@ -261,6 +261,53 @@ class PlannedTransactionsSpec
       plannedTransactionGuids3 must not contain (plannedTransaction3.guid)
     }
 
+    "return only PlannedTransactions in the specified transactionCount range" in {
+      TestService.deletePlannedTransactions()
+
+      val plannedTransaction1 = TestService.createPlannedTransaction()
+      TestService.createTransaction(plannedTransactionGuid = Some(plannedTransaction1.guid))
+
+      val plannedTransaction2 = TestService.createPlannedTransaction()
+      (1 to 3).foreach { _ => TestService.createTransaction(plannedTransactionGuid = Some(plannedTransaction2.guid)) }
+
+      val plannedTransaction3 = TestService.createPlannedTransaction()
+      (1 to 5).foreach { _ => TestService.createTransaction(plannedTransactionGuid = Some(plannedTransaction3.guid)) }
+
+      val response1 = await {
+        authenticatedRequest("/plannedTransactions").withQueryString(
+          "transactionCountFrom" -> "2",
+          "transactionCountTo" -> "4"
+        ).get
+      }
+
+      val plannedTransactionGuids1 = response1.json.as[Seq[PlannedTransaction]].map(_.guid)
+      plannedTransactionGuids1 must not contain (plannedTransaction1.guid)
+      plannedTransactionGuids1 must contain (plannedTransaction2.guid)
+      plannedTransactionGuids1 must not contain (plannedTransaction3.guid)
+
+      val response2 = await {
+        authenticatedRequest("/plannedTransactions").withQueryString(
+          "transactionCountFrom" -> "2"
+        ).get
+      }
+
+      val plannedTransactionGuids2 = response2.json.as[Seq[PlannedTransaction]].map(_.guid)
+      plannedTransactionGuids2 must not contain (plannedTransaction1.guid)
+      plannedTransactionGuids2 must contain (plannedTransaction2.guid)
+      plannedTransactionGuids2 must contain (plannedTransaction3.guid)
+
+      val response3 = await {
+        authenticatedRequest("/plannedTransactions").withQueryString(
+          "transactionCountTo" -> "4"
+        ).get
+      }
+
+      val plannedTransactionGuids3 = response3.json.as[Seq[PlannedTransaction]].map(_.guid)
+      plannedTransactionGuids3 must contain (plannedTransaction1.guid)
+      plannedTransactionGuids3 must contain (plannedTransaction2.guid)
+      plannedTransactionGuids3 must not contain (plannedTransaction3.guid)
+    }
+
     "paginate the PlannedTransactions as specified" in {
       TestService.deletePlannedTransactions()
 

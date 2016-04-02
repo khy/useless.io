@@ -96,6 +96,8 @@ class PlannedTransactionsService(
     minDateTo: Option[LocalDate] = None,
     maxDateFrom: Option[LocalDate] = None,
     maxDateTo: Option[LocalDate] = None,
+    transactionCountFrom: Option[Int] = None,
+    transactionCountTo: Option[Int] = None,
     userGuids: Option[Seq[UUID]] = None,
     rawPaginationParams: RawPaginationParams = RawPaginationParams()
   )(implicit ec: ExecutionContext): Future[Validation[PaginatedResult[PlannedTransaction]]] = {
@@ -171,6 +173,22 @@ class PlannedTransactionsService(
       maxDateTo.foreach { maxDateTo =>
         query = query.filter { case (plannedTransaction, _) =>
           plannedTransaction.maxDate <= new sql.Date(maxDateTo.toDateTimeAtStartOfDay.getMillis)
+        }
+      }
+
+      transactionCountFrom.foreach { transactionCountFrom =>
+        query = query.filter { case (plannedTransaction, _) =>
+          Transactions.
+            filter(_.plannedTransactionId === plannedTransaction.id).
+            length >= transactionCountFrom
+        }
+      }
+
+      transactionCountTo.foreach { transactionCountTo =>
+        query = query.filter { case (plannedTransaction, _) =>
+          Transactions.
+            filter(_.plannedTransactionId === plannedTransaction.id).
+            length <= transactionCountTo
         }
       }
 

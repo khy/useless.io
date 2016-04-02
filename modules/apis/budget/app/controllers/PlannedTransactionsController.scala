@@ -31,7 +31,9 @@ object PlannedTransactionsController extends Controller with PaginationControlle
     minDateFrom: Option[LocalDate],
     minDateTo: Option[LocalDate],
     maxDateFrom: Option[LocalDate],
-    maxDateTo: Option[LocalDate]
+    maxDateTo: Option[LocalDate],
+    transactionCountFrom: Option[Int],
+    transactionCountTo: Option[Int]
   )
 
   val indexQueryForm = Form(
@@ -43,7 +45,9 @@ object PlannedTransactionsController extends Controller with PaginationControlle
       "minDateFrom" -> optional(jodaLocalDate),
       "minDateTo" -> optional(jodaLocalDate),
       "maxDateFrom" -> optional(jodaLocalDate),
-      "maxDateTo" -> optional(jodaLocalDate)
+      "maxDateTo" -> optional(jodaLocalDate),
+      "transactionCountFrom" -> optional(number),
+      "transactionCountTo" -> optional(number)
     )(IndexQuery.apply)(IndexQuery.unapply)
   )
 
@@ -61,6 +65,8 @@ object PlannedTransactionsController extends Controller with PaginationControlle
             minDateTo = indexQuery.minDateTo,
             maxDateFrom = indexQuery.maxDateFrom,
             maxDateTo = indexQuery.maxDateTo,
+            transactionCountFrom = indexQuery.transactionCountFrom,
+            transactionCountTo = indexQuery.transactionCountTo,
             userGuids = Some(Seq(request.accessToken.resourceOwner.guid)),
             rawPaginationParams = rawPaginationParams
           ).map { result =>
