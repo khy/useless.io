@@ -75,7 +75,7 @@ class PlannedTransactionsSpec
       plannedTransactions.head.guid mustBe includedPlannedTransaction.guid
     }
 
-    "return the transaction GUID that the planned transaction has been associated with, if any" in {
+    "return the transactions that the planned transaction has been associated with, if any" in {
       TestService.deletePlannedTransactions()
       val plannedTransaction = TestService.createPlannedTransaction()
       val transaction1 = TestService.createTransaction(plannedTransactionGuid = Some(plannedTransaction.guid))
@@ -164,16 +164,16 @@ class PlannedTransactionsSpec
     "return only PlannedTransactions in the specified minDate range" in {
       TestService.deletePlannedTransactions()
 
-      val excludedPlannedTransaction1 = TestService.createPlannedTransaction(
+      val plannedTransaction1 = TestService.createPlannedTransaction(
         minDate = Some(LocalDate.now.plusDays(1))
       )
 
-      val excludedPlannedTransaction2 = TestService.createPlannedTransaction(
-        minDate = Some(LocalDate.now.plusDays(5))
+      val plannedTransaction2 = TestService.createPlannedTransaction(
+        minDate = Some(LocalDate.now.plusDays(3))
       )
 
-      val includedPlannedTransaction = TestService.createPlannedTransaction(
-        minDate = Some(LocalDate.now.plusDays(3))
+      val plannedTransaction3 = TestService.createPlannedTransaction(
+        minDate = Some(LocalDate.now.plusDays(5))
       )
 
       val response1 = await {
@@ -184,9 +184,9 @@ class PlannedTransactionsSpec
       }
 
       val plannedTransactionGuids1 = response1.json.as[Seq[PlannedTransaction]].map(_.guid)
-      plannedTransactionGuids1 must contain (includedPlannedTransaction.guid)
-      plannedTransactionGuids1 must not contain (excludedPlannedTransaction1.guid)
-      plannedTransactionGuids1 must not contain (excludedPlannedTransaction2.guid)
+      plannedTransactionGuids1 must not contain (plannedTransaction1.guid)
+      plannedTransactionGuids1 must contain (plannedTransaction2.guid)
+      plannedTransactionGuids1 must not contain (plannedTransaction3.guid)
 
       val response2 = await {
         authenticatedRequest("/plannedTransactions").withQueryString(
@@ -195,9 +195,9 @@ class PlannedTransactionsSpec
       }
 
       val plannedTransactionGuids2 = response2.json.as[Seq[PlannedTransaction]].map(_.guid)
-      plannedTransactionGuids2 must contain (includedPlannedTransaction.guid)
-      plannedTransactionGuids2 must not contain (excludedPlannedTransaction1.guid)
-      plannedTransactionGuids2 must contain (excludedPlannedTransaction2.guid)
+      plannedTransactionGuids2 must not contain (plannedTransaction1.guid)
+      plannedTransactionGuids2 must contain (plannedTransaction2.guid)
+      plannedTransactionGuids2 must contain (plannedTransaction3.guid)
 
       val response3 = await {
         authenticatedRequest("/plannedTransactions").withQueryString(
@@ -206,24 +206,24 @@ class PlannedTransactionsSpec
       }
 
       val plannedTransactionGuids3 = response3.json.as[Seq[PlannedTransaction]].map(_.guid)
-      plannedTransactionGuids3 must contain (includedPlannedTransaction.guid)
-      plannedTransactionGuids3 must contain (excludedPlannedTransaction1.guid)
-      plannedTransactionGuids3 must not contain (excludedPlannedTransaction2.guid)
+      plannedTransactionGuids3 must contain (plannedTransaction1.guid)
+      plannedTransactionGuids3 must contain (plannedTransaction2.guid)
+      plannedTransactionGuids3 must not contain (plannedTransaction3.guid)
     }
 
     "return only PlannedTransactions in the specified maxDate range" in {
       TestService.deletePlannedTransactions()
 
-      val excludedPlannedTransaction1 = TestService.createPlannedTransaction(
+      val plannedTransaction1 = TestService.createPlannedTransaction(
         maxDate = Some(LocalDate.now.plusDays(1))
       )
 
-      val excludedPlannedTransaction2 = TestService.createPlannedTransaction(
-        maxDate = Some(LocalDate.now.plusDays(5))
+      val plannedTransaction2 = TestService.createPlannedTransaction(
+        maxDate = Some(LocalDate.now.plusDays(3))
       )
 
-      val includedPlannedTransaction = TestService.createPlannedTransaction(
-        maxDate = Some(LocalDate.now.plusDays(3))
+      val plannedTransaction3 = TestService.createPlannedTransaction(
+        maxDate = Some(LocalDate.now.plusDays(5))
       )
 
       val response1 = await {
@@ -234,9 +234,9 @@ class PlannedTransactionsSpec
       }
 
       val plannedTransactionGuids1 = response1.json.as[Seq[PlannedTransaction]].map(_.guid)
-      plannedTransactionGuids1 must contain (includedPlannedTransaction.guid)
-      plannedTransactionGuids1 must not contain (excludedPlannedTransaction1.guid)
-      plannedTransactionGuids1 must not contain (excludedPlannedTransaction2.guid)
+      plannedTransactionGuids1 must not contain (plannedTransaction1.guid)
+      plannedTransactionGuids1 must contain (plannedTransaction2.guid)
+      plannedTransactionGuids1 must not contain (plannedTransaction3.guid)
 
       val response2 = await {
         authenticatedRequest("/plannedTransactions").withQueryString(
@@ -245,9 +245,9 @@ class PlannedTransactionsSpec
       }
 
       val plannedTransactionGuids2 = response2.json.as[Seq[PlannedTransaction]].map(_.guid)
-      plannedTransactionGuids2 must contain (includedPlannedTransaction.guid)
-      plannedTransactionGuids2 must not contain (excludedPlannedTransaction1.guid)
-      plannedTransactionGuids2 must contain (excludedPlannedTransaction2.guid)
+      plannedTransactionGuids2 must not contain (plannedTransaction1.guid)
+      plannedTransactionGuids2 must contain (plannedTransaction2.guid)
+      plannedTransactionGuids2 must contain (plannedTransaction3.guid)
 
       val response3 = await {
         authenticatedRequest("/plannedTransactions").withQueryString(
@@ -256,9 +256,9 @@ class PlannedTransactionsSpec
       }
 
       val plannedTransactionGuids3 = response3.json.as[Seq[PlannedTransaction]].map(_.guid)
-      plannedTransactionGuids3 must contain (includedPlannedTransaction.guid)
-      plannedTransactionGuids3 must contain (excludedPlannedTransaction1.guid)
-      plannedTransactionGuids3 must not contain (excludedPlannedTransaction2.guid)
+      plannedTransactionGuids3 must contain (plannedTransaction1.guid)
+      plannedTransactionGuids3 must contain (plannedTransaction2.guid)
+      plannedTransactionGuids3 must not contain (plannedTransaction3.guid)
     }
 
     "paginate the PlannedTransactions as specified" in {
