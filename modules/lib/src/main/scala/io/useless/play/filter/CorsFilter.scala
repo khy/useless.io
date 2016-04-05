@@ -8,11 +8,13 @@ object CorsFilter extends Filter {
 
   private val AllowedMethods = Seq("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
   private val AllowedHeaders = Seq("Accept", "Authorization", "Content-Type")
+  private val ExposedHeaders = Seq("Content-Type", "Link")
 
   private val Headers = Seq(
     "Access-Control-Allow-Origin" -> "*",
     "Access-Control-Allow-Methods" -> AllowedMethods.mkString(","),
-    "Access-Control-Allow-Headers" -> AllowedHeaders.mkString(",")
+    "Access-Control-Allow-Headers" -> AllowedHeaders.mkString(","),
+    "Access-Control-Expose-Headers" -> ExposedHeaders.mkString(",")
   )
 
   override def apply(next: RequestHeader => Future[Result])(request: RequestHeader): Future[Result] = {
