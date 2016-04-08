@@ -1,4 +1,4 @@
-package test.budget.integration
+package test.budget.integration.aggregates
 
 import java.util.UUID
 import org.scalatest._
@@ -9,7 +9,7 @@ import play.api.libs.json._
 import org.joda.time.LocalDate
 import io.useless.play.json.DateTimeJson._
 
-import models.budget.Projection
+import models.budget.aggregates.Projection
 import models.budget.JsonImplicits._
 import services.budget.TestService
 import test.budget.integration.util.IntegrationHelper
@@ -23,12 +23,12 @@ class ProjectionsSpec
   "GET /projections" must {
 
     "return a 401 Unauthorized if the request isn't authenticated" in {
-      val response = await { unauthentictedRequest("/projections").get() }
+      val response = await { unauthentictedRequest("/aggregates/projections").get() }
       response.status mustBe UNAUTHORIZED
     }
 
     "return a 409 Conflict if the 'date' query parameter is missing" in {
-      val response = await { authenticatedRequest("/projections").get() }
+      val response = await { authenticatedRequest("/aggregates/projections").get() }
       response.status mustBe CONFLICT
     }
 
@@ -95,7 +95,7 @@ class ProjectionsSpec
       )
 
       val response = await {
-        authenticatedRequest("/projections").
+        authenticatedRequest("/aggregates/projections").
           withQueryString("date" -> LocalDate.now.plusDays(10).toString).
           get()
       }
