@@ -94,12 +94,18 @@ class ContextsSpec
       response.status mustBe UNAUTHORIZED
     }
 
-    "return a 409 Conflict any required fields aren't specified" in {
+    "return a 409 Conflict if any required fields aren't specified" in {
       val context = TestService.createContext(userGuids = Seq.empty)
       Seq("userGuid").foreach { field =>
         val response = await { authenticatedRequest(s"/contexts/${context.guid}/users").post(json - field) }
         response.status mustBe CONFLICT
       }
+    }
+
+    "return a 409 Conflict if the specified context does not belong to the authenticated user" in {
+      val context = TestService.createContext(userGuids = Seq.empty, accessToken = TestService.otherAccessToken)
+      val response = await { authenticatedRequest(s"/contexts/${context.guid}/users").post(json) }
+      response.status mustBe CONFLICT
     }
 
     "return a new Conflict if authorized and valid" in {

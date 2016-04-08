@@ -71,7 +71,9 @@ class ContextsService(
 
   def findContexts(
     ids: Option[Seq[Long]] = None,
+    guids: Option[Seq[UUID]] = None,
     userGuids: Option[Seq[UUID]] = None,
+    createdByUserGuids: Option[Seq[UUID]] = None,
     rawPaginationParams: RawPaginationParams = RawPaginationParams()
   )(implicit ec: ExecutionContext): Future[Validation[PaginatedResult[ContextRecord]]] = {
     val valPaginationParams = PaginationParams.build(rawPaginationParams)
@@ -87,6 +89,18 @@ class ContextsService(
       ids.foreach { ids =>
         query = query.filter { case (context, _) =>
           context.id inSet ids
+        }
+      }
+
+      guids.foreach { guids =>
+        query = query.filter { case (context, _) =>
+          context.guid inSet guids
+        }
+      }
+
+      createdByUserGuids.foreach { createdByUserGuids =>
+        query = query.filter { case (context, _) =>
+          context.createdByAccount inSet createdByUserGuids
         }
       }
 
@@ -141,10 +155,22 @@ class ContextsService(
     userGuid: UUID,
     accessToken: AccessToken
   )(implicit ec: ExecutionContext): Future[Validation[ContextRecord]] = {
-    val query = Contexts.filter(_.guid === guid).map(_.id)
+    findContexts(
+      guids = Some(Seq(guid)),
+      createdByUserGuids = Some(Seq(accessToken.resourceOwner.guid))
+    ).flatMap { result =>
+      val valContextId = result.flatMap { pagination =>
+        pagination.items.map(_.id).headOption.map { contextId =>
+          Validation.Success(contextId)
+        }.getOrElse {
+          Validation.failure(
+            "guid", "useless.error.unknownGuid",
+            "specified" -> guid.toString
+          )
+        }
+      }
 
-    database.run(query.result).flatMap { contextIds =>
-      contextIds.headOption.map { contextId =>
+      ValidationUtil.flatMapFuture(valContextId) { contextId =>
         val insertProjection = ContextUsers.map { r =>
           (r.contextId, r.userGuid, r.createdByAccount, r.createdByAccessToken)
         }
@@ -160,10 +186,6 @@ class ContextsService(
             }
           }
         }
-      }.getOrElse {
-        Future.successful(Validation.failure("guid", "useless.error.unknownGuid",
-          "specified" -> guid.toString
-        ))
       }
     }
   }

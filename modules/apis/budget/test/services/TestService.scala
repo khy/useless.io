@@ -46,7 +46,8 @@ object TestService extends DatabaseAccessor {
 
   def createContext(
     name: String = "Default",
-    userGuids: Seq[UUID] = Seq(accessToken.resourceOwner.guid)
+    userGuids: Seq[UUID] = Seq(accessToken.resourceOwner.guid),
+    accessToken: AccessToken = accessToken
   ): Context = await {
     val futResult = contextsService.createContext(name, userGuids, accessToken)
     futResult.flatMap { result =>
