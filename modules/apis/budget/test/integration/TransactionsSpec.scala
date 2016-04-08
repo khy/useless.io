@@ -194,7 +194,7 @@ class TransactionsSpec
 
       val transactions1 = response1.json.as[Seq[Transaction]]
       transactions1.length mustBe 2
-      transactions1.map(_.guid) must not contain transaction3.guid
+      transactions1.map(_.guid) must not contain transaction1.guid
 
       val response2 = await {
         authenticatedRequest("/transactions").
@@ -204,7 +204,7 @@ class TransactionsSpec
 
       val transactions2 = response2.json.as[Seq[Transaction]]
       transactions2.length mustBe 1
-      transactions2.head.guid mustBe transaction3.guid
+      transactions2.head.guid mustBe transaction1.guid
     }
 
   }

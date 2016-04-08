@@ -206,9 +206,9 @@ class PlannedTransactionsService(
         }
       }
 
-      var pageQuery = query.sortBy { case (plannedTxn, _) =>
-        plannedTxn.minDate.asc
-      }
+      var pageQuery = query.
+        sortBy { case (plannedTxn, _) => plannedTxn.createdAt.desc }.
+        sortBy { case (plannedTxn, _) => plannedTxn.minDate.desc }
 
       pageQuery = paginationParams match {
         case params: OffsetBasedPaginationParams => {

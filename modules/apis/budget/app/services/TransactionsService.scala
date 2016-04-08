@@ -164,9 +164,9 @@ class TransactionsService(
         }
       }
 
-      var pageQuery = query.sortBy { case (txn, _) =>
-        txn.date.desc
-      }
+      var pageQuery = query.
+        sortBy { case (txn, _) => txn.createdAt.desc }.
+        sortBy { case (txn, _) => txn.date.desc }
 
       pageQuery = paginationParams match {
         case params: OffsetBasedPaginationParams => {

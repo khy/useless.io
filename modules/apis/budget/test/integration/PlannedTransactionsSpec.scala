@@ -323,7 +323,7 @@ class PlannedTransactionsSpec
 
       val plannedTransactions1 = response1.json.as[Seq[PlannedTransaction]]
       plannedTransactions1.length mustBe 2
-      plannedTransactions1.map(_.guid) must not contain plannedTransaction3.guid
+      plannedTransactions1.map(_.guid) must not contain plannedTransaction1.guid
 
       val response2 = await {
         authenticatedRequest("/plannedTransactions").
@@ -333,7 +333,7 @@ class PlannedTransactionsSpec
 
       val plannedTransactions2 = response2.json.as[Seq[PlannedTransaction]]
       plannedTransactions2.length mustBe 1
-      plannedTransactions2.head.guid mustBe plannedTransaction3.guid
+      plannedTransactions2.head.guid mustBe plannedTransaction1.guid
     }
 
   }
