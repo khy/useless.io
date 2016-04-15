@@ -3,6 +3,3 @@
 ->  /books    books.Routes
 ->  /haiku    haiku.Routes
 ->  /budget   budget.Routes
-
-->  /auth     auth.Routes
-->  /account  account.Routes
