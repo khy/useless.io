@@ -157,15 +157,28 @@ class TransactionTypesService(
       }
     }
 
-    val valName = if (name.isEmpty) {
-      Validation.failure("name", "useless.error.cannotBeEmpty")
+    val futValName = if (name.isEmpty) {
+      Future.successful(Validation.failure("name", "useless.error.cannotBeEmpty"))
     } else {
-      Validation.success(name)
+      val nameQuery = TransactionTypes.join(Contexts).on { case (txnType, context) =>
+        txnType.contextId === context.id
+      }.filter { case (txnType, context) =>
+        txnType.name === name && context.guid === contextGuid
+      }.map { case (txnType, _) => txnType }
+
+      database.run(nameQuery.result).map { txnType =>
+        if (txnType.headOption.isDefined) {
+          Validation.failure("name", "useless.error.duplicate", "specified" -> name)
+        } else {
+          Validation.success(name)
+        }
+      }
     }
 
     for {
       valOptParentId <- futValOptParentId
       valContextId <- futValContextId
+      valName <- futValName
       valTransactionType <- {
         ValidationUtil.mapFuture(valOptParentId ++ valContextId ++ valName) { case ((optParentId, contextId), name) =>
           val transactionTypes = TransactionTypes.map { r =>

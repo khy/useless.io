@@ -136,7 +136,24 @@ class TransactionTypesSpec
       response.status mustBe CONFLICT
     }
 
+    "return a 409 if the name already exists in the context" in {
+      TestService.createTransactionType(
+        contextGuid = context.guid,
+        name = "Rent",
+        parentGuid = Some(expense.guid)
+      )
+
+      val response1 = await { authenticatedRequest("/transactionTypes").post(json) }
+      response1.status mustBe CONFLICT
+
+      val otherContext = TestService.createContext()
+      val _json = json ++ Json.obj("contextGuid" -> otherContext.guid)
+      val response2 = await { authenticatedRequest("/transactionTypes").post(_json) }
+      response2.status mustBe CREATED
+    }
+
     "return a new TransactionType if authorized and valid" in {
+      TestService.deleteTransactionTypes()
       val response = await { authenticatedRequest("/transactionTypes").post(json) }
       response.status mustBe CREATED
 
