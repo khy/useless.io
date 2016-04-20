@@ -128,24 +128,46 @@ class AccountsService(
       }
     }
 
-    futValContextId.flatMap { valContextId =>
-      ValidationUtil.mapFuture(valContextId) { contextId =>
-        val accounts = Accounts.map { a =>
-          (a.guid, a.contextId, a.accountTypeKey, a.name, a.initialBalance, a.createdByAccount, a.createdByAccessToken)
-        }.returning(Accounts.map(_.id))
+    val futValName = if (name.isEmpty) {
+      Future.successful(Validation.failure("name", "useless.error.cannotBeEmpty"))
+    } else {
+      val nameQuery = Accounts.join(Contexts).on { case (account, context) =>
+        account.contextId === context.id
+      }.filter { case (account, context) =>
+        account.name === name && context.guid === contextGuid
+      }.map { case (account, _) => account }
 
-        val insert = accounts += (UUID.randomUUID, contextId, accountType.key, name, initialBalance, accessToken.resourceOwner.guid, accessToken.guid)
+      database.run(nameQuery.result).map { account =>
+        if (account.headOption.isDefined) {
+          Validation.failure("name", "useless.error.duplicate", "specified" -> name)
+        } else {
+          Validation.success(name)
+        }
+      }
+    }
 
-        database.run(insert).flatMap { id =>
-          findAccounts(ids = Some(Seq(id))).map { result =>
-            result.map(_.items.headOption) match {
-              case Validation.Success(Some(account)) => account
-              case _ => throw new ResourceUnexpectedlyNotFound("Account", id)
+    for {
+      valContextId <- futValContextId
+      valName <- futValName
+      valAccount <- {
+        ValidationUtil.mapFuture(valContextId ++ valName) { case (contextId, name) =>
+          val accounts = Accounts.map { a =>
+            (a.guid, a.contextId, a.accountTypeKey, a.name, a.initialBalance, a.createdByAccount, a.createdByAccessToken)
+          }.returning(Accounts.map(_.id))
+
+          val insert = accounts += (UUID.randomUUID, contextId, accountType.key, name, initialBalance, accessToken.resourceOwner.guid, accessToken.guid)
+
+          database.run(insert).flatMap { id =>
+            findAccounts(ids = Some(Seq(id))).map { result =>
+              result.map(_.items.headOption) match {
+                case Validation.Success(Some(account)) => account
+                case _ => throw new ResourceUnexpectedlyNotFound("Account", id)
+              }
             }
           }
         }
       }
-    }
+    } yield valAccount
   }
 
 }

@@ -127,7 +127,30 @@ class AccountsSpec
       }
     }
 
+    "return a 409 Conflict if name is an empty string" in {
+      val _json = json ++ Json.obj("name" -> "")
+      val response = await { authenticatedRequest("/accounts").post(_json) }
+      response.status mustBe CONFLICT
+    }
+
+    "return a 409 if the name already exists in the context" in {
+      val excludedAccount = TestService.createAccount(
+        contextGuid = context.guid,
+        name = "Shared Checking",
+        accessToken = TestService.accessToken
+      )
+
+      val response1 = await { authenticatedRequest("/accounts").post(json) }
+      response1.status mustBe CONFLICT
+
+      val otherContext = TestService.createContext()
+      val _json = json ++ Json.obj("contextGuid" -> otherContext.guid)
+      val response2 = await { authenticatedRequest("/accounts").post(_json) }
+      response2.status mustBe CREATED
+    }
+
     "return a new Account if authorized and valid" in {
+      TestService.deleteAccounts()
       val response = await { authenticatedRequest("/accounts").post(json) }
       response.status mustBe CREATED
 
