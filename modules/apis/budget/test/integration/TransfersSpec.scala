@@ -23,8 +23,8 @@ class TransfersSpec
   "POST /transfers" must {
 
     lazy val context = TestService.createContext()
-    lazy val fromAccount = TestService.createAccount(contextGuid = context.guid)
-    lazy val toAccount = TestService.createAccount(contextGuid = context.guid)
+    lazy val fromAccount = TestService.createAccount(contextGuid = context.guid, name = "Checking")
+    lazy val toAccount = TestService.createAccount(contextGuid = context.guid, name = "Savings")
     val date = LocalDate.now
 
     lazy val json = Json.obj(

@@ -30,6 +30,7 @@ class PlannedTransactionsSpec
 
     "return only PlannedTransactions for accounts in contexts that the authenticated user belongs to" in {
       TestService.deletePlannedTransactions()
+      TestService.deleteAccounts()
 
       val account1 = TestService.createAccount(contextGuid = TestService.myContext.guid)
       val account2 = TestService.createAccount(contextGuid = TestService.sharedContext.guid)
@@ -113,12 +114,12 @@ class PlannedTransactionsSpec
     "return only PlannedTransactions belonging to the specified context" in {
       TestService.deletePlannedTransactions()
 
-      val account1 = TestService.createAccount(contextGuid = TestService.myContext.guid)
+      val account1 = TestService.createAccount(contextGuid = TestService.myContext.guid, name = "Checking")
       val excludedPlannedTransaction = TestService.createPlannedTransaction(
         accountGuid = account1.guid
       )
 
-      val account2 = TestService.createAccount(contextGuid = TestService.sharedContext.guid)
+      val account2 = TestService.createAccount(contextGuid = TestService.sharedContext.guid, name = "Savings")
       val includedPlannedTransaction = TestService.createPlannedTransaction(
         accountGuid = account2.guid
       )
@@ -136,9 +137,11 @@ class PlannedTransactionsSpec
 
     "return only PlannedTransactions for the specified transaction type" in {
       TestService.deletePlannedTransactions()
+      TestService.deleteAccounts()
+
       val account = TestService.createAccount(contextGuid = TestService.myContext.guid)
-      val includedTransactionType = TestService.createTransactionType(contextGuid = TestService.myContext.guid)
-      val excludedTransactionType = TestService.createTransactionType(contextGuid = TestService.myContext.guid)
+      val includedTransactionType = TestService.createTransactionType(contextGuid = TestService.myContext.guid, name = "Books")
+      val excludedTransactionType = TestService.createTransactionType(contextGuid = TestService.myContext.guid, name = "Food")
 
       val excludedPlannedTransaction = TestService.createPlannedTransaction(
         accountGuid = account.guid,

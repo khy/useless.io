@@ -29,6 +29,7 @@ class TransactionsSpec
 
     "return only Transactions for accounts in contexts that the authenticated user belongs to" in {
       TestService.deleteTransactions()
+      TestService.deleteAccounts()
 
       val account1 = TestService.createAccount(contextGuid = TestService.myContext.guid)
       val account2 = TestService.createAccount(contextGuid = TestService.sharedContext.guid)
@@ -76,13 +77,14 @@ class TransactionsSpec
 
     "return only Transactions belonging to the specified account" in {
       TestService.deleteTransactions()
+      TestService.deleteAccounts()
 
-      val includedAccount = TestService.createAccount()
+      val includedAccount = TestService.createAccount(name = "Checking")
       val includedTransaction = TestService.createTransaction(
         accountGuid = includedAccount.guid
       )
 
-      val excludedAccount = TestService.createAccount()
+      val excludedAccount = TestService.createAccount(name = "Savings")
       val excludedTransaction = TestService.createTransaction(
         accountGuid = excludedAccount.guid
       )
@@ -100,6 +102,7 @@ class TransactionsSpec
 
     "return only Transactions belonging to the specified context" in {
       TestService.deleteTransactions()
+      TestService.deleteAccounts()
 
       val account1 = TestService.createAccount(contextGuid = TestService.myContext.guid)
       val excludedTransaction = TestService.createTransaction(
@@ -124,9 +127,11 @@ class TransactionsSpec
 
     "return only Transactions for the specified transaction type" in {
       TestService.deleteTransactions()
+      TestService.deleteAccounts()
+
       val account = TestService.createAccount(contextGuid = TestService.myContext.guid)
-      val includedTransactionType = TestService.createTransactionType(contextGuid = TestService.myContext.guid)
-      val excludedTransactionType = TestService.createTransactionType(contextGuid = TestService.myContext.guid)
+      val includedTransactionType = TestService.createTransactionType(contextGuid = TestService.myContext.guid, name = "Books")
+      val excludedTransactionType = TestService.createTransactionType(contextGuid = TestService.myContext.guid, name = "Food")
 
       val excludedTransaction = TestService.createTransaction(
         accountGuid = account.guid,

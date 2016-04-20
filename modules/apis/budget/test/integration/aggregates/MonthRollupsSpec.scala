@@ -29,8 +29,8 @@ class MonthRollupsSpec
     "return rollups for all the months that include transactions for the requestor" in {
       TestService.deleteAccounts()
       TestService.deleteTransactions()
-      val account1 = TestService.createAccount(contextGuid = TestService.myContext.guid)
-      val account2 = TestService.createAccount(contextGuid = TestService.myContext.guid)
+      val account1 = TestService.createAccount(contextGuid = TestService.myContext.guid, name = "Checking")
+      val account2 = TestService.createAccount(contextGuid = TestService.myContext.guid, name = "Savings")
       val sharedAccount = TestService.createAccount(contextGuid = TestService.sharedContext.guid)
       val otherAccount = TestService.createAccount(contextGuid = TestService.otherContext.guid)
 
