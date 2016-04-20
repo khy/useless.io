@@ -130,6 +130,12 @@ class TransactionTypesSpec
       }
     }
 
+    "return a 409 Conflict if name is an empty string" in {
+      val _json = json ++ Json.obj("name" -> "")
+      val response = await { authenticatedRequest("/transactionTypes").post(_json) }
+      response.status mustBe CONFLICT
+    }
+
     "return a new TransactionType if authorized and valid" in {
       val response = await { authenticatedRequest("/transactionTypes").post(json) }
       response.status mustBe CREATED

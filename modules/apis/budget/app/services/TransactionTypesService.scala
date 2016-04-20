@@ -157,34 +157,42 @@ class TransactionTypesService(
       }
     }
 
+    val valName = if (name.isEmpty) {
+      Validation.failure("name", "useless.error.cannotBeEmpty")
+    } else {
+      Validation.success(name)
+    }
+
     for {
       valOptParentId <- futValOptParentId
       valContextId <- futValContextId
-      valTransactionType <- ValidationUtil.mapFuture(valOptParentId ++ valContextId) { case (optParentId, contextId) =>
-        val transactionTypes = TransactionTypes.map { r =>
-          (r.guid, r.contextId, r.name, r.ownershipKey, r.createdByAccount, r.createdByAccessToken)
-        }.returning(TransactionTypes.map(_.id))
+      valTransactionType <- {
+        ValidationUtil.mapFuture(valOptParentId ++ valContextId ++ valName) { case ((optParentId, contextId), name) =>
+          val transactionTypes = TransactionTypes.map { r =>
+            (r.guid, r.contextId, r.name, r.ownershipKey, r.createdByAccount, r.createdByAccessToken)
+          }.returning(TransactionTypes.map(_.id))
 
-        val insert = transactionTypes += ((UUID.randomUUID, Some(contextId), name, ownership.key, accessToken.resourceOwner.guid, accessToken.guid))
+          val insert = transactionTypes += ((UUID.randomUUID, Some(contextId), name, ownership.key, accessToken.resourceOwner.guid, accessToken.guid))
 
-        database.run(insert).flatMap { id =>
-          val futParentInsert = optParentId.map { parentId =>
-            val transactionTypeSubtypes = TransactionTypeSubtypes.map { r =>
-              (r.parentTransactionTypeId, r.childTransactionTypeId, r.createdByAccount, r.createdByAccessToken)
-            }.returning(TransactionTypeSubtypes.map(_.id))
+          database.run(insert).flatMap { id =>
+            val futParentInsert = optParentId.map { parentId =>
+              val transactionTypeSubtypes = TransactionTypeSubtypes.map { r =>
+                (r.parentTransactionTypeId, r.childTransactionTypeId, r.createdByAccount, r.createdByAccessToken)
+              }.returning(TransactionTypeSubtypes.map(_.id))
 
-            val insert = transactionTypeSubtypes += ((parentId, id, accessToken.resourceOwner.guid, accessToken.guid))
+              val insert = transactionTypeSubtypes += ((parentId, id, accessToken.resourceOwner.guid, accessToken.guid))
 
-            database.run(insert).map { _ => () }
-          }.getOrElse {
-            Future.successful(())
-          }
+              database.run(insert).map { _ => () }
+            }.getOrElse {
+              Future.successful(())
+            }
 
-          futParentInsert.flatMap { _ =>
-            findTransactionTypes(ids = Some(Seq(id))).map { result =>
-              result.map(_.items.headOption) match {
-                case Validation.Success(Some(transactionType)) => transactionType
-                case _ => throw new ResourceUnexpectedlyNotFound("TransactionGroup", id)
+            futParentInsert.flatMap { _ =>
+              findTransactionTypes(ids = Some(Seq(id))).map { result =>
+                result.map(_.items.headOption) match {
+                  case Validation.Success(Some(transactionType)) => transactionType
+                  case _ => throw new ResourceUnexpectedlyNotFound("TransactionGroup", id)
+                }
               }
             }
           }
