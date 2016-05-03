@@ -10,8 +10,8 @@ case class HaikuRecord(
   lineOne: String,
   lineTwo: String,
   lineThree: String,
-  inResponseToId: Long,
-  attribution: String,
+  inResponseToId: Option[Long],
+  attribution: Option[String],
   createdAt: Timestamp,
   createdByAccount: UUID,
   createdByAccessToken: UUID,
@@ -28,8 +28,8 @@ class HaikusTable(tag: Tag)
   def lineOne = column[String]("line_one")
   def lineTwo = column[String]("line_two")
   def lineThree = column[String]("line_three")
-  def inResponseToId = column[Long]("in_response_to_id")
-  def attribution = column[String]("attribution")
+  def inResponseToId = column[Option[Long]]("in_response_to_id")
+  def attribution = column[Option[String]]("attribution")
   def createdAt = column[Timestamp]("created_at")
   def createdByAccount = column[UUID]("created_by_account")
   def createdByAccessToken = column[UUID]("created_by_access_token")

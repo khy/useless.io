@@ -6,15 +6,10 @@ import play.api.Play.current
 import play.api.libs.concurrent.Execution.Implicits._
 import org.joda.time.DateTime
 import slick.driver.PostgresDriver.api._
-import reactivemongo.bson.BSONDocument
-import reactivemongo.api.QueryOpts
-import reactivemongo.core.commands.Count
 import io.useless.Message
+import io.useless.accesstoken.AccessToken
 import io.useless.account.{User, PublicUser}
-import io.useless.reactivemongo.MongoAccessor
 import io.useless.client.account.AccountClient
-import io.useless.reactivemongo.bson.UuidBson._
-import io.useless.reactivemongo.bson.DateTimeBson._
 import io.useless.util.configuration.Configuration
 import io.useless.util.configuration.RichConfiguration._
 import io.useless.pagination._
@@ -22,16 +17,9 @@ import io.useless.validation._
 
 import db.haiku._
 import models.haiku._
-import models.haiku.mongo.HaikuMongo._
 import lib.haiku.TwoPhaseLineSyllableCounter
 
 object HaikuService extends Configuration {
-
-  private val CollectionName = "haikus"
-
-  private lazy val collection = {
-    MongoAccessor("haiku.mongo.uri").collection(CollectionName)
-  }
 
   private lazy val database = Database.forConfig("db.haiku")
 
@@ -56,9 +44,11 @@ object HaikuService extends Configuration {
   }
 
   def db2model(records: Seq[HaikuRecord]): Future[Seq[Haiku]] = {
-    find(ids = Some(records.map(_.inResponseToId))).flatMap { inResponseToResult1 =>
+    val inResponseToIds = records.map(_.inResponseToId).filter(_.isDefined).map(_.get)
+    find(ids = Some(inResponseToIds)).flatMap { inResponseToResult1 =>
       val inResponseToRecords1 = inResponseToResult1.toSuccess.value.items
-      val futInResponseToRecords2 = find(ids = Some(inResponseToRecords1.map(_.inResponseToId))).map { records =>
+      val inResponseToIds = inResponseToRecords1.map(_.inResponseToId).filter(_.isDefined).map(_.get)
+      val futInResponseToRecords2 = find(ids = Some(inResponseToIds)).map { records =>
         records.toSuccess.value.items
       }
 
@@ -74,10 +64,10 @@ object HaikuService extends Configuration {
         }.getOrElse(AnonUser)
 
         val inResponseTo = inResponseToRecords1.filter { inResponseToRecord =>
-          inResponseToRecord.id == record.inResponseToId
+          Some(inResponseToRecord.id) == record.inResponseToId
         }.map { record =>
           val inResponseToGuid = inResponseToRecords2.filter { inResponseToRecord =>
-            inResponseToRecord.id == record.inResponseToId
+            Some(inResponseToRecord.id) == record.inResponseToId
           }.map(_.guid).headOption
 
           ShallowHaiku(record.guid, inResponseToGuid, haikuLines(record), new DateTime(record.createdAt), createdBy(record))
@@ -123,23 +113,6 @@ object HaikuService extends Configuration {
     name = None
   )
 
-  private def getShallowHaikus(guids: Seq[UUID]): Future[Seq[ShallowHaiku]] = {
-    val query = BSONDocument("_id" -> BSONDocument("$in" -> guids))
-    collection.find(query).cursor[HaikuDocument].collect[Seq]().flatMap { documents =>
-      val createdByGuids = documents.map(_.createdByGuid)
-
-      getUsers(createdByGuids).map { users =>
-        documents.map { document =>
-          val createdBy = users.find { user =>
-            user.guid == document.createdByGuid
-          }.getOrElse(AnonUser)
-
-          ShallowHaiku(document.guid, document.inResponseToGuid, document.lines, document.createdAt, createdBy)
-        }
-      }
-    }
-  }
-
   private def getUsers(guids: Seq[UUID]): Future[Seq[User]] = {
     val userOptFuts = guids.map { guid =>
       accountClient.getAccount(guid).map { optAccount =>
@@ -158,14 +131,15 @@ object HaikuService extends Configuration {
   def create(
     inResponseToGuid: Option[UUID],
     lines: Seq[String],
-    createdBy: User
-  ): Future[Validation[Haiku]] = {
+    accessToken: AccessToken
+  ): Future[Validation[HaikuRecord]] = {
     val valLines = validate(lines)
 
-    val futValOptInResponseTo: Future[Validation[Option[ShallowHaiku]]] = inResponseToGuid.map { inResponseToGuid =>
-      getShallowHaikus(Seq(inResponseToGuid)).map { shallowHaikus =>
-        shallowHaikus.headOption.map { shallowHaiku =>
-          Validation.success(Some(shallowHaiku))
+    val futValOptInResponseToId: Future[Validation[Option[Long]]] = inResponseToGuid.map { inResponseToGuid =>
+      val query = Haikus.filter { _.guid === inResponseToGuid }
+      database.run(query.result).map { haikuRecords =>
+        haikuRecords.headOption.map { haikuRecord =>
+          Validation.success(Some(haikuRecord.id))
         }.getOrElse {
           Validation.failure("inResponseToGuid", "useless.haiku.error.nonExistantHaikuGuid", "guid" -> inResponseToGuid.toString)
         }
@@ -174,21 +148,20 @@ object HaikuService extends Configuration {
       Future.successful(Validation.success(None))
     }
 
-    futValOptInResponseTo.flatMap { valOptInResponseTo =>
-      ValidationUtil.mapFuture(valLines ++ valOptInResponseTo) { case (lines, optInResponseTo) =>
-        val document = new HaikuDocument(
-          guid = UUID.randomUUID,
-          inResponseToGuid = inResponseToGuid,
-          lines = lines,
-          createdByGuid = createdBy.guid,
-          createdAt = DateTime.now
-        )
+    futValOptInResponseToId.flatMap { valOptInResponseToId =>
+      ValidationUtil.mapFuture(valLines ++ valOptInResponseToId) { case (lines, optInResponseToId) =>
+        val haikus = Haikus.map { r =>
+          (r.guid, r.lineOne, r.lineTwo, r.lineThree, r.inResponseToId, r.attribution, r.createdByAccount, r.createdByAccessToken)
+        }.returning(Haikus.map(_.id))
 
-        collection.insert(document).map { lastError =>
-          if (lastError.ok) {
-            Haiku(document.guid, optInResponseTo, document.lines, document.createdAt, createdBy)
-          } else {
-            throw lastError
+        val insert = haikus += (UUID.randomUUID, lines(0), lines(1), lines(2), optInResponseToId, None, accessToken.resourceOwner.guid, accessToken.guid)
+
+        database.run(insert).flatMap { id =>
+          find(ids = Some(Seq(id))).map { result =>
+            result.map(_.items.headOption) match {
+              case Validation.Success(Some(haiku)) => haiku
+              case _ => throw new RuntimeException("Could not find haiku " + id.toString)
+            }
           }
         }
       }

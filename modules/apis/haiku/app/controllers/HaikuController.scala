@@ -38,14 +38,13 @@ object HaikuController extends Controller with PaginationController {
     val inResponseToGuid = (request.body \ "inResponseToGuid").as[Option[UUID]]
     val lines = (request.body \ "lines").as[Seq[String]]
 
-    request.accessToken.resourceOwner match {
-      case user: User => HaikuService.create(inResponseToGuid, lines, user).map { result =>
-        result.fold (
-          failure => Conflict(Json.toJson(failure)),
-          haiku => Created(Json.toJson(haiku))
-        )
-      }
-      case _ => Future.successful(Unauthorized)
+    HaikuService.create(inResponseToGuid, lines, request.accessToken).flatMap { result =>
+      result.fold (
+        failure => Future.successful(Conflict(Json.toJson(failure))),
+        haiku => HaikuService.db2model(Seq(haiku)).map { haikuModels =>
+          Created(Json.toJson(haikuModels.head))
+        }
+      )
     }
   }
 
