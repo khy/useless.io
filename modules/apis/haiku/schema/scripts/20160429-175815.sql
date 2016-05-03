@@ -1,6 +1,6 @@
 CREATE TABLE haikus (
     id bigserial NOT NULL PRIMARY KEY,
-    uuid uuid NOT NULL,
+    guid uuid NOT NULL,
     line_one text NOT NULL,
     line_two text NOT NULL,
     line_three text NOT NULL,

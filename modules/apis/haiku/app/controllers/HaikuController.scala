@@ -20,10 +20,15 @@ object HaikuController extends Controller with PaginationController {
     withRawPaginationParams { pagination =>
       val userHandle = request.getQueryString("user")
 
-      HaikuService.find(userHandle, pagination).map { result =>
+      HaikuService.find(
+        userHandles = userHandle.map(Seq(_)),
+        rawPaginationParams = pagination
+      ).flatMap { result =>
         result.fold(
-          error => Conflict(Json.toJson(error)),
-          haikus => paginatedResult(routes.HaikuController.index(), haikus)
+          error => Future.successful(Conflict(Json.toJson(error))),
+          result => HaikuService.db2model(result.items).map { haikuModels =>
+            paginatedResult(routes.HaikuController.index(), result.copy(items = haikuModels))
+          }
         )
       }
     }

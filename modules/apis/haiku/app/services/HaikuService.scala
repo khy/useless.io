@@ -5,6 +5,7 @@ import scala.concurrent.Future
 import play.api.Play.current
 import play.api.libs.concurrent.Execution.Implicits._
 import org.joda.time.DateTime
+import slick.driver.PostgresDriver.api._
 import reactivemongo.bson.BSONDocument
 import reactivemongo.api.QueryOpts
 import reactivemongo.core.commands.Count
@@ -19,6 +20,7 @@ import io.useless.util.configuration.RichConfiguration._
 import io.useless.pagination._
 import io.useless.validation._
 
+import db.haiku._
 import models.haiku._
 import models.haiku.mongo.HaikuMongo._
 import lib.haiku.TwoPhaseLineSyllableCounter
@@ -30,6 +32,8 @@ object HaikuService extends Configuration {
   private lazy val collection = {
     MongoAccessor("haiku.mongo.uri").collection(CollectionName)
   }
+
+  private lazy val database = Database.forConfig("db.haiku")
 
   lazy val accountClient = {
     val authGuid = configuration.underlying.getUuid("haiku.accessTokenGuid")
@@ -45,37 +49,69 @@ object HaikuService extends Configuration {
     defaultOrder = "created_at"
   )
 
+  //TODO: Execution contexts!
+
+  def haikuLines(record: HaikuRecord): Seq[String] = {
+    Seq(record.lineOne, record.lineTwo, record.lineThree)
+  }
+
+  def db2model(records: Seq[HaikuRecord]): Future[Seq[Haiku]] = {
+    find(ids = Some(records.map(_.inResponseToId))).flatMap { inResponseToResult1 =>
+      val inResponseToRecords1 = inResponseToResult1.toSuccess.value.items
+      val futInResponseToRecords2 = find(ids = Some(inResponseToRecords1.map(_.inResponseToId))).map { records =>
+        records.toSuccess.value.items
+      }
+
+      val createdByAccountGuids = (records ++ inResponseToRecords1).map(_.createdByAccount)
+      val futAccounts = getUsers(createdByAccountGuids)
+
+      for {
+        inResponseToRecords2 <- futInResponseToRecords2
+        accounts <- futAccounts
+      } yield records.map { record =>
+        def createdBy(record: HaikuRecord) = accounts.find { account =>
+          account.guid == record.createdByAccount
+        }.getOrElse(AnonUser)
+
+        val inResponseTo = inResponseToRecords1.filter { inResponseToRecord =>
+          inResponseToRecord.id == record.inResponseToId
+        }.map { record =>
+          val inResponseToGuid = inResponseToRecords2.filter { inResponseToRecord =>
+            inResponseToRecord.id == record.inResponseToId
+          }.map(_.guid).headOption
+
+          ShallowHaiku(record.guid, inResponseToGuid, haikuLines(record), new DateTime(record.createdAt), createdBy(record))
+        }.headOption
+
+        Haiku(record.guid, inResponseTo, haikuLines(record), new DateTime(record.createdAt), createdBy(record))
+      }
+    }
+  }
+
   def find(
-    optUserHandle: Option[String],
-    rawPaginationParams: RawPaginationParams
-  ): Future[Validation[PaginatedResult[Haiku]]] = {
+    ids: Option[Seq[Long]] = None,
+    userHandles: Option[Seq[String]] = None,
+    rawPaginationParams: RawPaginationParams = RawPaginationParams()
+  ): Future[Validation[PaginatedResult[HaikuRecord]]] = {
     val valPaginationParams = PaginationParams.build(rawPaginationParams, paginationConfig)
 
     ValidationUtil.mapFuture(valPaginationParams) { paginationParams =>
-      userQuery(optUserHandle).flatMap { userQuery =>
-        paginationQuery(paginationParams).flatMap { paginationQuery =>
-          val query = userQuery.add(paginationQuery)
+      val futAccounts = userHandles.map { userHandles =>
+        val accountFuts = userHandles.map { userHandle => accountClient.getAccountForHandle(userHandle) }
+        Future.sequence(accountFuts).map { accounts =>
+          Some(accounts.filter(_.isDefined).map(_.get))
+        }
+      }.getOrElse { Future.successful(None) }
 
-          var queryBuilder = collection.find(query).
-            sort(BSONDocument(paginationParams.order -> -1))
+      futAccounts.flatMap { optAccounts =>
+        var query: Query[HaikusTable, HaikuRecord, Seq] = Haikus
 
-          queryBuilder = paginationParams match {
-            case obpParams: OffsetBasedPaginationParams => {
-              queryBuilder.options(QueryOpts(skipN = obpParams.offset))
-            }
-            case _ => queryBuilder
-          }
+        optAccounts.foreach { accounts =>
+          query.filter { _.createdByAccount inSet accounts.map(_.guid) }
+        }
 
-          val futCount = collection.db.command(Count(CollectionName, Some(query)))
-          val futDocuments = queryBuilder.cursor[HaikuDocument].collect[Seq](paginationParams.limit)
-
-          for {
-            count <- futCount
-            documents <- futDocuments
-            haikus <- buildHaikus(documents)
-          } yield {
-            PaginatedResult.build(haikus, paginationParams, Some(count))
-          }
+        database.run(query.result).map { haikuRecords =>
+          PaginatedResult.build(haikuRecords, paginationParams, None)
         }
       }
     }
@@ -86,33 +122,6 @@ object HaikuService extends Configuration {
     handle = "anon",
     name = None
   )
-
-  private def buildHaikus(documents: Seq[HaikuDocument]): Future[Seq[Haiku]] = {
-    val inResponseToGuids = documents.map(_.inResponseToGuid).filter(_.isDefined).map(_.get)
-    val createdByGuids = documents.map(_.createdByGuid)
-
-    val futShallowHaikus = getShallowHaikus(inResponseToGuids)
-    val futUsers = getUsers(createdByGuids)
-
-    for {
-      shallowHaikus <- futShallowHaikus
-      users <- futUsers
-    } yield {
-      documents.map { document =>
-        val inResponseTo = document.inResponseToGuid.flatMap { inResponseToGuid =>
-          shallowHaikus.find { shallowHaiku =>
-            shallowHaiku.guid == inResponseToGuid
-          }
-        }
-
-        val createdBy = users.find { user =>
-          user.guid == document.createdByGuid
-        }.getOrElse(AnonUser)
-
-        Haiku(document.guid, inResponseTo, document.lines, document.createdAt, createdBy)
-      }
-    }
-  }
 
   private def getShallowHaikus(guids: Seq[UUID]): Future[Seq[ShallowHaiku]] = {
     val query = BSONDocument("_id" -> BSONDocument("$in" -> guids))
@@ -144,46 +153,6 @@ object HaikuService extends Configuration {
     Future.sequence(userOptFuts).map { userOpts =>
       userOpts.filter(_.isDefined).map(_.get)
     }
-  }
-
-  private def paginationQuery(paginationParams: PaginationParams): Future[BSONDocument] = {
-    paginationParams match {
-      case precedenceParams: PrecedenceBasedPaginationParams => {
-        precedenceParams.after.map { guid =>
-          forGuid(guid).map { optDocument =>
-            optDocument.map { document =>
-              BSONDocument("created_at" -> BSONDocument("$lt" -> document.createdAt))
-            }.getOrElse {
-              BSONDocument()
-            }
-          }
-        }.getOrElse {
-          Future.successful(BSONDocument())
-        }
-      }
-
-      case offsetParams: OffsetBasedPaginationParams => {
-        Future.successful(BSONDocument())
-      }
-    }
-  }
-
-  private def userQuery(optUserHandle: Option[String]): Future[BSONDocument] = {
-    optUserHandle.map { userHandle =>
-      accountClient.getAccountForHandle(userHandle).map { optAccount =>
-        optAccount.map { account =>
-          BSONDocument("created_by_guid" -> account.guid)
-        }.getOrElse {
-          BSONDocument()
-        }
-      }
-    }.getOrElse {
-      Future.successful(BSONDocument())
-    }
-  }
-
-  private def forGuid(guid: UUID): Future[Option[HaikuDocument]] = {
-    collection.find(BSONDocument("_id" -> guid)).one[HaikuDocument]
   }
 
   def create(
