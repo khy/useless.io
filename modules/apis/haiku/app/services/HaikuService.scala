@@ -96,8 +96,12 @@ object HaikuService extends Configuration {
       futAccounts.flatMap { optAccounts =>
         var query: Query[HaikusTable, HaikuRecord, Seq] = Haikus
 
+        ids.foreach { ids =>
+          query = query.filter { _.id inSet ids }
+        }
+
         optAccounts.foreach { accounts =>
-          query.filter { _.createdByAccount inSet accounts.map(_.guid) }
+          query = query.filter { _.createdByAccount inSet accounts.map(_.guid) }
         }
 
         database.run(query.result).map { haikuRecords =>

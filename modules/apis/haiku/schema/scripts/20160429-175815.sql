@@ -4,7 +4,7 @@ CREATE TABLE haikus (
     line_one text NOT NULL,
     line_two text NOT NULL,
     line_three text NOT NULL,
-    in_response_to_id bigint NOT NULL REFERENCES haikus,
+    in_response_to_id bigint REFERENCES haikus,
     attribution text,
     created_at timestamp NOT NULL DEFAULT now(),
     created_by_account uuid NOT NULL,
