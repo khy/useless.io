@@ -8,6 +8,7 @@ import play.api.test._
 import play.api.test.Helpers._
 import play.api.libs.ws.WS
 import play.api.libs.json.{ Json, JsValue, JsArray, JsNull }
+import slick.driver.PostgresDriver.api._
 import io.useless.Message
 import io.useless.accesstoken.AccessToken
 import io.useless.account.User
@@ -16,6 +17,7 @@ import io.useless.client.account.{ AccountClient, MockAccountClient }
 import io.useless.play.json.MessageJson.format
 import io.useless.util.mongo.MongoUtil
 
+import db.haiku._
 import models.haiku.Haiku
 import models.haiku.JsonImplicits._
 import io.useless.validation.Validation
@@ -26,8 +28,12 @@ class HaikuSpec
   with OneServerPerSuite
 {
 
+  val database = Database.forConfig("db.haiku")
+
   override def beforeEach {
-    MongoUtil.clearDb("haiku.mongo.uri")
+    await {
+      database.run(Haikus.delete)
+    }
   }
 
   implicit override lazy val app = {

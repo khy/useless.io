@@ -21,7 +21,7 @@ import lib.haiku.TwoPhaseLineSyllableCounter
 
 object HaikuService extends Configuration {
 
-  private lazy val database = Database.forConfig("db.haiku")
+  val database = Database.forConfig("db.haiku")
 
   lazy val accountClient = {
     val authGuid = configuration.underlying.getUuid("haiku.accessTokenGuid")
@@ -104,9 +104,26 @@ object HaikuService extends Configuration {
           query = query.filter { _.createdByAccount inSet accounts.map(_.guid) }
         }
 
-        database.run(query.result).map { haikuRecords =>
-          PaginatedResult.build(haikuRecords, paginationParams, None)
+        var pagedQuery = query.sortBy(_.createdAt.desc)
+
+        pagedQuery = paginationParams match {
+          case params: OffsetBasedPaginationParams => pagedQuery.drop(params.offset)
+          case params: PrecedenceBasedPaginationParams => params.after.map { after =>
+            pagedQuery.filter {
+              _.createdAt < Haikus.filter(_.guid === params.after).map(_.createdAt).min
+            }
+          }.getOrElse { pagedQuery }
         }
+
+        pagedQuery = pagedQuery.take(paginationParams.limit)
+
+        val futCount = database.run(query.length.result)
+        val futHaikuRecords = database.run(pagedQuery.result)
+
+        for {
+          count <- futCount
+          haikuRecords <- futHaikuRecords
+        } yield PaginatedResult.build(haikuRecords, paginationParams, Some(count))
       }
     }
   }
