@@ -3,6 +3,7 @@ package controllers.haiku
 import java.util.UUID
 import scala.concurrent.Future
 import play.api._
+import play.api.Play.current
 import play.api.mvc._
 import play.api.libs.json.Json
 import play.api.libs.concurrent.Execution.Implicits._

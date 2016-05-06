@@ -1,9 +1,8 @@
 package services.haiku
 
 import java.util.UUID
-import scala.concurrent.Future
-import play.api.Play.current
-import play.api.libs.concurrent.Execution.Implicits._
+import scala.concurrent.{ExecutionContext, Future}
+import play.api.Application
 import org.joda.time.DateTime
 import slick.driver.PostgresDriver.api._
 import io.useless.Message
@@ -23,7 +22,7 @@ object HaikuService extends Configuration {
 
   val database = Database.forConfig("db.haiku")
 
-  lazy val accountClient = {
+  def accountClient(implicit app: Application) = {
     val authGuid = configuration.underlying.getUuid("haiku.accessTokenGuid")
     AccountClient.instance(authGuid)
   }
@@ -43,7 +42,7 @@ object HaikuService extends Configuration {
     Seq(record.lineOne, record.lineTwo, record.lineThree)
   }
 
-  def db2model(records: Seq[HaikuRecord]): Future[Seq[Haiku]] = {
+  def db2model(records: Seq[HaikuRecord])(implicit app: Application, ec: ExecutionContext): Future[Seq[Haiku]] = {
     val inResponseToIds = records.map(_.inResponseToId).filter(_.isDefined).map(_.get)
     find(ids = Some(inResponseToIds)).flatMap { inResponseToResult1 =>
       val inResponseToRecords1 = inResponseToResult1.toSuccess.value.items
@@ -82,7 +81,7 @@ object HaikuService extends Configuration {
     ids: Option[Seq[Long]] = None,
     userHandles: Option[Seq[String]] = None,
     rawPaginationParams: RawPaginationParams = RawPaginationParams()
-  ): Future[Validation[PaginatedResult[HaikuRecord]]] = {
+  )(implicit app: Application, ec: ExecutionContext): Future[Validation[PaginatedResult[HaikuRecord]]] = {
     val valPaginationParams = PaginationParams.build(rawPaginationParams, paginationConfig)
 
     ValidationUtil.mapFuture(valPaginationParams) { paginationParams =>
@@ -134,7 +133,7 @@ object HaikuService extends Configuration {
     name = None
   )
 
-  private def getUsers(guids: Seq[UUID]): Future[Seq[User]] = {
+  private def getUsers(guids: Seq[UUID])(implicit app: Application, ec: ExecutionContext): Future[Seq[User]] = {
     val userOptFuts = guids.map { guid =>
       accountClient.getAccount(guid).map { optAccount =>
         optAccount match {
@@ -153,7 +152,7 @@ object HaikuService extends Configuration {
     inResponseToGuid: Option[UUID],
     lines: Seq[String],
     accessToken: AccessToken
-  ): Future[Validation[HaikuRecord]] = {
+  )(implicit app: Application, ec: ExecutionContext): Future[Validation[HaikuRecord]] = {
     val valLines = validate(lines)
 
     val futValOptInResponseToId: Future[Validation[Option[Long]]] = inResponseToGuid.map { inResponseToGuid =>
@@ -189,9 +188,9 @@ object HaikuService extends Configuration {
     }
   }
 
-  lazy val counter = TwoPhaseLineSyllableCounter.default()
+  private def validate(lines: Seq[String])(implicit app: Application): Validation[Seq[String]] = {
+    lazy val counter = TwoPhaseLineSyllableCounter.default()
 
-  private def validate(lines: Seq[String]): Validation[Seq[String]] = {
     def validateLine(index: Int, expectedSyllables: Int): Validation[String] = {
       val lineKey = "line" + (index + 1).toString
 
