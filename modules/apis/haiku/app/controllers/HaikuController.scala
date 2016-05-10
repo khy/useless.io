@@ -35,18 +35,24 @@ object HaikuController extends Controller with PaginationController {
     }
   }
 
-  def create = Auth.async(parse.json) { request =>
-    val inResponseToGuid = (request.body \ "inResponseToGuid").as[Option[UUID]]
-    val lines = (request.body \ "lines").as[Seq[String]]
+  case class CreateData(
+    lines: Seq[String],
+    inResponseToGuid: Option[UUID]
+  )
+  private implicit val cdr = Json.reads[CreateData]
 
-    HaikuService.create(inResponseToGuid, lines, request.accessToken).flatMap { result =>
-      result.fold (
-        failure => Future.successful(Conflict(Json.toJson(failure))),
-        haiku => HaikuService.db2model(Seq(haiku)).map { haikuModels =>
-          Created(Json.toJson(haikuModels.head))
-        }
-      )
-    }
+  def create = Auth.async(parse.json) { request =>
+    request.body.validate[CreateData].fold(
+      error => Future.successful(Conflict(error.toString)),
+      data => HaikuService.create(data.inResponseToGuid, data.lines, request.accessToken).flatMap { result =>
+        result.fold (
+          failure => Future.successful(Conflict(Json.toJson(failure))),
+          haiku => HaikuService.db2model(Seq(haiku)).map { haikuModels =>
+            Created(Json.toJson(haikuModels.head))
+          }
+        )
+      }
+    )
   }
 
 }
