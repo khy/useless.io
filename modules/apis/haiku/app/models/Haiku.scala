@@ -8,6 +8,7 @@ case class Haiku(
   guid: UUID,
   inResponseTo: Option[ShallowHaiku],
   lines: Seq[String],
+  attribution: Option[String],
   createdAt: DateTime,
   createdBy: User
 )

@@ -69,10 +69,10 @@ object HaikuService extends Configuration {
             Some(inResponseToRecord.id) == record.inResponseToId
           }.map(_.guid).headOption
 
-          ShallowHaiku(record.guid, inResponseToGuid, haikuLines(record), new DateTime(record.createdAt), createdBy(record))
+          ShallowHaiku(record.guid, inResponseToGuid, haikuLines(record), record.attribution, new DateTime(record.createdAt), createdBy(record))
         }.headOption
 
-        Haiku(record.guid, inResponseTo, haikuLines(record), new DateTime(record.createdAt), createdBy(record))
+        Haiku(record.guid, inResponseTo, haikuLines(record), record.attribution, new DateTime(record.createdAt), createdBy(record))
       }
     }
   }
@@ -151,6 +151,7 @@ object HaikuService extends Configuration {
   def create(
     inResponseToGuid: Option[UUID],
     lines: Seq[String],
+    attribution: Option[String],
     accessToken: AccessToken
   )(implicit app: Application, ec: ExecutionContext): Future[Validation[HaikuRecord]] = {
     val valLines = validate(lines)
@@ -174,7 +175,7 @@ object HaikuService extends Configuration {
           (r.guid, r.lineOne, r.lineTwo, r.lineThree, r.inResponseToId, r.attribution, r.createdByAccount, r.createdByAccessToken)
         }.returning(Haikus.map(_.id))
 
-        val insert = haikus += (UUID.randomUUID, lines(0), lines(1), lines(2), optInResponseToId, None, accessToken.resourceOwner.guid, accessToken.guid)
+        val insert = haikus += (UUID.randomUUID, lines(0), lines(1), lines(2), optInResponseToId, attribution, accessToken.resourceOwner.guid, accessToken.guid)
 
         database.run(insert).flatMap { id =>
           find(ids = Some(Seq(id))).map { result =>

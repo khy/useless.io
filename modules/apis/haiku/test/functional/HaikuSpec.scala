@@ -95,11 +95,17 @@ class HaikuSpec
             "the Dutchmen, too,",
             "kneel before His Lordship—",
             "spring under His reign"
-          )
+          ),
+          "attribution" -> "Matsuo Bashō"
         ))
       }
 
       response.status mustBe CREATED
+      val haiku = response.json.as[Haiku]
+      haiku.lines(0) mustBe "the Dutchmen, too,"
+      haiku.lines(1) mustBe "kneel before His Lordship—"
+      haiku.lines(2) mustBe "spring under His reign"
+      haiku.attribution mustBe Some("Matsuo Bashō")
     }
 
     "respond with a 422 Unprocessable Entity for an authenticated request with an invalid haiku" in {

@@ -6,8 +6,9 @@ import io.useless.account.User
 
 case class ShallowHaiku(
   guid: UUID,
-  inResponseToGuid: Option[UUID], 
+  inResponseToGuid: Option[UUID],
   lines: Seq[String],
+  attribution: Option[String],
   createdAt: DateTime,
   createdBy: User
 )
