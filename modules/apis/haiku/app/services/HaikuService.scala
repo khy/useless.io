@@ -79,6 +79,7 @@ object HaikuService extends Configuration {
 
   def find(
     ids: Option[Seq[Long]] = None,
+    guids: Option[Seq[UUID]] = None,
     userHandles: Option[Seq[String]] = None,
     rawPaginationParams: RawPaginationParams = RawPaginationParams()
   )(implicit app: Application, ec: ExecutionContext): Future[Validation[PaginatedResult[HaikuRecord]]] = {
@@ -97,6 +98,10 @@ object HaikuService extends Configuration {
 
         ids.foreach { ids =>
           query = query.filter { _.id inSet ids }
+        }
+
+        guids.foreach { guids =>
+          query = query.filter { _.guid inSet guids }
         }
 
         optAccounts.foreach { accounts =>

@@ -2,6 +2,7 @@ package controllers.haiku
 
 import java.util.UUID
 import scala.concurrent.Future
+import scala.util.control.Exception._
 import play.api._
 import play.api.Play.current
 import play.api.mvc._
@@ -19,10 +20,16 @@ object HaikuController extends Controller with PaginationController {
 
   def index = Action.async { implicit request =>
     withRawPaginationParams { pagination =>
-      val userHandle = request.getQueryString("user")
+      val guids = request.queryString.get("guid").map { rawGuids =>
+        rawGuids.map { rawGuid =>
+          catching(classOf[IllegalArgumentException]) opt UUID.fromString(rawGuid)
+        }.filter(_.isDefined).map(_.get)
+      }
+      val userHandles = request.queryString.get("user")
 
       HaikuService.find(
-        userHandles = userHandle.map(Seq(_)),
+        guids = guids,
+        userHandles = userHandles,
         rawPaginationParams = pagination
       ).flatMap { result =>
         result.fold(

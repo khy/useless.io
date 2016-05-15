@@ -255,6 +255,23 @@ class HaikuSpec
       (haikus(1) \ "createdBy" \ "handle").as[String] mustBe "khy"
     }
 
+    "return haikus with the specified guids" in {
+      val haiku1 = createHaiku1.json.as[Haiku]
+      val haiku2 = createHaiku2.json.as[Haiku]
+      val haiku3 = createHaiku3.json.as[Haiku]
+
+      val response = await { WS.url(url).withQueryString(
+        "guid" -> haiku1.guid.toString,
+        "guid" -> haiku2.guid.toString
+      ).get() }
+
+      val haikus = response.json.as[Seq[Haiku]]
+      val haikuGuids = haikus.map(_.guid)
+      haikuGuids must contain (haiku1.guid)
+      haikuGuids must contain (haiku2.guid)
+      haikuGuids must not contain (haiku3.guid)
+    }
+
   }
 
   def createHaiku1(implicit url: String, app: Application) = await { WS.url(url).
