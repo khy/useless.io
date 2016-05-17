@@ -36,45 +36,61 @@ object HaikuService extends Configuration {
     defaultOrder = "created_at"
   )
 
-  //TODO: Execution contexts!
-
   def haikuLines(record: HaikuRecord): Seq[String] = {
     Seq(record.lineOne, record.lineTwo, record.lineThree)
   }
 
   def db2model(records: Seq[HaikuRecord])(implicit app: Application, ec: ExecutionContext): Future[Seq[Haiku]] = {
     val inResponseToIds = records.map(_.inResponseToId).filter(_.isDefined).map(_.get)
-    find(ids = Some(inResponseToIds)).flatMap { inResponseToResult1 =>
-      val inResponseToRecords1 = inResponseToResult1.toSuccess.value.items
-      val inResponseToIds = inResponseToRecords1.map(_.inResponseToId).filter(_.isDefined).map(_.get)
-      val futInResponseToRecords2 = find(ids = Some(inResponseToIds)).map { records =>
-        records.toSuccess.value.items
-      }
+    val futInResponseToRecords = database.run(Haikus.filter(_.id inSet inResponseToIds).result)
+    val futResponseRecords = database.run(Haikus.filter(_.inResponseToId inSet records.map(_.id)).result)
 
-      val createdByAccountGuids = (records ++ inResponseToRecords1).map(_.createdByAccount)
-      val futAccounts = getUsers(createdByAccountGuids)
+    for {
+      inResponseToRecords1 <- futInResponseToRecords
+      responseRecords1 <- futResponseRecords
+      haikus <- {
+        val relatedRecords = (inResponseToRecords1 ++ responseRecords1)
 
-      for {
-        inResponseToRecords2 <- futInResponseToRecords2
-        accounts <- futAccounts
-      } yield records.map { record =>
-        def createdBy(record: HaikuRecord) = accounts.find { account =>
-          account.guid == record.createdByAccount
-        }.getOrElse(AnonUser)
+        val inResponseToIds = relatedRecords.map(_.inResponseToId).filter(_.isDefined).map(_.get)
+        val futInResponseToRecords2 = database.run(Haikus.filter(_.id inSet inResponseToIds).result)
+        val futResponseRecords2 = database.run(Haikus.filter(_.inResponseToId inSet relatedRecords.map(_.id)).result)
 
-        val inResponseTo = inResponseToRecords1.filter { inResponseToRecord =>
-          Some(inResponseToRecord.id) == record.inResponseToId
-        }.map { record =>
-          val inResponseToGuid = inResponseToRecords2.filter { inResponseToRecord =>
+        val createdByAccountGuids = (records ++ relatedRecords).map(_.createdByAccount)
+        val futAccounts = getUsers(createdByAccountGuids)
+
+        for {
+          inResponseToRecords2 <- futInResponseToRecords2
+          responseRecords2 <- futResponseRecords2
+          accounts <- futAccounts
+        } yield records.map { record =>
+          def createdBy(record: HaikuRecord) = accounts.find { account =>
+            account.guid == record.createdByAccount
+          }.getOrElse(AnonUser)
+
+          def shallowHaiku(record: HaikuRecord) = {
+            val inResponseToGuid = inResponseToRecords2.filter { inResponseToRecord =>
+              Some(inResponseToRecord.id) == record.inResponseToId
+            }.map(_.guid).headOption
+
+            val responseGuids = responseRecords2.filter { responseRecord =>
+              responseRecord.inResponseToId == Some(record.id)
+            }.map(_.guid)
+
+            ShallowHaiku(record.guid, haikuLines(record), record.attribution, inResponseToGuid, responseGuids, new DateTime(record.createdAt), createdBy(record))
+          }
+
+          val inResponseTo = inResponseToRecords1.filter { inResponseToRecord =>
             Some(inResponseToRecord.id) == record.inResponseToId
-          }.map(_.guid).headOption
+          }.map(shallowHaiku).headOption
 
-          ShallowHaiku(record.guid, inResponseToGuid, haikuLines(record), record.attribution, new DateTime(record.createdAt), createdBy(record))
-        }.headOption
+          val responses = responseRecords1.filter { responseRecord =>
+            responseRecord.inResponseToId == Some(record.id)
+          }.map(shallowHaiku)
 
-        Haiku(record.guid, inResponseTo, haikuLines(record), record.attribution, new DateTime(record.createdAt), createdBy(record))
+          Haiku(record.guid, haikuLines(record), record.attribution, inResponseTo, responses, new DateTime(record.createdAt), createdBy(record))
+        }
       }
-    }
+    } yield haikus
   }
 
   def find(

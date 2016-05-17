@@ -272,6 +272,43 @@ class HaikuSpec
       haikuGuids must not contain (haiku3.guid)
     }
 
+    "return a haiku's responses correctly" in {
+      val haiku = createHaiku1.json.as[Haiku]
+
+      val responseHaiku1 = await { WS.url(url).
+        withHeaders(("Authorization" -> "00000000-0000-0000-0000-000000000000")).
+        post(Json.obj(
+          "inResponseToGuid" -> haiku.guid.toString,
+          "lines" -> Json.arr(
+            "even a horse",
+            "arrests my eyes—on this",
+            "snowy morrow"
+          )
+        ))
+      }.json.as[Haiku]
+
+      val responseHaiku2 = await { WS.url(url).
+        withHeaders(("Authorization" -> "00000000-0000-0000-0000-000000000000")).
+        post(Json.obj(
+          "inResponseToGuid" -> haiku.guid.toString,
+          "lines" -> Json.arr(
+            "another year is gone",
+            "a traveler's shade on my head,",
+            "straw sandals at my feet"
+          )
+        ))
+      }.json.as[Haiku]
+
+      val response = await { WS.url(url).withQueryString(
+        "guid" -> haiku.guid.toString
+      ).get() }
+
+      response.status mustBe OK
+      val responseGuids = response.json.as[Seq[Haiku]].head.responses.map(_.guid)
+      responseGuids.length mustBe 2
+      responseGuids must contain (responseHaiku1.guid)
+      responseGuids must contain (responseHaiku2.guid)
+    }
   }
 
   def createHaiku1(implicit url: String, app: Application) = await { WS.url(url).

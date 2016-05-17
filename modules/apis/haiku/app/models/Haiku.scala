@@ -6,9 +6,10 @@ import io.useless.account.User
 
 case class Haiku(
   guid: UUID,
-  inResponseTo: Option[ShallowHaiku],
   lines: Seq[String],
   attribution: Option[String],
+  inResponseTo: Option[ShallowHaiku],
+  responses: Seq[ShallowHaiku],
   createdAt: DateTime,
   createdBy: User
 )
