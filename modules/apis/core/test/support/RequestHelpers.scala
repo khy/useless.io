@@ -32,6 +32,19 @@ trait RequestHelpers {
     await { request.post(body) }
   }
 
+  def put(url: String, auth: UUID, body: JsValue)(implicit app: Application): WSResponse =
+    put(url, Some(auth.toString), body)
+
+  def put(url: String, auth: Option[String], body: JsValue)(implicit app: Application): WSResponse = {
+    var request = WS.url(url)
+
+    auth.foreach { auth =>
+      request = request.withHeaders(("Authorization" -> auth))
+    }
+
+    await { request.put(body) }
+  }
+
   def get(url: String, auth: UUID, query: (String, String)*)(implicit app: Application): WSResponse =
     get(url, auth.toString, query:_*)
 

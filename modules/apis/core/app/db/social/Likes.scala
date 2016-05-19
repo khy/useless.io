@@ -19,7 +19,7 @@ case class LikeRecord(
 )
 
 class LikesTable(tag: Tag)
-  extends Table[LikeRecord](tag, "likes")
+  extends Table[LikeRecord](tag, Some("social"), "likes")
 {
   def id = column[Long]("id")
   def guid = column[UUID]("guid")

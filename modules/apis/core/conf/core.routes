@@ -10,4 +10,6 @@ POST    /apis                               controllers.core.account.ApiControll
 POST    /apps                               controllers.core.account.AppController.create()
 POST    /users                              controllers.core.account.UserController.create()
 
+PUT     /social/likes/:api/:type/:id        controllers.core.social.LikeController.create(api: String, type: String, id: String)
+
 GET     /                                   controllers.core.MainController.index
