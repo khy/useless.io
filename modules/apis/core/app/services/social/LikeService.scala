@@ -1,6 +1,7 @@
 package services.core.social
 
-import java.util.UUID
+import java.util.{Date, UUID}
+import java.sql
 import scala.concurrent.{ExecutionContext, Future}
 import play.api.Configuration
 import org.joda.time.DateTime
@@ -52,27 +53,125 @@ class LikeService(
     }
   }
 
+  def find(
+    resourceApi: Option[String],
+    resourceType: Option[String],
+    resourceId: Option[String],
+    rawPaginationParams: RawPaginationParams = RawPaginationParams()
+  )(implicit ec: ExecutionContext): Future[Validation[PaginatedResult[LikeRecord]]] = {
+    val valPaginationParams = PaginationParams.build(rawPaginationParams)
+
+    ValidationUtil.mapFuture(valPaginationParams) { paginationParams =>
+      var query = Likes.filter(_.deletedAt.isEmpty)
+
+      resourceApi.foreach { resourceApi =>
+        query = query.filter(_.resourceApi === resourceApi)
+      }
+
+      resourceType.foreach { resourceType =>
+        query = query.filter(_.resourceType === resourceType)
+      }
+
+      resourceId.foreach { resourceId =>
+        query = query.filter(_.resourceId === resourceId)
+      }
+
+      var pagedQuery = query.sortBy(_.createdAt.desc)
+
+      pagedQuery = paginationParams match {
+        case params: OffsetBasedPaginationParams => pagedQuery.drop(params.offset)
+        case params: PrecedenceBasedPaginationParams => params.after.map { after =>
+          pagedQuery.filter {
+            _.createdAt < Likes.filter(_.guid === params.after).map(_.createdAt).min
+          }
+        }.getOrElse { pagedQuery }
+      }
+
+      pagedQuery = pagedQuery.take(paginationParams.limit)
+
+      val futCount = database.run(query.length.result)
+      val futLikeRecords = database.run(pagedQuery.result)
+
+      for {
+        count <- futCount
+        likeRecords <- futLikeRecords
+      } yield PaginatedResult.build(likeRecords, paginationParams, Some(count))
+    }
+  }
+
   def create(
     resourceApi: String,
     resourceType: String,
     resourceId: String,
     accessToken: AccessToken
   )(implicit ec: ExecutionContext): Future[Validation[LikeRecord]] = {
-    val likes = Likes.map { r =>
-      (r.guid, r.resourceApi, r.resourceType, r.resourceId, r.createdByAccount, r.createdByAccessToken)
-    }.returning(Likes.map(_.id))
+    getLike(resourceApi, resourceType, resourceId, accessToken).flatMap { optExistingLike =>
+      optExistingLike.map { existingLike =>
+        Future.successful(Validation.Success(existingLike))
+      }.getOrElse {
+        val likes = Likes.map { r =>
+          (r.guid, r.resourceApi, r.resourceType, r.resourceId, r.createdByAccount, r.createdByAccessToken)
+        }.returning(Likes.map(_.id))
 
-    val insert = likes += (UUID.randomUUID, resourceApi, resourceType, resourceId, accessToken.resourceOwner.guid, accessToken.guid)
+        val insert = likes += (UUID.randomUUID, resourceApi, resourceType, resourceId, accessToken.resourceOwner.guid, accessToken.guid)
 
-    database.run(insert).flatMap { id =>
-      database.run(Likes.filter(_.id === id).result).map { likes =>
-        likes.headOption.map { like =>
-          Validation.Success(like)
-        }.getOrElse {
-          throw new RuntimeException("Could not find like " + id.toString)
+        database.run(insert).flatMap { id =>
+          database.run(Likes.filter(_.id === id).result).map { likes =>
+            likes.headOption.map { like =>
+              Validation.Success(like)
+            }.getOrElse {
+              throw new RuntimeException("Could not find like " + id.toString)
+            }
+          }
         }
       }
     }
+  }
+
+  def delete(
+    resourceApi: String,
+    resourceType: String,
+    resourceId: String,
+    accessToken: AccessToken
+  )(implicit ec: ExecutionContext): Future[Option[LikeRecord]] = {
+    getLike(resourceApi, resourceType, resourceId, accessToken).flatMap { optLike =>
+      optLike.map { like =>
+        val now = new sql.Timestamp((new Date).getTime)
+
+        val query = Likes.filter { like =>
+          like.id === like.id &&
+          like.deletedAt.isEmpty
+        }.map { like =>
+          (like.deletedAt, like.deletedByAccount, like.deletedByAccessToken)
+        }.update((Some(now), Some(accessToken.resourceOwner.guid), Some(accessToken.guid)))
+
+        database.run(query).map { result =>
+          if (result > 0) {
+            Some(like)
+          } else {
+            throw new RuntimeException("Could not delete like " + like.id.toString)
+          }
+        }
+      }.getOrElse {
+        Future.successful(None)
+      }
+    }
+  }
+
+  private def getLike(
+    resourceApi: String,
+    resourceType: String,
+    resourceId: String,
+    accessToken: AccessToken
+  )(implicit ec: ExecutionContext): Future[Option[LikeRecord]] = {
+    val existingQuery = Likes.filter { r =>
+      r.resourceApi === resourceApi &&
+      r.resourceType === resourceType &&
+      r.resourceId === resourceId &&
+      r.createdByAccount === accessToken.resourceOwner.guid
+    }
+
+    database.run(existingQuery.result).map(_.headOption)
   }
 
 }

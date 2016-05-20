@@ -18,3 +18,7 @@ CREATE INDEX social_likes_guid_idx ON social.likes (guid);
 CREATE INDEX social_likes_resource_api_idx ON social.likes (resource_api);
 CREATE INDEX social_likes_resource_type_idx ON social.likes (resource_type);
 CREATE INDEX social_likes_resource_id_idx ON social.likes (resource_id);
+
+CREATE UNIQUE INDEX social_likes_resource_user_unq_idx
+  ON social.likes (resource_api, resource_type, resource_id, created_by_account)
+  WHERE deleted_at IS NULL;

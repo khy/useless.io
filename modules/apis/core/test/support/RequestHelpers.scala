@@ -65,4 +65,17 @@ trait RequestHelpers {
     await { request.get }
   }
 
+  def delete(url: String, auth: UUID)(implicit app: Application): WSResponse =
+    delete(url, Some(auth.toString))
+
+  def delete(url: String, auth: Option[String])(implicit app: Application): WSResponse = {
+    var request = WS.url(url)
+
+    auth.foreach { auth =>
+      request = request.withHeaders(("Authorization" -> auth))
+    }
+
+    await { request.delete }
+  }
+
 }
