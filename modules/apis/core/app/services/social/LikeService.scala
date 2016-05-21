@@ -54,9 +54,10 @@ class LikeService(
   }
 
   def find(
-    resourceApi: Option[String],
-    resourceType: Option[String],
-    resourceId: Option[String],
+    resourceApis: Option[Seq[String]],
+    resourceTypes: Option[Seq[String]],
+    resourceIds: Option[Seq[String]],
+    accountGuids: Option[Seq[UUID]],
     rawPaginationParams: RawPaginationParams = RawPaginationParams()
   )(implicit ec: ExecutionContext): Future[Validation[PaginatedResult[LikeRecord]]] = {
     val valPaginationParams = PaginationParams.build(rawPaginationParams)
@@ -64,16 +65,20 @@ class LikeService(
     ValidationUtil.mapFuture(valPaginationParams) { paginationParams =>
       var query = Likes.filter(_.deletedAt.isEmpty)
 
-      resourceApi.foreach { resourceApi =>
-        query = query.filter(_.resourceApi === resourceApi)
+      resourceApis.foreach { resourceApis =>
+        query = query.filter(_.resourceApi inSet resourceApis)
       }
 
-      resourceType.foreach { resourceType =>
-        query = query.filter(_.resourceType === resourceType)
+      resourceTypes.foreach { resourceTypes =>
+        query = query.filter(_.resourceType inSet resourceTypes)
       }
 
-      resourceId.foreach { resourceId =>
-        query = query.filter(_.resourceId === resourceId)
+      resourceIds.foreach { resourceIds =>
+        query = query.filter(_.resourceId inSet resourceIds)
+      }
+
+      accountGuids.foreach { accountGuids =>
+        query = query.filter(_.createdByAccount inSet accountGuids)
       }
 
       var pagedQuery = query.sortBy(_.createdAt.desc)

@@ -10,6 +10,7 @@ import play.api.libs.json.Json
 import play.api.libs.concurrent.Execution.Implicits._
 import io.useless.play.json.MessageJson.format
 import io.useless.play.pagination.PaginationController
+import io.useless.play.http.LooseQueryStringUtil.RichQueryStringRequest
 
 import controllers.core.auth.Auth
 import models.core.social.JsonImplicits._
@@ -19,39 +20,23 @@ object LikeController extends Controller with PaginationController {
 
   val likeService = LikeService.instance(current.configuration)
 
-  case class IndexQuery(
-    resourceApi: Option[String],
-    resourceType: Option[String],
-    resourceId: Option[String]
-  )
-
-  val indexQueryForm = Form(
-    mapping(
-      "resourceApi" -> optional(text),
-      "resourceType" -> optional(text),
-      "resourceId" -> optional(text)
-    )(IndexQuery.apply)(IndexQuery.unapply)
-  )
-
   def index = Auth.async { implicit request =>
-    indexQueryForm.bindFromRequest.fold(
-      formWithErrors => Future.successful(Conflict(formWithErrors.errorsAsJson)),
-      indexQuery => withRawPaginationParams { pagination =>
-        likeService.find(
-          indexQuery.resourceApi,
-          indexQuery.resourceType,
-          indexQuery.resourceId,
-          pagination
-        ).flatMap { result =>
-          result.fold(
-            errors => Future.successful(Conflict(Json.toJson(errors))),
-            result => likeService.db2model(result.items).map { likeModels =>
-              paginatedResult(routes.LikeController.index(), result.copy(items = likeModels))
-            }
-          )
-        }
+    withRawPaginationParams { pagination =>
+      likeService.find(
+        request.richQueryString.seqString("resourceApi"),
+        request.richQueryString.seqString("resourceType"),
+        request.richQueryString.seqString("resourceId"),
+        request.richQueryString.seqUuid("accountGuid"),
+        pagination
+      ).flatMap { result =>
+        result.fold(
+          errors => Future.successful(Conflict(Json.toJson(errors))),
+          result => likeService.db2model(result.items).map { likeModels =>
+            paginatedResult(routes.LikeController.index(), result.copy(items = likeModels))
+          }
+        )
       }
-    )
+    }
   }
 
   def create(

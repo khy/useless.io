@@ -54,6 +54,39 @@ class LikeSpec
       likes.map(_.guid) must contain theSameElementsAs Seq(like1.guid, like2.guid)
     }
 
+    "support specifying multiples of an individual parameter" in {
+      val like1 = createLike()
+      val like2 = createLike(resourceId = "456")
+
+      val response = get(collectionUrl, auth = user.accessTokens(0).guid,
+        "resourceApi" -> "beer",
+        "resourceType" -> "bottles",
+        "resourceId" -> "123",
+        "resourceId" -> "456"
+      )
+      response.status mustBe OK
+
+      val likes = response.json.as[Seq[Like]]
+      likes.map(_.guid) must contain theSameElementsAs Seq(like1.guid, like2.guid)
+    }
+
+    "support specifying an account guid" in {
+      val user = createUser("dave@useless.io", "dave", None)
+      val like1 = createLike()
+      val like2 = createLike(user = user)
+
+      val response = get(collectionUrl, auth = user.accessTokens(0).guid,
+        "resourceApi" -> "beer",
+        "resourceType" -> "bottles",
+        "resourceId" -> "123",
+        "accountGuid" -> user.guid.toString
+      )
+      response.status mustBe OK
+
+      val likes = response.json.as[Seq[Like]]
+      likes.map(_.guid) must contain theSameElementsAs Seq(like2.guid)
+    }
+
     "support pagination" in {
       val like1 = createLike()
       val like2 = createLike(user = createUser("dave@useless.io", "dave", None))
