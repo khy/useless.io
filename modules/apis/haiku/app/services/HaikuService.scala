@@ -27,13 +27,14 @@ object HaikuService extends Configuration {
     AccountClient.instance(authGuid)
   }
 
-  private val paginationConfig = PaginationConfig(
+  private val paginationConfig = PaginationConfig[UUID](
     defaultStyle = PrecedenceBasedPagination,
     maxLimit = 100,
     defaultLimit = 20,
     defaultOffset = 0,
     validOrders = Seq("created_at"),
-    defaultOrder = "created_at"
+    defaultOrder = "created_at",
+    afterParser = Validator.uuid
   )
 
   def haikuLines(record: HaikuRecord): Seq[String] = {
@@ -127,10 +128,10 @@ object HaikuService extends Configuration {
         var pagedQuery = query.sortBy(_.createdAt.desc)
 
         pagedQuery = paginationParams match {
-          case params: OffsetBasedPaginationParams => pagedQuery.drop(params.offset)
-          case params: PrecedenceBasedPaginationParams => params.after.map { after =>
+          case params: OffsetBasedPaginationParams[_] => pagedQuery.drop(params.offset)
+          case params: PrecedenceBasedPaginationParams[UUID] => params.pfter.map { after =>
             pagedQuery.filter {
-              _.createdAt < Haikus.filter(_.guid === params.after).map(_.createdAt).min
+              _.createdAt < Haikus.filter(_.guid === after).map(_.createdAt).min
             }
           }.getOrElse { pagedQuery }
         }

@@ -1,6 +1,11 @@
 package io.useless.validation
 
+import java.util.UUID
 import scala.util.control.Exception._
+import scala.util.{Success, Failure}
+
+import io.useless.Message
+import io.useless.util.Uuid
 
 import io.useless.Message
 
@@ -16,6 +21,13 @@ class Validator(prefix: String) {
         val message = Message(messageKey("nonInt"), "specified" -> raw)
         Validation.Failure(Seq(Errors(Seq(message), key)))
       }
+  }
+
+  def uuid(raw: String): Seq[Message] = {
+    Uuid.parseUuid(raw) match {
+      case Success(uuid) => Seq.empty
+      case Failure(_) => Seq(Message(messageKey("nonUuid"), "specified" -> raw))
+    }
   }
 
   private def messageKey(suffix: String) = prefix + "." + suffix

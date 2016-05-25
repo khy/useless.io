@@ -20,22 +20,22 @@ object PaginatedResult {
 
   def build[T <: { def guid: UUID }](
     items: Seq[T],
-    params: PaginationParams,
+    params: PaginationParams[T],
     totalItems: Option[Int] = None,
     hasNext: Boolean = true
   ): PaginatedResult[T] = params match {
-    case offsetParams: OffsetBasedPaginationParams => {
+    case offsetParams: OffsetBasedPaginationParams[T] => {
       PaginationParams.calculateStyle(params.raw) match {
         case OffsetBasedPagination => offsetBased(items, offsetParams, totalItems, hasNext)
         case _ => pageBased(items, offsetParams, totalItems, hasNext)
       }
     }
 
-    case precedenceParams: PrecedenceBasedPaginationParams => {
+    case precedenceParams: PrecedenceBasedPaginationParams[T] => {
       PaginatedResult(
         items = items,
         next = Some(precedenceParams.raw.copy(
-          after = items.lastOption.map(_.guid).orElse(params.raw.after),
+          after = items.lastOption.map(_.guid.toString).orElse(params.raw.after),
           style = None
         ))
       )
@@ -44,7 +44,7 @@ object PaginatedResult {
 
   def pageBased[T](
     items: Seq[T],
-    params: OffsetBasedPaginationParams,
+    params: OffsetBasedPaginationParams[T],
     totalItems: Option[Int] = None,
     hasNext: Boolean = true
   ) = {
@@ -77,7 +77,7 @@ object PaginatedResult {
 
   def offsetBased[T](
     items: Seq[T],
-    params: OffsetBasedPaginationParams,
+    params: OffsetBasedPaginationParams[T],
     totalItems: Option[Int] = None,
     hasNext: Boolean = true
   ) = {

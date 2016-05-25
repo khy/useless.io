@@ -3,7 +3,6 @@ package io.useless.play.pagination
 import java.util.UUID
 import scala.util.{ Try, Success, Failure }
 import play.api.mvc.Request
-import io.useless.util.Uuid
 
 import io.useless.Message
 import io.useless.http.UrlUtil
@@ -40,10 +39,6 @@ class PrefixedRawPaginationParamsBinding(
       stringParam(key).map { value => Try(value.toInt) }
     }
 
-    def guidParam(key: String): Option[Try[UUID]] = {
-      stringParam(key).map(Uuid.parseUuid(_))
-    }
-
   }
 
   def bind(
@@ -75,16 +70,9 @@ class PrefixedRawPaginationParamsBinding(
       }
     }.getOrElse(Validation.success(None))
 
-    val after = request.guidParam("after").map { result =>
-      result match {
-        case Success(value) => Validation.success(Some(value))
-        case Failure(_) => Validation.failure("pagination.after", "useless.error.non-uuid",
-          "specified" -> request.stringParam("after").get)
-      }
-    }.getOrElse(Validation.success(None))
-
-    (style ++ limit ++ offset ++ page ++ after).map { case ((((style, limit), offset), page), after) =>
+    (style ++ limit ++ offset ++ page).map { case (((style, limit), offset), page) =>
       val order = request.stringParam("order")
+      val after = request.stringParam("after")
       RawPaginationParams(style, limit, order, offset, page, after)
     }
   }
