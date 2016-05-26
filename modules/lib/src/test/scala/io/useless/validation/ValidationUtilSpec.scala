@@ -6,6 +6,8 @@ import org.scalatest.MustMatchers
 import play.api.libs.concurrent.Execution.Implicits._
 import play.api.test.Helpers._
 
+import ValidationTestHelper._
+
 class ValidationUtilSpec
   extends WordSpec
   with MustMatchers
@@ -26,7 +28,7 @@ class ValidationUtilSpec
       val result = ValidationUtil.mapFuture(validation) { case (num) =>
         Future.successful(num.toString)
       }
-      await { result }.toFailure.errors("resourceKey").head.key mustBe "is.invalid"
+      await { result }.toFailure.errors.getMessages("resourceKey").head.key mustBe "is.invalid"
     }
 
   }
@@ -46,7 +48,7 @@ class ValidationUtilSpec
       val result = ValidationUtil.flatMapFuture(validation) { case (num) =>
         Future.successful(Validation.failure("resourceKey", "is.invalid"))
       }
-      await { result }.toFailure.errors("resourceKey").head.key mustBe "is.invalid"
+      await { result }.toFailure.errors.getMessages("resourceKey").head.key mustBe "is.invalid"
     }
 
     "return a Future of the Validation itself, if it is a Validation.Failure" in {
@@ -54,7 +56,7 @@ class ValidationUtilSpec
       val result = ValidationUtil.flatMapFuture(validation) { case (num) =>
         Future.successful(Validation.success(num.toString))
       }
-      await { result }.toFailure.errors("resourceKey").head.key mustBe "is.invalid"
+      await { result }.toFailure.errors.getMessages("resourceKey").head.key mustBe "is.invalid"
     }
 
   }

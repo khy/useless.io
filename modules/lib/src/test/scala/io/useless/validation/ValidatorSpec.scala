@@ -3,6 +3,8 @@ package io.useless.validation
 import org.scalatest.WordSpec
 import org.scalatest.MustMatchers
 
+import ValidationTestHelper._
+
 class ValidatorSpec
   extends WordSpec
   with MustMatchers
@@ -27,14 +29,14 @@ class ValidatorSpec
 
     "return a Validation.Failure if the value is non-numeric" in {
       val validation = Validator.int("key", "non-numeric")
-      val error = validation.toFailure.errors("key").head
+      val error = validation.toFailure.errors.getMessages("key").head
       error.key mustBe "useless.error.nonInt"
       error.details("specified") mustBe "non-numeric"
     }
 
     "return a Validation.Failure if the value is numeric, but has a fractional part" in {
       val validation = Validator.int("key", "1.5")
-      val error = validation.toFailure.errors("key").head
+      val error = validation.toFailure.errors.getMessages("key").head
       error.key mustBe "useless.error.nonInt"
       error.details("specified") mustBe "1.5"
     }

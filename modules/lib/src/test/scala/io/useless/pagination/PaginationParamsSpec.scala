@@ -3,6 +3,8 @@ package io.useless.pagination
 import java.util.UUID
 import org.scalatest._
 
+import io.useless.validation.ValidationTestHelper._
+
 class PaginationParamsSpec
   extends WordSpec
   with MustMatchers
@@ -18,7 +20,7 @@ class PaginationParamsSpec
     "fail if the limit is negative" in {
       val raw = RawPaginationParams(limit = Some(-1))
       val errors = PaginationParams.build(raw).toFailure.errors
-      val limitError = errors("pagination.limit").head
+      val limitError = errors.getMessages("pagination.limit").head
       limitError.key mustBe ("useless.error.non-positive")
       limitError.details("specified") mustBe "-1"
     }
@@ -26,7 +28,7 @@ class PaginationParamsSpec
     "fail if the limit is zero" in {
       val raw = RawPaginationParams(limit = Some(0))
       val errors = PaginationParams.build(raw).toFailure.errors
-      val limitError = errors("pagination.limit").head
+      val limitError = errors.getMessages("pagination.limit").head
       limitError.key mustBe ("useless.error.non-positive")
       limitError.details("specified") mustBe "0"
     }
@@ -34,7 +36,7 @@ class PaginationParamsSpec
     "fail if the limit is above the maximum limit" in {
       val raw = RawPaginationParams(limit = Some(101))
       val errors = PaginationParams.build(raw).toFailure.errors
-      val limitError = errors("pagination.limit").head
+      val limitError = errors.getMessages("pagination.limit").head
       limitError.key mustBe ("useless.error.exceeds-maximum")
       limitError.details("specified") mustBe "101"
       limitError.details("maximum") mustBe "100"
@@ -66,7 +68,7 @@ class PaginationParamsSpec
       )
       val raw = RawPaginationParams(order = Some("votes"))
       val errors = PaginationParams.build(raw, config).toFailure.errors
-      val orderError = errors("pagination.order").head
+      val orderError = errors.getMessages("pagination.order").head
       orderError.key mustBe ("useless.error.invalid-value")
       orderError.details("specified") mustBe ("votes")
       orderError.details("valid") mustBe ("'created_at', 'rank'")
@@ -87,7 +89,7 @@ class PaginationParamsSpec
     "fail if the page is negative" in {
       val raw = RawPaginationParams(page = Some(-1))
       val errors = PaginationParams.build(raw).toFailure.errors
-      val pageError = errors("pagination.page").head
+      val pageError = errors.getMessages("pagination.page").head
       pageError.key mustBe ("useless.error.non-positive")
       pageError.details("specified") mustBe ("-1")
     }
@@ -95,7 +97,7 @@ class PaginationParamsSpec
     "fail if the page is zero" in {
       val raw = RawPaginationParams(page = Some(0))
       val errors = PaginationParams.build(raw).toFailure.errors
-      val pageError = errors("pagination.page").head
+      val pageError = errors.getMessages("pagination.page").head
       pageError.key mustBe ("useless.error.non-positive")
       pageError.details("specified") mustBe ("0")
     }
@@ -109,7 +111,7 @@ class PaginationParamsSpec
     "fail if the offset is negative" in {
       val raw = RawPaginationParams(offset = Some(-1))
       val errors = PaginationParams.build(raw).toFailure.errors
-      val offsetError = errors("pagination.offset").head
+      val offsetError = errors.getMessages("pagination.offset").head
       offsetError.key mustBe ("useless.error.negative")
       offsetError.details("specified") mustBe ("-1")
     }

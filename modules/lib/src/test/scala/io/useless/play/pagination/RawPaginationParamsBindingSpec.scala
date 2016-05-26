@@ -4,6 +4,8 @@ import java.util.UUID
 import org.scalatest._
 import play.api.test.FakeRequest
 
+import io.useless.validation.ValidationTestHelper._
+
 class RawPaginationParamsBindingSpec
   extends WordSpec
   with MustMatchers
@@ -19,7 +21,7 @@ class RawPaginationParamsBindingSpec
     "fail if 'p.limit' is specified, but non-numeric" in {
       val request = FakeRequest("GET", "/notes?p.limit=invalid")
       val errors = RawPaginationParamsBinding.default.bind(request).toFailure.errors
-      val limitError = errors("pagination.limit").head
+      val limitError = errors.getMessages("pagination.limit").head
       limitError.key mustBe ("useless.error.nonInt")
       limitError.details("specified") mustBe ("invalid")
     }
@@ -37,7 +39,7 @@ class RawPaginationParamsBindingSpec
     "fail if 'p.offset' is specified, but non-numeric" in {
       val request = FakeRequest("GET", "/notes?p.offset=invalid")
       val errors = RawPaginationParamsBinding.default.bind(request).toFailure.errors
-      val offsetError = errors("pagination.offset").head
+      val offsetError = errors.getMessages("pagination.offset").head
       offsetError.key mustBe ("useless.error.nonInt")
       offsetError.details("specified") mustBe("invalid")
     }
@@ -50,7 +52,7 @@ class RawPaginationParamsBindingSpec
     "fail if 'p.page' is specified, but non-numeric" in {
       val request = FakeRequest("GET", "/notes?p.page=invalid")
       val errors = RawPaginationParamsBinding.default.bind(request).toFailure.errors
-      val pageErrors = errors("pagination.page").head
+      val pageErrors = errors.getMessages("pagination.page").head
       pageErrors.key mustBe ("useless.error.non-numeric")
       pageErrors.details("specified") mustBe("invalid")
     }
@@ -64,7 +66,7 @@ class RawPaginationParamsBindingSpec
     "fail if 'p.after' is specified, but is not a valid UUID" in {
       val request = FakeRequest("GET", "/notes?p.after=invalid")
       val errors = RawPaginationParamsBinding.default.bind(request).toFailure.errors
-      val afterError = errors("pagination.after").head
+      val afterError = errors.getMessages("pagination.after").head
       afterError.key mustBe ("useless.error.non-uuid")
       afterError.details("specified") mustBe("invalid")
     }

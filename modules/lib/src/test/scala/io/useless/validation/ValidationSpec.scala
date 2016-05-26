@@ -4,6 +4,8 @@ import org.scalatest.WordSpec
 import org.scalatest.MustMatchers
 import io.useless.Message
 
+import ValidationTestHelper._
+
 class ValidationSpec
   extends WordSpec
   with MustMatchers
@@ -23,25 +25,25 @@ class ValidationSpec
     "return a Validation.Failure with the specified errors, using the low-level signature" in {
       val validation = Validation.failure("resourceKey", "is.invalid", "id" -> "1")
       val errors = validation.toFailure.errors
-      errors("resourceKey").head.key mustBe "is.invalid"
-      errors("resourceKey").head.details("id") mustBe "1"
+      errors.getMessages("resourceKey").head.key mustBe "is.invalid"
+      errors.getMessages("resourceKey").head.details("id") mustBe "1"
     }
 
     "return a Validation.Failure with the specified errors, using Message signature" in {
       val message = Message("is.invalid", "id" -> "1")
       val validation = Validation.failure("resourceKey", message)
       val errors = validation.toFailure.errors
-      errors("resourceKey").head.key mustBe "is.invalid"
-      errors("resourceKey").head.details("id") mustBe "1"
+      errors.getMessages("resourceKey").head.key mustBe "is.invalid"
+      errors.getMessages("resourceKey").head.details("id") mustBe "1"
     }
 
     "return a Validation.Failure with the specified errors, using Error signature" in {
       val message = Message("is.invalid", "id" -> "1")
-      val error = Map("resourceKey" -> Seq(message))
-      val validation = Validation.failure(error)
+      val _errors = Errors.attribute("resourceKey", Seq(message))
+      val validation = Validation.failure(Seq(_errors))
       val errors = validation.toFailure.errors
-      errors("resourceKey").head.key mustBe "is.invalid"
-      errors("resourceKey").head.details("id") mustBe "1"
+      errors.getMessages("resourceKey").head.key mustBe "is.invalid"
+      errors.getMessages("resourceKey").head.details("id") mustBe "1"
     }
 
   }
@@ -64,7 +66,7 @@ class ValidationSpec
 
     "return a Validation.Failure if the validation is a Validation.Failure" in {
       val validation = Validation.failure("resourceKey", "is.invalid")
-      validation.toFailure.errors("resourceKey").head.key mustBe "is.invalid"
+      validation.toFailure.errors.getMessages("resourceKey").head.key mustBe "is.invalid"
     }
 
     "throw a NoSuchElementException if the validation is a Validation.Success" in {
@@ -85,7 +87,7 @@ class ValidationSpec
     "return the specified validation if it is a Validation.Failure" in {
       val validation = Validation.failure[Long]("resourceKey", "is.invalid")
       val _validation = validation.map(_.toString)
-      _validation.toFailure.errors("resourceKey").head.key mustBe "is.invalid"
+      _validation.toFailure.errors.getMessages("resourceKey").head.key mustBe "is.invalid"
     }
 
   }
@@ -101,19 +103,19 @@ class ValidationSpec
     "return Validation.Failure if the validation is Validation.Success, but the function returns Validation.Failure" in {
       val validation = Validation.success(1)
       val _validation = validation.flatMap { i => Validation.failure[Int]("resourceKey", "is.invalid") }
-      _validation.toFailure.errors("resourceKey").head.key mustBe "is.invalid"
+      _validation.toFailure.errors.getMessages("resourceKey").head.key mustBe "is.invalid"
     }
 
     "return Validation.Failure if the validation and the function result are Validation.Failure" in {
       val validation = Validation.failure[Int]("resourceKey", "is.invalid")
       val _validation = validation.flatMap { i => Validation.failure[Int]("resourceKey", "is.also.invalid") }
-      _validation.toFailure.errors("resourceKey").head.key mustBe "is.invalid"
+      _validation.toFailure.errors.getMessages("resourceKey").head.key mustBe "is.invalid"
     }
 
     "return Validation.Failure if the validation is Validation.Failure, but the function returns Validation.Success" in {
       val validation = Validation.failure[Int]("resourceKey", "is.invalid")
       val _validation = validation.flatMap { i => Validation.success(i.toString) }
-      _validation.toFailure.errors("resourceKey").head.key mustBe "is.invalid"
+      _validation.toFailure.errors.getMessages("resourceKey").head.key mustBe "is.invalid"
     }
 
   }
@@ -166,7 +168,7 @@ class ValidationSpec
       }
 
       val errors = combined.toFailure.errors
-      errors("resourceKey").head.key mustBe "is.invalid"
+      errors.getMessages("resourceKey").head.key mustBe "is.invalid"
     }
 
     "return a Validation.Failure that combines the errors of any specified Validation.Failure" in {
@@ -179,11 +181,12 @@ class ValidationSpec
       }
 
       val errors = combined.toFailure.errors
-      errors("resourceKey")(0).key mustBe "is.invalid"
-      errors("resourceKey")(1).key mustBe "is.just.wrong"
-      errors("resourceKey")(1).details mustBe Map("id" -> "1")
-      errors("otherResourceKey")(0).key mustBe "is.also.wrong"
-      errors("otherResourceKey")(0).details mustBe Map("id" -> "2")
+      println(errors)
+      errors.getMessages("resourceKey")(0).key mustBe "is.invalid"
+      errors.getMessages("resourceKey")(1).key mustBe "is.just.wrong"
+      errors.getMessages("resourceKey")(1).details mustBe Map("id" -> "1")
+      errors.getMessages("otherResourceKey")(0).key mustBe "is.also.wrong"
+      errors.getMessages("otherResourceKey")(0).details mustBe Map("id" -> "2")
     }
 
   }

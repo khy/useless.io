@@ -5,7 +5,7 @@ import io.useless.Message
 object Validation {
 
   final case class Success[+T](value: T) extends Validation[T]
-  final case class Failure[+T](errors: Errors) extends Validation[T]
+  final case class Failure[+T](errors: Seq[Errors]) extends Validation[T]
 
   def success[T](value: T) = {
     new Success(value)
@@ -16,15 +16,11 @@ object Validation {
   }
 
   def failure[T](key: String, message: Message): Validation[T] = {
-    val errors = Errors.Composite(
-      principal = Errors.scalar(),
-      components = Map(key -> Errors.scalar(message))
-    )
-    failure(errors)
+    failure(Seq(Errors.attribute(key, Seq(message))))
   }
 
-  def failure[T](errors: Errors): Validation[T] = {
-    new Failure[T](errors)
+  def failure[T](errors: Seq[Errors]): Validation[T] = {
+    Failure[T](errors)
   }
 
 }
@@ -64,7 +60,7 @@ sealed trait Validation[+T] {
   }
 
   def fold[S](
-    onFailure: Errors => S,
+    onFailure: Seq[Errors] => S,
     onSuccess: T => S
   ): S = this match {
     case Failure(errors) => onFailure(errors)
