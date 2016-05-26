@@ -2,16 +2,19 @@ package io.useless.validation
 
 import scala.util.control.Exception._
 
+import io.useless.Message
+
 object Validator extends Validator("useless.error")
 
 class Validator(prefix: String) {
 
-  def int(key: String, raw: String): Validation[Int] = {
+  def int(raw: String, key: Option[String] = None): Validation[Int] = {
     catching(classOf[NumberFormatException]).
       opt { raw.toInt }.
-      map { Validation.success }.
+      map { Validation.Success.apply }.
       getOrElse {
-        Validation.failure(key, messageKey("nonInt"), "specified" -> raw)
+        val message = Message(messageKey("nonInt"), "specified" -> raw)
+        Validation.Failure(Seq(Errors(Seq(message), key)))
       }
   }
 

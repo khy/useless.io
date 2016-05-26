@@ -13,29 +13,29 @@ class ValidatorSpec
   "Validator.int" must {
 
     "return a Validation.Success if the value is an integer" in {
-      val validation = Validator.int("key", "1")
+      val validation = Validator.int("1", Some("key"))
       validation.toSuccess.value mustBe 1
     }
 
     "return a Validation.Success if the value is zero" in {
-      val validation = Validator.int("key", "0")
+      val validation = Validator.int("0", Some("key"))
       validation.toSuccess.value mustBe 0
     }
 
     "return a Validation.Success if the value is a negative integer" in {
-      val validation = Validator.int("key", "-1")
+      val validation = Validator.int("-1", Some("key"))
       validation.toSuccess.value mustBe -1
     }
 
     "return a Validation.Failure if the value is non-numeric" in {
-      val validation = Validator.int("key", "non-numeric")
+      val validation = Validator.int("non-numeric", Some("key"))
       val error = validation.toFailure.errors.getMessages("key").head
       error.key mustBe "useless.error.nonInt"
       error.details("specified") mustBe "non-numeric"
     }
 
     "return a Validation.Failure if the value is numeric, but has a fractional part" in {
-      val validation = Validator.int("key", "1.5")
+      val validation = Validator.int("1.5", Some("key"))
       val error = validation.toFailure.errors.getMessages("key").head
       error.key mustBe "useless.error.nonInt"
       error.details("specified") mustBe "1.5"

@@ -60,11 +60,11 @@ class PrefixedRawPaginationParamsBinding(
     }.getOrElse(Validation.success(None))
 
     val limit = request.stringParam("limit").map { limit =>
-      Validator.int("pagination.limit", limit).map(Some(_))
+      Validator.int(limit, Some("pagination.limit")).map(Some(_))
     }.getOrElse(Validation.success(None))
 
     val offset = request.stringParam("offset").map { offset =>
-      Validator.int("pagination.offset", offset).map(Some(_))
+      Validator.int(offset, Some("pagination.offset")).map(Some(_))
     }.getOrElse(Validation.success(None))
 
     val page = request.intParam("page").map { result =>
