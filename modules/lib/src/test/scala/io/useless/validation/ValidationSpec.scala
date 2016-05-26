@@ -181,7 +181,6 @@ class ValidationSpec
       }
 
       val errors = combined.toFailure.errors
-      println(errors)
       errors.getMessages("resourceKey")(0).key mustBe "is.invalid"
       errors.getMessages("resourceKey")(1).key mustBe "is.just.wrong"
       errors.getMessages("resourceKey")(1).details mustBe Map("id" -> "1")

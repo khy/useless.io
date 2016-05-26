@@ -72,7 +72,7 @@ sealed trait Validation[+T] {
       case (Success(a), Success(b)) => success((a, b))
       case (Success(a), Failure(b)) => failure(b)
       case (Failure(a), Success(b)) => failure(a)
-      case (Failure(a), Failure(b)) => failure((b ++ a))
+      case (Failure(a), Failure(b)) => failure(Errors.combine(a, b))
     }
   }
 
