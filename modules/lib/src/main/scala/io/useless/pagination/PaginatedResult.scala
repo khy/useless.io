@@ -1,7 +1,8 @@
 package io.useless.pagination
 
 import java.util.UUID
-import scala.language.reflectiveCalls
+
+import io.useless.typeclass.Identify
 
 /*
  * PaginatedResult represents the result set, plus links to other, related
@@ -18,24 +19,24 @@ case class PaginatedResult[T](
 
 object PaginatedResult {
 
-  def build[T <: { def guid: UUID }](
+  def build[T](
     items: Seq[T],
-    params: PaginationParams[T],
+    params: PaginationParams,
     totalItems: Option[Int] = None,
     hasNext: Boolean = true
-  ): PaginatedResult[T] = params match {
-    case offsetParams: OffsetBasedPaginationParams[T] => {
+  )(implicit i: Identify[T]): PaginatedResult[T] = params match {
+    case offsetParams: OffsetBasedPaginationParams => {
       PaginationParams.calculateStyle(params.raw) match {
         case OffsetBasedPagination => offsetBased(items, offsetParams, totalItems, hasNext)
         case _ => pageBased(items, offsetParams, totalItems, hasNext)
       }
     }
 
-    case precedenceParams: PrecedenceBasedPaginationParams[T] => {
+    case precedenceParams: PrecedenceBasedPaginationParams => {
       PaginatedResult(
         items = items,
         next = Some(precedenceParams.raw.copy(
-          after = items.lastOption.map(_.guid.toString).orElse(params.raw.after),
+          after = items.lastOption.map(i.identify).orElse(params.raw.after),
           style = None
         ))
       )
@@ -44,7 +45,7 @@ object PaginatedResult {
 
   def pageBased[T](
     items: Seq[T],
-    params: OffsetBasedPaginationParams[T],
+    params: OffsetBasedPaginationParams,
     totalItems: Option[Int] = None,
     hasNext: Boolean = true
   ) = {
@@ -77,7 +78,7 @@ object PaginatedResult {
 
   def offsetBased[T](
     items: Seq[T],
-    params: OffsetBasedPaginationParams[T],
+    params: OffsetBasedPaginationParams,
     totalItems: Option[Int] = None,
     hasNext: Boolean = true
   ) = {

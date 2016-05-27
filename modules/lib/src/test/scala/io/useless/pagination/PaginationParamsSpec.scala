@@ -118,13 +118,13 @@ class PaginationParamsSpec
 
     "use the after parameter, if specified" in {
       val guid = UUID.randomUUID
-      val raw = RawPaginationParams(after = Some(guid))
+      val raw = RawPaginationParams(after = Some(guid.toString))
       val params = PaginationParams.build(raw).toSuccess.value.asInstanceOf[PrecedenceBasedPaginationParams]
-      params.after mustBe Some(guid)
+      params.after mustBe Some(guid.toString)
     }
 
     "prefer page over after" in {
-      val raw = RawPaginationParams(page = Some(4), after = Some(UUID.randomUUID))
+      val raw = RawPaginationParams(page = Some(4), after = Some(UUID.randomUUID.toString))
       val params = PaginationParams.build(raw).toSuccess.value.asInstanceOf[OffsetBasedPaginationParams]
       params.offset mustBe (60)
     }

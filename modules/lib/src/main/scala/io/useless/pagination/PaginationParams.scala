@@ -20,11 +20,11 @@ case class RawPaginationParams(
  * The result of parsing a RawPaginationParams. Will either be offset-based or
  * precedence-based.
  */
-sealed trait PaginationParams[T] {
+sealed trait PaginationParams {
 
   def raw: RawPaginationParams
 
-  def config: PaginationConfig[T]
+  def config: PaginationConfig
 
   def limit = raw.limit.getOrElse(config.defaultLimit)
 
@@ -36,10 +36,10 @@ sealed trait PaginationParams[T] {
  * OffsetBasedPaginationParams has an offset, of course, which is either
  * calculated from page, or just the raw offset.
  */
-class OffsetBasedPaginationParams[T] private [pagination] (
+class OffsetBasedPaginationParams private [pagination] (
   val raw: RawPaginationParams,
-  val config: PaginationConfig[T]
-) extends PaginationParams[T] {
+  val config: PaginationConfig
+) extends PaginationParams {
 
   def offset = raw.page.map { page =>
     ((page - 1) * limit)
@@ -51,10 +51,10 @@ class OffsetBasedPaginationParams[T] private [pagination] (
  * PrecedenceBasedPaginationParams has an after, which signifies the resource
  * afterwhich the result set should start. This is just the raw after.
  */
-class PrecedenceBasedPaginationParams[T] private [pagination] (
+class PrecedenceBasedPaginationParams private [pagination] (
   val raw: RawPaginationParams,
-  val config: PaginationConfig[T]
-) extends PaginationParams[T] {
+  val config: PaginationConfig
+) extends PaginationParams {
 
   def after = raw.after
 
@@ -62,19 +62,19 @@ class PrecedenceBasedPaginationParams[T] private [pagination] (
 
 object PaginationParams {
 
-  val defaultPaginationConfig = PaginationConfig[UUID](
+  val defaultPaginationConfig = PaginationConfig(
     defaultStyle = PageBasedPagination,
     maxLimit = 100,
     defaultLimit = 20,
     defaultOffset = 0,
     validOrders = Seq("created_at"),
     defaultOrder = "created_at",
-    afterParser = Validator.uuid(_: String, None)
+    afterParser = Validator.uuid(_: String, None).map(_.toString)
   )
 
-  def calculateStyle[T](
+  def calculateStyle(
     raw: RawPaginationParams,
-    config: PaginationConfig[T] = defaultPaginationConfig
+    config: PaginationConfig = defaultPaginationConfig
   ): PaginationStyle = {
     raw.style.getOrElse {
       if (raw.page.isDefined) {
@@ -89,10 +89,10 @@ object PaginationParams {
     }
   }
 
-  def build[T](
+  def build(
     raw: RawPaginationParams,
-    config: PaginationConfig[T] = defaultPaginationConfig
-  ): Validation[PaginationParams[T]] = {
+    config: PaginationConfig = defaultPaginationConfig
+  ): Validation[PaginationParams] = {
     val limitVal = raw.limit.map { limit =>
       if (limit <= 0) {
         Validation.failure("pagination.limit", "useless.error.non-positive",

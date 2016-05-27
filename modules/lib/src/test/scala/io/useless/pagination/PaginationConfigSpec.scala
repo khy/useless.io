@@ -4,6 +4,8 @@ import java.util.UUID
 import org.scalatest._
 import org.scalatest.OptionValues._
 
+import io.useless.validation.Validation
+
 class PaginationConfigSpec
   extends WordSpec
   with MustMatchers
@@ -15,8 +17,9 @@ class PaginationConfigSpec
     defaultLimit: Int = 20,
     defaultOffset: Int = 0,
     validOrders: Seq[String] = Seq("id"),
-    defaultOrder: String = "id"
-  ) = PaginationConfig(defaultStyle, maxLimit, defaultLimit, defaultOffset, validOrders, defaultOrder)
+    defaultOrder: String = "id",
+    afterParser: String => Validation[String] = Validation.Success.apply
+  ) = PaginationConfig(defaultStyle, maxLimit, defaultLimit, defaultOffset, validOrders, defaultOrder, afterParser)
 
   "PaginationConfig" must {
 

@@ -3,14 +3,14 @@ package io.useless.pagination
 import io.useless.Message
 import io.useless.validation.Validation
 
-case class PaginationConfig[T](
+case class PaginationConfig(
   defaultStyle: PaginationStyle,
   maxLimit: Int,
   defaultLimit: Int,
   defaultOffset: Int,
   validOrders: Seq[String],
   defaultOrder: String,
-  afterParser: (String) => Validation[T]
+  afterParser: (String) => Validation[String]
 ) {
 
   require(maxLimit > 0, "maxLimit is not greater than zero")

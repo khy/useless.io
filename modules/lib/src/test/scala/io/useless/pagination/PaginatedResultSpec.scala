@@ -3,6 +3,8 @@ package io.useless.pagination
 import java.util.UUID
 import org.scalatest._
 
+import io.useless.typeclass.Identify
+
 class PaginatedResultSpec
   extends WordSpec
   with MustMatchers
@@ -11,10 +13,14 @@ class PaginatedResultSpec
   case class TestItem(guid: UUID = UUID.randomUUID)
   val items = Seq(TestItem(), TestItem(), TestItem())
 
+  implicit val id = new Identify[TestItem] {
+    def identify(ti: TestItem) = ti.guid.toString
+  }
+
   "PaginatedResult.build" must {
 
     def buildPrecedenceParams(after: UUID = UUID.randomUUID) = {
-      val raw = RawPaginationParams(after = Some(after))
+      val raw = RawPaginationParams(after = Some(after.toString))
       PaginationParams.build(raw).toSuccess.value
     }
 
@@ -27,7 +33,7 @@ class PaginatedResultSpec
     "use the last UUID in items for the after of the next" in {
       val params = buildPrecedenceParams()
       val result = PaginatedResult.build(items, params)
-      result.next.get.after.get mustBe items(2).guid
+      result.next.get.after.get mustBe items(2).guid.toString
     }
 
     "not include a previous for after params" in {
@@ -40,7 +46,7 @@ class PaginatedResultSpec
       val raw = RawPaginationParams(style = Some(PrecedenceBasedPagination))
       val params = PaginationParams.build(raw).toSuccess.value
       val result = PaginatedResult.build(items, params)
-      result.next.get.after.get mustBe items(2).guid
+      result.next.get.after.get mustBe items(2).guid.toString
       result.next.get.style mustBe(None)
       result.previous mustBe(None)
     }

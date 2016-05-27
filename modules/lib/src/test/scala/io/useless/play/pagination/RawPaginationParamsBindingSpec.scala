@@ -60,15 +60,7 @@ class RawPaginationParamsBindingSpec
     "extract 'p.after' parameter from a request" in {
       val request = FakeRequest("GET", "/notes?p.after=52a79894-2c1b-488d-82fe-a1c1d47038cc")
       val after = RawPaginationParamsBinding.default.bind(request).toSuccess.value.after
-      after mustBe Some(UUID.fromString("52a79894-2c1b-488d-82fe-a1c1d47038cc"))
-    }
-
-    "fail if 'p.after' is specified, but is not a valid UUID" in {
-      val request = FakeRequest("GET", "/notes?p.after=invalid")
-      val errors = RawPaginationParamsBinding.default.bind(request).toFailure.errors
-      val afterError = errors.getMessages("pagination.after").head
-      afterError.key mustBe ("useless.error.non-uuid")
-      afterError.details("specified") mustBe("invalid")
+      after mustBe Some("52a79894-2c1b-488d-82fe-a1c1d47038cc")
     }
 
   }
