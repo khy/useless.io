@@ -69,7 +69,7 @@ object PaginationParams {
     defaultOffset = 0,
     validOrders = Seq("created_at"),
     defaultOrder = "created_at",
-    afterParser = Validator.uuid
+    afterParser = Validator.uuid(_: String, None)
   )
 
   def calculateStyle[T](

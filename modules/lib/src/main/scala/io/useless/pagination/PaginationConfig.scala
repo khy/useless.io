@@ -10,7 +10,7 @@ case class PaginationConfig[T](
   defaultOffset: Int,
   validOrders: Seq[String],
   defaultOrder: String,
-  afterParser: (String) => Seq[Message]
+  afterParser: (String) => Validation[T]
 ) {
 
   require(maxLimit > 0, "maxLimit is not greater than zero")

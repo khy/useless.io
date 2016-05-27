@@ -17,17 +17,23 @@ class Validator(prefix: String) {
     catching(classOf[NumberFormatException]).
       opt { raw.toInt }.
       map { Validation.Success.apply }.
-      getOrElse {
-        val message = Message(messageKey("nonInt"), "specified" -> raw)
-        Validation.Failure(Seq(Errors(Seq(message), key)))
-      }
+      getOrElse { failure(key, "nonInt", "specified" -> raw) }
   }
 
-  def uuid(raw: String): Seq[Message] = {
+  def uuid(raw: String, key: Option[String] = None): Validation[UUID] = {
     Uuid.parseUuid(raw) match {
-      case Success(uuid) => Seq.empty
-      case Failure(_) => Seq(Message(messageKey("nonUuid"), "specified" -> raw))
+      case Success(uuid) => Validation.Success(uuid)
+      case Failure(_) => failure(key, "nonUuid", "specified" -> raw)
     }
+  }
+
+  private def failure(
+    _errorKey: Option[String],
+    _messageKey: String,
+    details: (String, String)*
+  ) = {
+    val message = Message(messageKey(_messageKey), details:_*)
+    Validation.Failure(Seq(Errors(Seq(message), _errorKey)))
   }
 
   private def messageKey(suffix: String) = prefix + "." + suffix
