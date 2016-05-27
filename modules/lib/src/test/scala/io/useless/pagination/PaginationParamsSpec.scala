@@ -3,6 +3,8 @@ package io.useless.pagination
 import java.util.UUID
 import org.scalatest._
 
+import io.useless.Message
+import io.useless.validation.{Errors, Validation}
 import io.useless.validation.ValidationTestHelper._
 
 class PaginationParamsSpec
@@ -114,6 +116,24 @@ class PaginationParamsSpec
       val offsetError = errors.getMessages("pagination.offset").head
       offsetError.key mustBe ("useless.error.negative")
       offsetError.details("specified") mustBe ("-1")
+    }
+
+    "fail if the after parameter is not valid" in {
+      val raw = RawPaginationParams(after = Some("123"))
+      val config = PaginationParams.defaultPaginationConfig.copy(
+        afterParser = (after) => after match {
+          case "abc" => Validation.Success(after)
+          case other => {
+            val message = Message("useless.error.no-abc", "specified" -> other)
+            Validation.Failure(Seq(Errors.scalar(Seq(message))))
+          }
+        }
+      )
+
+      val errors = PaginationParams.build(raw, config).toFailure.errors
+      val offsetError = errors.getMessages("pagination.after").head
+      offsetError.key mustBe ("useless.error.no-abc")
+      offsetError.details("specified") mustBe ("123")
     }
 
     "use the after parameter, if specified" in {

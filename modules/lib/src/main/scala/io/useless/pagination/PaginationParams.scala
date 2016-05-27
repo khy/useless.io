@@ -136,7 +136,17 @@ object PaginationParams {
       }
     }.getOrElse(Validation.success(None))
 
-    (limitVal ++ orderVal ++ pageVal ++ offsetVal).map { _ =>
+    val afterVal = raw.after.map { after =>
+      config.afterParser(after).fold (
+        errors => {
+          val scopedErrors = errors.map { _.copy(key = Some("pagination.after")) }
+          Validation.Failure(scopedErrors)
+        },
+        after => Validation.Success(after)
+      )
+    }.getOrElse(Validation.Success(None))
+
+    (limitVal ++ orderVal ++ pageVal ++ offsetVal ++ afterVal).map { _ =>
       calculateStyle(raw, config) match {
         case PrecedenceBasedPagination => new PrecedenceBasedPaginationParams(raw, config)
         case _ => new OffsetBasedPaginationParams(raw, config)
