@@ -14,8 +14,10 @@ import io.useless.accesstoken.AccessToken
 import io.useless.account.User
 import io.useless.client.accesstoken.{ AccessTokenClient, MockAccessTokenClient }
 import io.useless.client.account.{ AccountClient, MockAccountClient }
-import io.useless.play.json.MessageJson.format
+import io.useless.validation.Errors
+import io.useless.play.json.validation.ErrorsJson._
 import io.useless.util.mongo.MongoUtil
+import io.useless.validation.ValidationTestHelper._
 
 import db.haiku._
 import models.haiku.Haiku
@@ -121,11 +123,11 @@ class HaikuSpec
       }
 
       response.status mustBe CONFLICT
-      val errors = response.json.as[Validation.Errors]
+      val errors = response.json.as[Seq[Errors]]
 
-      errors("line1").head.key mustBe "useless.haiku.error.tooFewSyllables"
-      errors("line2").head.key mustBe "useless.haiku.error.tooManySyllables"
-      errors.get("line3") mustBe None
+      errors.getMessages("line1").head.key mustBe "useless.haiku.error.tooFewSyllables"
+      errors.getMessages("line2").head.key mustBe "useless.haiku.error.tooManySyllables"
+      errors.filter(_.key == Some("line3")).headOption mustBe None
     }
 
     "accept the UUID of a haiku that the haiku is in response to" in {

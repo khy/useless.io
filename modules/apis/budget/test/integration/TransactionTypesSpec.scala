@@ -8,6 +8,9 @@ import play.api.test.Helpers._
 import play.api.libs.json._
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import slick.driver.PostgresDriver.api._
+import io.useless.validation.Errors
+import io.useless.play.json.validation.ErrorsJson._
+import io.useless.validation.ValidationTestHelper._
 
 import models.budget.{TransactionType, TransactionTypeOwnership}
 import models.budget.JsonImplicits._
@@ -188,7 +191,8 @@ class TransactionTypesSpec
           post(Json.obj("name" -> "Expense!!!!"))
       }
       response.status mustBe CONFLICT
-      ((response.json \ "guid")(0) \ "key").as[String] mustBe "useless.error.systemTransactionType"
+      val errors = response.json.as[Seq[Errors]]
+      errors.getMessages("guid").head.key mustBe "useless.error.systemTransactionType"
 
       val _expense = TestService.getSystemTransactionType("Expense")
       expense mustBe _expense

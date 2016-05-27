@@ -8,6 +8,9 @@ import play.api.test.Helpers._
 import play.api.libs.json._
 import org.joda.time.LocalDate
 import io.useless.play.json.DateTimeJson._
+import io.useless.validation.Errors
+import io.useless.play.json.validation.ErrorsJson._
+import io.useless.validation.ValidationTestHelper._
 
 import models.budget.Transaction
 import models.budget.JsonImplicits._
@@ -267,14 +270,16 @@ class TransactionsSpec
     "return a 409 Conflict if the specified GUID doesn't exist" in {
       val response = await { authenticatedRequest(s"/transactions/${UUID.randomUUID}").delete }
       response.status mustBe CONFLICT
-      ((response.json \ "transactionGuid")(0) \ "key").as[String] mustBe "useless.error.unknownGuid"
+      val errors = response.json.as[Seq[Errors]]
+      errors.getMessages("transactionGuid").head.key mustBe "useless.error.unknownGuid"
     }
 
     "return a 409 Conflict if the specified GUID doesn't belong to the authenticated account" in {
       val transaction = TestService.createTransaction(accessToken = TestService.otherAccessToken)
       val response = await { authenticatedRequest(s"/transactions/${transaction.guid}").delete }
       response.status mustBe CONFLICT
-      ((response.json \ "transactionGuid")(0) \ "key").as[String] mustBe "useless.error.unauthorized"
+      val errors = response.json.as[Seq[Errors]]
+      errors.getMessages("transactionGuid").head.key mustBe "useless.error.unauthorized"
     }
 
     "return a 204 No Content if the specified GUID exists and belongs to the authenticated account" in {

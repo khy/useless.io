@@ -8,7 +8,7 @@ import play.api.data.Forms._
 import play.api.Play.current
 import play.api.libs.json.Json
 import play.api.libs.concurrent.Execution.Implicits._
-import io.useless.play.json.MessageJson.format
+import io.useless.play.json.validation.ErrorsJson._
 import io.useless.play.pagination.PaginationController
 import io.useless.play.http.LooseQueryStringUtil.RichQueryStringRequest
 

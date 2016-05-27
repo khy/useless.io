@@ -11,7 +11,7 @@ import play.api.data._
 import play.api.data.Forms._
 import org.joda.time.LocalDate
 import io.useless.play.json.DateTimeJson._
-import io.useless.play.json.MessageJson.format
+import io.useless.play.json.validation.ErrorsJson._
 import io.useless.play.pagination.PaginationController
 
 import controllers.budget.auth.Auth

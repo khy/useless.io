@@ -10,14 +10,14 @@ parallelExecution in Global := false
 
 lazy val lib = (project in file("modules/lib")).enablePlugins(Base).configs(IntegrationTest).settings(sbt.Defaults.itSettings: _*)
 
-lazy val core = (project in file("modules/apis/core")).enablePlugins(Base, PlayScala, Mongo).dependsOn(lib)
+lazy val core = (project in file("modules/apis/core")).enablePlugins(Base, PlayScala, Mongo).dependsOn(lib % "test->test;compile->compile")
 
-lazy val books = (project in file("modules/apis/books")).enablePlugins(Base, PlayScala, Postgres).dependsOn(lib)
-lazy val haiku = (project in file("modules/apis/haiku")).enablePlugins(Base, PlayScala, Mongo).dependsOn(lib)
-lazy val budget = (project in file("modules/apis/budget")).enablePlugins(Base, PlayScala, Postgres).dependsOn(lib)
+lazy val books = (project in file("modules/apis/books")).enablePlugins(Base, PlayScala, Postgres).dependsOn(lib % "test->test;compile->compile")
+lazy val haiku = (project in file("modules/apis/haiku")).enablePlugins(Base, PlayScala, Mongo).dependsOn(lib % "test->test;compile->compile")
+lazy val budget = (project in file("modules/apis/budget")).enablePlugins(Base, PlayScala, Postgres).dependsOn(lib % "test->test;compile->compile")
 
-lazy val auth = (project in file("modules/apps/auth")).enablePlugins(Base, PlayScala, Mongo).dependsOn(lib)
-lazy val account = (project in file("modules/apps/account")).enablePlugins(Base, PlayScala, Mongo).dependsOn(lib)
+lazy val auth = (project in file("modules/apps/auth")).enablePlugins(Base, PlayScala, Mongo).dependsOn(lib % "test->test;compile->compile")
+lazy val account = (project in file("modules/apps/account")).enablePlugins(Base, PlayScala, Mongo).dependsOn(lib % "test->test;compile->compile")
 
 lazy val root = (project in file(".")).
   enablePlugins(PlayScala, DockerPlugin, Release).

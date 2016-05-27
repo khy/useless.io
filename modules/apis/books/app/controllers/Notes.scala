@@ -10,6 +10,7 @@ import io.useless.util.Uuid
 import io.useless.pagination._
 import io.useless.play.pagination.PaginationController
 import io.useless.play.json.MessageJson
+import io.useless.play.json.validation.ErrorsJson._
 import io.useless.http.LinkHeader
 
 import services.books.NoteService

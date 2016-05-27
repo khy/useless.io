@@ -8,7 +8,7 @@ import play.api.libs.json.Json
 import play.api.Play.current
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import io.useless.play.json.DateTimeJson._
-import io.useless.play.json.MessageJson.format
+import io.useless.play.json.validation.ErrorsJson._
 import io.useless.play.pagination.PaginationController
 
 import controllers.budget.auth.Auth
