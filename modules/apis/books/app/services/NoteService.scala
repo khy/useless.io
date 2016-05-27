@@ -60,7 +60,7 @@ object NoteService extends BaseService with Configuration {
         }
         case params: PrecedenceBasedPaginationParams => {
           params.after.foreach { after =>
-            val maxCreatedAt = Notes.filter(_.guid === after).
+            val maxCreatedAt = Notes.filter(_.guid === UUID.fromString(after)).
               map(_.createdAt).min.asColumnOf[Timestamp]
 
             query = query.filter(_.createdAt < maxCreatedAt)

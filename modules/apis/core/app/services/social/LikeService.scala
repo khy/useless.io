@@ -87,7 +87,7 @@ class LikeService(
         case params: OffsetBasedPaginationParams => pagedQuery.drop(params.offset)
         case params: PrecedenceBasedPaginationParams => params.after.map { after =>
           pagedQuery.filter {
-            _.createdAt < Likes.filter(_.guid === params.after).map(_.createdAt).min
+            _.createdAt < Likes.filter(_.guid === UUID.fromString(after)).map(_.createdAt).min
           }
         }.getOrElse { pagedQuery }
       }
