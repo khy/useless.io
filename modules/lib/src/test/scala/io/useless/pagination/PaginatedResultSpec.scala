@@ -36,6 +36,18 @@ class PaginatedResultSpec
       result.next.get.after.get mustBe items(2).guid.toString
     }
 
+    "use the ID supplied by Identify for the next after" in {
+      val params = buildPrecedenceParams()
+      val items = Seq("abc", "def", "ghi")
+
+      implicit val id = new Identify[String] {
+        def identify(s: String) = s + "!"
+      }
+
+      val result = PaginatedResult.build(items, params)
+      result.next.get.after.get mustBe "ghi!"
+    }
+
     "not include a previous for after params" in {
       val params = buildPrecedenceParams()
       val result = PaginatedResult.build(items, params)
