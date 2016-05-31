@@ -19,20 +19,20 @@ case class PaginatedResult[T](
 
 object PaginatedResult {
 
-  def build[T](
+  def build[T, A](
     items: Seq[T],
-    params: PaginationParams,
+    params: PaginationParams[A],
     totalItems: Option[Int] = None,
     hasNext: Boolean = true
   )(implicit i: Identify[T]): PaginatedResult[T] = params match {
-    case offsetParams: OffsetBasedPaginationParams => {
+    case offsetParams: OffsetBasedPaginationParams[_] => {
       PaginationParams.calculateStyle(params.raw) match {
         case OffsetBasedPagination => offsetBased(items, offsetParams, totalItems, hasNext)
         case _ => pageBased(items, offsetParams, totalItems, hasNext)
       }
     }
 
-    case precedenceParams: PrecedenceBasedPaginationParams => {
+    case precedenceParams: PrecedenceBasedPaginationParams[_] => {
       PaginatedResult(
         items = items,
         next = Some(precedenceParams.raw.copy(
@@ -43,9 +43,9 @@ object PaginatedResult {
     }
   }
 
-  def pageBased[T](
+  def pageBased[T, A](
     items: Seq[T],
-    params: OffsetBasedPaginationParams,
+    params: OffsetBasedPaginationParams[A],
     totalItems: Option[Int] = None,
     hasNext: Boolean = true
   ) = {
@@ -76,9 +76,9 @@ object PaginatedResult {
     )
   }
 
-  def offsetBased[T](
+  def offsetBased[T, A](
     items: Seq[T],
-    params: OffsetBasedPaginationParams,
+    params: OffsetBasedPaginationParams[A],
     totalItems: Option[Int] = None,
     hasNext: Boolean = true
   ) = {

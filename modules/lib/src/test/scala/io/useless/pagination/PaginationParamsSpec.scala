@@ -51,7 +51,7 @@ class PaginationParamsSpec
 
     "use the default order if none is specified" in {
       val raw = RawPaginationParams()
-      val params = PaginationParams.build(raw).toSuccess.value.asInstanceOf[OffsetBasedPaginationParams]
+      val params = PaginationParams.build(raw).toSuccess.value.asInstanceOf[OffsetBasedPaginationParams[_]]
       params.order mustBe ("created_at")
     }
 
@@ -60,7 +60,7 @@ class PaginationParamsSpec
         validOrders = Seq("rank", "created_at")
       )
       val raw = RawPaginationParams(order = Some("rank"))
-      val params = PaginationParams.build(raw, config).toSuccess.value.asInstanceOf[OffsetBasedPaginationParams]
+      val params = PaginationParams.build(raw, config).toSuccess.value.asInstanceOf[OffsetBasedPaginationParams[_]]
       params.order mustBe ("rank")
     }
 
@@ -78,13 +78,13 @@ class PaginationParamsSpec
 
     "calculate the offset for the specified page" in {
       val raw = RawPaginationParams(page = Some(3), limit = Some(5))
-      val params = PaginationParams.build(raw).toSuccess.value.asInstanceOf[OffsetBasedPaginationParams]
+      val params = PaginationParams.build(raw).toSuccess.value.asInstanceOf[OffsetBasedPaginationParams[_]]
       params.offset mustBe (10)
     }
 
     "prefer page over offset" in {
       val raw = RawPaginationParams(page = Some(3), limit = Some(5), offset = Some(20))
-      val params = PaginationParams.build(raw).toSuccess.value.asInstanceOf[OffsetBasedPaginationParams]
+      val params = PaginationParams.build(raw).toSuccess.value.asInstanceOf[OffsetBasedPaginationParams[_]]
       params.offset mustBe (10)
     }
 
@@ -106,7 +106,7 @@ class PaginationParamsSpec
 
     "use the default offset if neither offset nor page is specified" in {
       val raw = RawPaginationParams()
-      val params = PaginationParams.build(raw).toSuccess.value.asInstanceOf[OffsetBasedPaginationParams]
+      val params = PaginationParams.build(raw).toSuccess.value.asInstanceOf[OffsetBasedPaginationParams[_]]
       params.offset mustBe (0)
     }
 
@@ -139,13 +139,13 @@ class PaginationParamsSpec
     "use the after parameter, if specified" in {
       val guid = UUID.randomUUID
       val raw = RawPaginationParams(after = Some(guid.toString))
-      val params = PaginationParams.build(raw).toSuccess.value.asInstanceOf[PrecedenceBasedPaginationParams]
-      params.after mustBe Some(guid.toString)
+      val params = PaginationParams.build(raw).toSuccess.value.asInstanceOf[PrecedenceBasedPaginationParams[_]]
+      params.after mustBe Some(guid)
     }
 
     "prefer page over after" in {
       val raw = RawPaginationParams(page = Some(4), after = Some(UUID.randomUUID.toString))
-      val params = PaginationParams.build(raw).toSuccess.value.asInstanceOf[OffsetBasedPaginationParams]
+      val params = PaginationParams.build(raw).toSuccess.value.asInstanceOf[OffsetBasedPaginationParams[_]]
       params.offset mustBe (60)
     }
 

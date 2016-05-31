@@ -34,7 +34,7 @@ object HaikuService extends Configuration {
     defaultOffset = 0,
     validOrders = Seq("created_at"),
     defaultOrder = "created_at",
-    afterParser = Validator.uuid(_: String, None).map(_.toString)
+    afterParser = Validator.uuid(_: String, None)
   )
 
   def haikuLines(record: HaikuRecord): Seq[String] = {
@@ -128,10 +128,10 @@ object HaikuService extends Configuration {
         var pagedQuery = query.sortBy(_.createdAt.desc)
 
         pagedQuery = paginationParams match {
-          case params: OffsetBasedPaginationParams => pagedQuery.drop(params.offset)
-          case params: PrecedenceBasedPaginationParams => params.after.map { after =>
+          case params: OffsetBasedPaginationParams[_] => pagedQuery.drop(params.offset)
+          case params: PrecedenceBasedPaginationParams[_] => params.after.map { after =>
             pagedQuery.filter {
-              _.createdAt < Haikus.filter(_.guid === UUID.fromString(after)).map(_.createdAt).min
+              _.createdAt < Haikus.filter(_.guid === after).map(_.createdAt).min
             }
           }.getOrElse { pagedQuery }
         }

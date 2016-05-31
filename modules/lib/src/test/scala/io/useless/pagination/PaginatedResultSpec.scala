@@ -73,18 +73,18 @@ class PaginatedResultSpec
 
   }
 
-  def buildOffsetParams(
+  def buildOffsetParams[A](
     limit: Option[Int] = None,
     order: Option[String] = None,
     offset: Option[Int] = None,
     page: Option[Int] = None,
-    config: PaginationConfig = PaginationParams.defaultPaginationConfig
-  ): OffsetBasedPaginationParams = {
+    config: PaginationConfig[A] = PaginationParams.defaultPaginationConfig
+  ): OffsetBasedPaginationParams[A] = {
     val raw = RawPaginationParams(None, limit, order, offset, page, None)
 
     PaginationParams.build(raw, config).fold(
       error => throw new RuntimeException(error.toString),
-      params => params.asInstanceOf[OffsetBasedPaginationParams]
+      params => params.asInstanceOf[OffsetBasedPaginationParams[A]]
     )
   }
 

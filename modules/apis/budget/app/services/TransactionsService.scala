@@ -169,7 +169,7 @@ class TransactionsService(
         sortBy { case (txn, _) => txn.date.desc }
 
       pageQuery = paginationParams match {
-        case params: OffsetBasedPaginationParams => {
+        case params: OffsetBasedPaginationParams[_] => {
           pageQuery.drop(params.offset)
         }
         case _ => pageQuery

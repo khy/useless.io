@@ -211,7 +211,7 @@ class PlannedTransactionsService(
         sortBy { case (plannedTxn, _) => plannedTxn.minDate.desc }
 
       pageQuery = paginationParams match {
-        case params: OffsetBasedPaginationParams => {
+        case params: OffsetBasedPaginationParams[_] => {
           pageQuery.drop(params.offset)
         }
         case _ => pageQuery
