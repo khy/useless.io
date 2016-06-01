@@ -139,14 +139,27 @@ class LikeService(
         query = query.filter(_.createdByAccount inSet accountGuids)
       }
 
-      val aggQuery = query.groupBy { like =>
+      var aggQuery = query.groupBy { like =>
         (like.resourceApi, like.resourceType, like.resourceId)
       }.map { case ((resourceApi, resourceType, resourceId), group) =>
         (resourceApi, resourceType, resourceId, group.length)
       }
 
-      val futCount = database.run(query.length.result)
-      val futLikeAggregateRecords = database.run(aggQuery.result)
+      var pagedQuery = aggQuery.sortBy { case (resourceApi, resourceType, resourceId, count) =>
+        (resourceApi, resourceType, resourceId)
+      }
+
+      pagedQuery = paginationParams match {
+        case params: OffsetBasedPaginationParams[_] => pagedQuery.drop(params.offset)
+        case params: PrecedenceBasedPaginationParams[_] => params.after.map { after =>
+          pagedQuery
+        }.getOrElse { pagedQuery }
+      }
+
+      pagedQuery = pagedQuery.take(paginationParams.limit)
+
+      val futCount = database.run(aggQuery.length.result)
+      val futLikeAggregateRecords = database.run(pagedQuery.result)
 
       for {
         count <- futCount

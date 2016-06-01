@@ -6,6 +6,7 @@ import play.api.test._
 import play.api.test.Helpers._
 import play.api.libs.json.Json
 import slick.driver.PostgresDriver.api._
+import io.useless.http.LinkHeader
 
 import db.core.social._
 import models.core.account.Account
@@ -154,6 +155,34 @@ class LikeSpec
       likeAggs.length mustBe 2
       likeAggs.find(_.resourceId == "123").get.count mustBe 2
       likeAggs.find(_.resourceId == "456").get.count mustBe 1
+    }
+
+    "support pagination, ordering by the api / type / ID concatenated key" in {
+      val user1 = createUser("dave@useless.io", "dave", None)
+      val user2 = createUser("bill@useless.io", "bill", None)
+      createLike("beer", "ingredients", "123", user1)
+      createLike("beer", "ingredients", "123", user2)
+      createLike("beer", "bottles", "123", user1)
+      createLike("beer", "bottles", "123", user2)
+      createLike("beer", "bottles", "456", user1)
+      createLike("beer", "bottles", "789", user2)
+
+      val response1 = get(aggregatesUrl, auth = user.accessTokens(0).guid,
+        "resourceApi" -> "beer",
+        "p.limit" -> "3"
+      )
+      response1.status mustBe OK
+
+      val likeAggs1 = response1.json.as[Seq[LikeAggregate]]
+      likeAggs1.length mustBe 3
+      likeAggs1.map(_.resourceType) must not contain ("ingredients")
+
+      val nextUrl = LinkHeader.parse(response1.header("Link").get).find(_.relation == "next").get.url
+      val response2 = get(nextUrl, auth = user.accessTokens(0).guid)
+      val likeAggs2 = response2.json.as[Seq[LikeAggregate]]
+      likeAggs2.length mustBe 1
+      likeAggs2.head.resourceType mustBe "ingredients"
+      likeAggs2.head.count mustBe 2
     }
 
   }
