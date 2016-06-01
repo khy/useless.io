@@ -39,6 +39,23 @@ object LikeController extends Controller with PaginationController {
     }
   }
 
+  def aggregates = Auth.async { implicit request =>
+    withRawPaginationParams { pagination =>
+      likeService.aggregates(
+        request.richQueryString.seqString("resourceApi"),
+        request.richQueryString.seqString("resourceType"),
+        request.richQueryString.seqString("resourceId"),
+        request.richQueryString.seqUuid("accountGuid"),
+        pagination
+      ).map { result =>
+        result.fold(
+          errors => Conflict(Json.toJson(errors)),
+          result => paginatedResult(routes.LikeController.aggregates(), result)
+        )
+      }
+    }
+  }
+
   def create(
     resourceApi: String,
     resourceType: String,

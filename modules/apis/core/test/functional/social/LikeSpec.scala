@@ -9,7 +9,7 @@ import slick.driver.PostgresDriver.api._
 
 import db.core.social._
 import models.core.account.Account
-import models.core.social.Like
+import models.core.social.{Like, LikeAggregate}
 import models.core.social.JsonImplicits._
 import support._
 
@@ -101,6 +101,59 @@ class LikeSpec
 
       val likes = response.json.as[Seq[Like]]
       likes.map(_.guid) mustBe Seq(like3.guid, like2.guid)
+    }
+
+  }
+
+  val aggregatesUrl = s"http://localhost:$port/social/likes/aggregates"
+
+  "GET /social/likes/aggregates" should {
+
+    "return a 401 Unauthorized if the request is not authenticated" in {
+      val response = get(aggregatesUrl, auth = None)
+      response.status mustBe UNAUTHORIZED
+    }
+
+    "return a 200 with any likes for the specified resource type" in {
+      val user1 = createUser("dave@useless.io", "dave", None)
+      val user2 = createUser("bill@useless.io", "bill", None)
+      createLike("beer", "bottles", "123", user1)
+      createLike("beer", "bottles", "123", user2)
+      createLike("beer", "bottles", "456", user1)
+      createLike("beer", "breweries", "123", user1)
+
+      val response = get(aggregatesUrl, auth = user.accessTokens(0).guid,
+        "resourceApi" -> "beer",
+        "resourceType" -> "bottles"
+      )
+      response.status mustBe OK
+
+      val likeAggs = response.json.as[Seq[LikeAggregate]]
+      likeAggs.length mustBe 2
+      likeAggs.find(_.resourceId == "123").get.count mustBe 2
+      likeAggs.find(_.resourceId == "456").get.count mustBe 1
+    }
+
+    "return only likes for the specified resource IDs" in {
+      val user1 = createUser("dave@useless.io", "dave", None)
+      val user2 = createUser("bill@useless.io", "bill", None)
+      createLike("beer", "bottles", "123", user1)
+      createLike("beer", "bottles", "123", user2)
+      createLike("beer", "bottles", "456", user1)
+      createLike("beer", "bottles", "789", user2)
+
+      val response = get(aggregatesUrl, auth = user.accessTokens(0).guid,
+        "resourceApi" -> "beer",
+        "resourceType" -> "bottles",
+        "resourceId" -> "123",
+        "resourceId" -> "456"
+      )
+      response.status mustBe OK
+
+      val likeAggs = response.json.as[Seq[LikeAggregate]]
+      likeAggs.length mustBe 2
+      likeAggs.find(_.resourceId == "123").get.count mustBe 2
+      likeAggs.find(_.resourceId == "456").get.count mustBe 1
     }
 
   }

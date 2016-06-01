@@ -8,5 +8,6 @@ import io.useless.play.json.account.UserJson._
 object JsonImplicits {
 
   implicit val likeFormat = Json.format[Like]
+  implicit val likeAggregateFormat = Json.format[LikeAggregate]
 
 }

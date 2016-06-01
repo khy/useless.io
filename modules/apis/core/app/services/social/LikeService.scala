@@ -6,6 +6,7 @@ import scala.concurrent.{ExecutionContext, Future}
 import play.api.Configuration
 import org.joda.time.DateTime
 import slick.driver.PostgresDriver.api._
+import io.useless.typeclass.Identify
 import io.useless.accesstoken.AccessToken
 import io.useless.pagination._
 import io.useless.validation._
@@ -101,6 +102,62 @@ class LikeService(
         count <- futCount
         likeRecords <- futLikeRecords
       } yield PaginatedResult.build(likeRecords, paginationParams, Some(count))
+    }
+  }
+
+  implicit val likeAggregateIdentify = new Identify[LikeAggregate] {
+    def identify(la: LikeAggregate) = {
+      s"${la.resourceApi}/${la.resourceType}/${la.resourceId}"
+    }
+  }
+
+  def aggregates(
+    resourceApis: Option[Seq[String]],
+    resourceTypes: Option[Seq[String]],
+    resourceIds: Option[Seq[String]],
+    accountGuids: Option[Seq[UUID]],
+    rawPaginationParams: RawPaginationParams = RawPaginationParams()
+  )(implicit ec: ExecutionContext): Future[Validation[PaginatedResult[LikeAggregate]]] = {
+    val valPaginationParams = PaginationParams.build(rawPaginationParams)
+
+    ValidationUtil.mapFuture(valPaginationParams) { paginationParams =>
+      var query = Likes.filter(_.deletedAt.isEmpty)
+
+      resourceApis.foreach { resourceApis =>
+        query = query.filter(_.resourceApi inSet resourceApis)
+      }
+
+      resourceTypes.foreach { resourceTypes =>
+        query = query.filter(_.resourceType inSet resourceTypes)
+      }
+
+      resourceIds.foreach { resourceIds =>
+        query = query.filter(_.resourceId inSet resourceIds)
+      }
+
+      accountGuids.foreach { accountGuids =>
+        query = query.filter(_.createdByAccount inSet accountGuids)
+      }
+
+      val aggQuery = query.groupBy { like =>
+        (like.resourceApi, like.resourceType, like.resourceId)
+      }.map { case ((resourceApi, resourceType, resourceId), group) =>
+        (resourceApi, resourceType, resourceId, group.length)
+      }
+
+      val futCount = database.run(query.length.result)
+      val futLikeAggregateRecords = database.run(aggQuery.result)
+
+      for {
+        count <- futCount
+        likeAggregateRecords <- futLikeAggregateRecords
+      } yield {
+        val likeAggregates = likeAggregateRecords.map { case (resourceApi, resourceType, resourceId, count) =>
+          LikeAggregate(resourceApi, resourceType, resourceId, count)
+        }
+
+        PaginatedResult.build(likeAggregates, paginationParams, Some(count))
+      }
     }
   }
 

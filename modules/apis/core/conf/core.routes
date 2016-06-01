@@ -11,6 +11,7 @@ POST    /apps                               controllers.core.account.AppControll
 POST    /users                              controllers.core.account.UserController.create()
 
 GET     /social/likes                       controllers.core.social.LikeController.index()
+GET     /social/likes/aggregates            controllers.core.social.LikeController.aggregates()
 PUT     /social/likes/:api/:type/:id        controllers.core.social.LikeController.create(api: String, type: String, id: String)
 DELETE  /social/likes/:api/:type/:id        controllers.core.social.LikeController.delete(api: String, type: String, id: String)
 
