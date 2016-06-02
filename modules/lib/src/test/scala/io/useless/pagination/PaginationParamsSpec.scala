@@ -136,6 +136,32 @@ class PaginationParamsSpec
       offsetError.details("specified") mustBe ("123")
     }
 
+    "fail if precedence-based pagination is specified, but not supported" in {
+      val raw = RawPaginationParams(style = Some(PrecedenceBasedPagination))
+      val config = PaginationParams.defaultPaginationConfig.copy(
+        validStyles = Seq(OffsetBasedPagination, PageBasedPagination)
+      )
+
+      val errors = PaginationParams.build(raw, config).toFailure.errors
+      val styleError = errors.getMessages("pagination.style").head
+      styleError.key mustBe ("useless.error.invalid-value")
+      styleError.details("specified") mustBe ("PrecedenceBasedPagination")
+      styleError.details("valid") mustBe ("'OffsetBasedPagination', 'PageBasedPagination'")
+    }
+
+    "fail if precedence-based pagination is implied, but not supported" in {
+      val raw = RawPaginationParams(after = Some("123"))
+      val config = PaginationParams.defaultPaginationConfig.copy(
+        validStyles = Seq(OffsetBasedPagination, PageBasedPagination)
+      )
+
+      val errors = PaginationParams.build(raw, config).toFailure.errors
+      val styleError = errors.getMessages("pagination.style").head
+      styleError.key mustBe ("useless.error.invalid-value")
+      styleError.details("specified") mustBe ("PrecedenceBasedPagination")
+      styleError.details("valid") mustBe ("'OffsetBasedPagination', 'PageBasedPagination'")
+    }
+
     "use the after parameter, if specified" in {
       val guid = UUID.randomUUID
       val raw = RawPaginationParams(after = Some(guid.toString))

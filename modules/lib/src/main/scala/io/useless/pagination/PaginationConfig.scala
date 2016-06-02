@@ -4,6 +4,7 @@ import io.useless.Message
 import io.useless.validation.Validation
 
 case class PaginationConfig[A](
+  validStyles: Seq[PaginationStyle],
   defaultStyle: PaginationStyle,
   maxLimit: Int,
   defaultLimit: Int,
@@ -12,6 +13,8 @@ case class PaginationConfig[A](
   defaultOrder: String,
   afterParser: (String) => Validation[A]
 ) {
+
+  require(validStyles.contains(defaultStyle), "defaultStyle is not included in validStyles")
 
   require(maxLimit > 0, "maxLimit is not greater than zero")
 

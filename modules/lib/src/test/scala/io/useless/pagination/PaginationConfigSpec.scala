@@ -12,6 +12,7 @@ class PaginationConfigSpec
 {
 
   def buildConfig(
+    validStyles: Seq[PaginationStyle] = Seq(OffsetBasedPagination, PageBasedPagination, PrecedenceBasedPagination),
     defaultStyle: PaginationStyle = OffsetBasedPagination,
     maxLimit: Int = 100,
     defaultLimit: Int = 20,
@@ -19,9 +20,21 @@ class PaginationConfigSpec
     validOrders: Seq[String] = Seq("id"),
     defaultOrder: String = "id",
     afterParser: String => Validation[String] = Validation.Success.apply
-  ) = PaginationConfig(defaultStyle, maxLimit, defaultLimit, defaultOffset, validOrders, defaultOrder, afterParser)
+  ) = PaginationConfig(validStyles, defaultStyle, maxLimit, defaultLimit, defaultOffset, validOrders, defaultOrder, afterParser)
 
   "PaginationConfig" must {
+
+    "not reject a valid style" in {
+      noException should be thrownBy {
+        buildConfig()
+      }
+    }
+
+    "reject defaultStyle not included in validStyles" in {
+      a [IllegalArgumentException] should be thrownBy {
+        buildConfig(validStyles = Seq(OffsetBasedPagination), defaultStyle = PrecedenceBasedPagination)
+      }
+    }
 
     "not reject a valid configuration" in {
       noException should be thrownBy {

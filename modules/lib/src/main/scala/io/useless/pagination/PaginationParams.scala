@@ -65,6 +65,7 @@ class PrecedenceBasedPaginationParams[A] private [pagination] (
 object PaginationParams {
 
   val defaultPaginationConfig = PaginationConfig(
+    validStyles = Seq(OffsetBasedPagination, PageBasedPagination, PrecedenceBasedPagination),
     defaultStyle = PageBasedPagination,
     maxLimit = 100,
     defaultLimit = 20,
@@ -95,6 +96,19 @@ object PaginationParams {
     raw: RawPaginationParams,
     config: PaginationConfig[A] = defaultPaginationConfig
   ): Validation[PaginationParams[A]] = {
+    val style = calculateStyle(raw, config)
+
+    val styleVal = if (!config.validStyles.contains(style)) {
+      val formattedValidStyles = config.validStyles.
+        sortWith(_.toString < _.toString).
+        map("'" + _ + "'").mkString(", ")
+
+      Validation.failure("pagination.style", "useless.error.invalid-value",
+       "specified" -> style.toString, "valid" -> formattedValidStyles)
+    } else {
+      Validation.success(Some(style))
+    }
+
     val limitVal = raw.limit.map { limit =>
       if (limit <= 0) {
         Validation.failure("pagination.limit", "useless.error.non-positive",
@@ -148,7 +162,7 @@ object PaginationParams {
       )
     }.getOrElse(Validation.Success(None))
 
-    (limitVal ++ orderVal ++ pageVal ++ offsetVal ++ afterVal).map { _ =>
+    (styleVal ++ limitVal ++ orderVal ++ pageVal ++ offsetVal ++ afterVal).map { _ =>
       calculateStyle(raw, config) match {
         case PrecedenceBasedPagination => new PrecedenceBasedPaginationParams(raw, config)
         case _ => new OffsetBasedPaginationParams(raw, config)
