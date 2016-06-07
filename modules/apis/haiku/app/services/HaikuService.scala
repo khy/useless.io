@@ -27,14 +27,8 @@ object HaikuService extends Configuration {
     AccountClient.instance(authGuid)
   }
 
-  private val paginationConfig = PaginationConfig(
-    defaultStyle = PrecedenceBasedPagination,
-    maxLimit = 100,
-    defaultLimit = 20,
-    defaultOffset = 0,
-    validOrders = Seq("created_at"),
-    defaultOrder = "created_at",
-    afterParser = Validator.uuid(_: String, None)
+  private val paginationConfig = PaginationParams.defaultPaginationConfig.copy(
+    defaultStyle = PrecedenceBasedPagination
   )
 
   def haikuLines(record: HaikuRecord): Seq[String] = {
