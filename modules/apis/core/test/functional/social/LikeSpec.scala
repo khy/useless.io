@@ -7,6 +7,8 @@ import play.api.test.Helpers._
 import play.api.libs.json.Json
 import slick.driver.PostgresDriver.api._
 import io.useless.http.LinkHeader
+import io.useless.validation.Errors
+import io.useless.play.json.validation.ErrorsJson._
 
 import db.core.social._
 import models.core.account.Account
@@ -157,7 +159,7 @@ class LikeSpec
       likeAggs.find(_.resourceId == "456").get.count mustBe 1
     }
 
-    "support pagination, ordering by the api / type / ID concatenated key" in {
+    "support offset- / page-based pagination, ordering by the api / type / ID concatenated key" in {
       val user1 = createUser("dave@useless.io", "dave", None)
       val user2 = createUser("bill@useless.io", "bill", None)
       createLike("beer", "ingredients", "123", user1)
@@ -183,6 +185,18 @@ class LikeSpec
       likeAggs2.length mustBe 1
       likeAggs2.head.resourceType mustBe "ingredients"
       likeAggs2.head.count mustBe 2
+    }
+
+    "not support precedence-based pagination" in {
+      val response = get(aggregatesUrl, auth = user.accessTokens(0).guid,
+        "resourceApi" -> "beer",
+        "p.after" -> "abc"
+      )
+
+      response.status mustBe CONFLICT
+      val errors = response.json.as[Seq[Errors]]
+      errors.head.key mustBe Some("pagination.style")
+      errors.head.messages.head.key mustBe "useless.error.invalid-value"
     }
 
   }

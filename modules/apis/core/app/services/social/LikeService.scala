@@ -111,6 +111,10 @@ class LikeService(
     }
   }
 
+  val aggregatePaginationConfig = PaginationParams.defaultPaginationConfig.copy(
+    validStyles = Seq(OffsetBasedPagination, PageBasedPagination)
+  )
+
   def aggregates(
     resourceApis: Option[Seq[String]],
     resourceTypes: Option[Seq[String]],
@@ -118,7 +122,7 @@ class LikeService(
     accountGuids: Option[Seq[UUID]],
     rawPaginationParams: RawPaginationParams = RawPaginationParams()
   )(implicit ec: ExecutionContext): Future[Validation[PaginatedResult[LikeAggregate]]] = {
-    val valPaginationParams = PaginationParams.build(rawPaginationParams)
+    val valPaginationParams = PaginationParams.build(rawPaginationParams, aggregatePaginationConfig)
 
     ValidationUtil.mapFuture(valPaginationParams) { paginationParams =>
       var query = Likes.filter(_.deletedAt.isEmpty)
