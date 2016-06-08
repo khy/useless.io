@@ -20,7 +20,7 @@ object LikeController extends Controller with PaginationController {
 
   val likeService = LikeService.instance(current.configuration)
 
-  def index = Auth.async { implicit request =>
+  def index = Action.async { implicit request =>
     withRawPaginationParams { pagination =>
       likeService.find(
         request.richQueryString.seqString("resourceApi"),
@@ -39,7 +39,7 @@ object LikeController extends Controller with PaginationController {
     }
   }
 
-  def aggregates = Auth.async { implicit request =>
+  def aggregates = Action.async { implicit request =>
     withRawPaginationParams { pagination =>
       likeService.aggregates(
         request.richQueryString.seqString("resourceApi"),

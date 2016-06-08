@@ -37,16 +37,11 @@ class LikeSpec
 
   "GET /social/likes" should {
 
-    "return a 401 Unauthorized if the request is not authenticated" in {
-      val response = get(collectionUrl, auth = None)
-      response.status mustBe UNAUTHORIZED
-    }
-
     "return a 200 with any likes for the specified resource" in {
       val like1 = createLike()
       val like2 = createLike(user = createUser("dave@useless.io", "dave", None))
 
-      val response = get(collectionUrl, auth = user.accessTokens(0).guid,
+      val response = get(collectionUrl, auth = None,
         "resourceApi" -> "beer",
         "resourceType" -> "bottles",
         "resourceId" -> "123"
@@ -61,7 +56,7 @@ class LikeSpec
       val like1 = createLike()
       val like2 = createLike(resourceId = "456")
 
-      val response = get(collectionUrl, auth = user.accessTokens(0).guid,
+      val response = get(collectionUrl, auth = None,
         "resourceApi" -> "beer",
         "resourceType" -> "bottles",
         "resourceId" -> "123",
@@ -78,7 +73,7 @@ class LikeSpec
       val like1 = createLike()
       val like2 = createLike(user = user)
 
-      val response = get(collectionUrl, auth = user.accessTokens(0).guid,
+      val response = get(collectionUrl, auth = None,
         "resourceApi" -> "beer",
         "resourceType" -> "bottles",
         "resourceId" -> "123",
@@ -95,7 +90,7 @@ class LikeSpec
       val like2 = createLike(user = createUser("dave@useless.io", "dave", None))
       val like3 = createLike(user = createUser("bill@useless.io", "bill", None))
 
-      val response = get(collectionUrl, auth = user.accessTokens(0).guid,
+      val response = get(collectionUrl, auth = None,
         "resourceApi" -> "beer",
         "resourceType" -> "bottles",
         "resourceId" -> "123",
@@ -112,11 +107,6 @@ class LikeSpec
 
   "GET /social/likes/aggregates" should {
 
-    "return a 401 Unauthorized if the request is not authenticated" in {
-      val response = get(aggregatesUrl, auth = None)
-      response.status mustBe UNAUTHORIZED
-    }
-
     "return a 200 with any likes for the specified resource type" in {
       val user1 = createUser("dave@useless.io", "dave", None)
       val user2 = createUser("bill@useless.io", "bill", None)
@@ -125,7 +115,7 @@ class LikeSpec
       createLike("beer", "bottles", "456", user1)
       createLike("beer", "breweries", "123", user1)
 
-      val response = get(aggregatesUrl, auth = user.accessTokens(0).guid,
+      val response = get(aggregatesUrl, auth = None,
         "resourceApi" -> "beer",
         "resourceType" -> "bottles"
       )
@@ -145,7 +135,7 @@ class LikeSpec
       createLike("beer", "bottles", "456", user1)
       createLike("beer", "bottles", "789", user2)
 
-      val response = get(aggregatesUrl, auth = user.accessTokens(0).guid,
+      val response = get(aggregatesUrl, auth = None,
         "resourceApi" -> "beer",
         "resourceType" -> "bottles",
         "resourceId" -> "123",
@@ -169,7 +159,7 @@ class LikeSpec
       createLike("beer", "bottles", "456", user1)
       createLike("beer", "bottles", "789", user2)
 
-      val response1 = get(aggregatesUrl, auth = user.accessTokens(0).guid,
+      val response1 = get(aggregatesUrl, auth = None,
         "resourceApi" -> "beer",
         "p.limit" -> "3"
       )
@@ -188,7 +178,7 @@ class LikeSpec
     }
 
     "not support precedence-based pagination" in {
-      val response = get(aggregatesUrl, auth = user.accessTokens(0).guid,
+      val response = get(aggregatesUrl, auth = None,
         "resourceApi" -> "beer",
         "p.after" -> "abc"
       )
