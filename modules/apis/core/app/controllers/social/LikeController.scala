@@ -60,7 +60,7 @@ object LikeController extends Controller with PaginationController {
     resourceApi: String,
     resourceType: String,
     resourceId: String
-  ) = Auth.async(parse.json) { request =>
+  ) = Auth.async { request =>
     likeService.create(resourceApi, resourceType, resourceId, request.accessToken).flatMap { result =>
       result.fold(
         failure => Future.successful(Conflict(Json.toJson(failure))),
