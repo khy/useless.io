@@ -216,6 +216,17 @@ class LikeSpec
       like2.guid mustBe like1.guid
     }
 
+    "not return a deleted like record, if one already exists" in {
+      val like1 = createLike()
+      val deleteResponse = delete(resourceUrl, auth = user.accessTokens(0).guid)
+
+      val likeResponse = put(resourceUrl, auth = user.accessTokens(0).guid, body = Json.obj())
+      likeResponse.status mustBe CREATED
+
+      val like2 = likeResponse.json.as[Like]
+      like2.guid must not be like1.guid
+    }
+
   }
 
   "DELETE /social/likes/:resourceApi/:resourceType/:resourceId" should {
@@ -241,6 +252,20 @@ class LikeSpec
         "resourceId" -> "123"
       )
       getResponse.json.as[Seq[Like]].length mustBe 0
+    }
+
+    "only delete the specified like" in {
+      createLike(resourceId = "123")
+      createLike(resourceId = "456")
+
+      val deleteResponse = delete(resourceUrl, auth = user.accessTokens(0).guid)
+
+      val getResponse = get(collectionUrl, auth = user.accessTokens(0).guid,
+        "resourceApi" -> "beer",
+        "resourceType" -> "bottles",
+        "resourceId" -> "456"
+      )
+      getResponse.json.as[Seq[Like]].length mustBe 1
     }
 
   }

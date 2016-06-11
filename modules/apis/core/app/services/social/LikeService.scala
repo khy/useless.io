@@ -217,9 +217,9 @@ class LikeService(
       optLike.map { like =>
         val now = new sql.Timestamp((new Date).getTime)
 
-        val query = Likes.filter { like =>
-          like.id === like.id &&
-          like.deletedAt.isEmpty
+        val query = Likes.filter { r =>
+          r.id === like.id &&
+          r.deletedAt.isEmpty
         }.map { like =>
           (like.deletedAt, like.deletedByAccount, like.deletedByAccessToken)
         }.update((Some(now), Some(accessToken.resourceOwner.guid), Some(accessToken.guid)))
@@ -247,7 +247,8 @@ class LikeService(
       r.resourceApi === resourceApi &&
       r.resourceType === resourceType &&
       r.resourceId === resourceId &&
-      r.createdByAccount === accessToken.resourceOwner.guid
+      r.createdByAccount === accessToken.resourceOwner.guid &&
+      r.deletedAt.isEmpty
     }
 
     database.run(existingQuery.result).map(_.headOption)
