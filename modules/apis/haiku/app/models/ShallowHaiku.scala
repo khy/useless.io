@@ -9,7 +9,6 @@ case class ShallowHaiku(
   lines: Seq[String],
   attribution: Option[String],
   inResponseToGuid: Option[UUID],
-  responseGuids: Seq[UUID],
   createdAt: DateTime,
   createdBy: User
 )
