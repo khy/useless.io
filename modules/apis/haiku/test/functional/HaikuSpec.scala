@@ -257,6 +257,27 @@ class HaikuSpec
       (haikus(1) \ "createdBy" \ "handle").as[String] mustBe "khy"
     }
 
+    "return haikus that are in response to the haiku specified by the 'inResponseTo' parameter" in {
+      val haiku = createHaiku1.json.as[Haiku]
+      await { WS.url(url).
+        withHeaders(("Authorization" -> "11111111-1111-1111-1111-111111111111")).
+        post(Json.obj(
+          "lines" -> Json.arr(
+            "another year is gone",
+            "a traveler's shade on my head,",
+            "straw sandals at my feet"
+          ),
+          "inResponseToGuid" -> haiku.guid
+        ))
+      }
+
+      val response = await { WS.url(url).withQueryString("inResponseTo" -> haiku.guid.toString).get() }
+      val haikus = Json.parse(response.body).as[Seq[Haiku]]
+
+      haikus.size mustBe 1
+      haikus(0).inResponseTo.get.guid mustBe haiku.guid
+    }
+
     "return haikus with the specified guids" in {
       val haiku1 = createHaiku1.json.as[Haiku]
       val haiku2 = createHaiku2.json.as[Haiku]

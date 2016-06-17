@@ -92,6 +92,7 @@ object HaikuService extends Configuration {
     ids: Option[Seq[Long]] = None,
     guids: Option[Seq[UUID]] = None,
     userHandles: Option[Seq[String]] = None,
+    inResponseToGuids: Option[Seq[UUID]] = None,
     rawPaginationParams: RawPaginationParams = RawPaginationParams()
   )(implicit app: Application, ec: ExecutionContext): Future[Validation[PaginatedResult[HaikuRecord]]] = {
     val valPaginationParams = PaginationParams.build(rawPaginationParams, paginationConfig)
@@ -117,6 +118,11 @@ object HaikuService extends Configuration {
 
         optAccounts.foreach { accounts =>
           query = query.filter { _.createdByAccount inSet accounts.map(_.guid) }
+        }
+
+        inResponseToGuids.foreach { inResponseToGuids =>
+          val inResponseToIds = Haikus.filter(_.guid inSet inResponseToGuids).map(_.id)
+          query = query.filter { _.inResponseToId in inResponseToIds }
         }
 
         var pagedQuery = query.sortBy(_.createdAt.desc)
