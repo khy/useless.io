@@ -9,6 +9,7 @@ case class Haiku(
   lines: Seq[String],
   attribution: Option[String],
   inResponseTo: Option[ShallowHaiku],
+  responseCount: Int,
   createdAt: DateTime,
   createdBy: User
 )
