@@ -42,7 +42,6 @@ useGpg := true
 
 publishStepTasks := Seq(
   (publishSigned in lib),
-  (ensureBoot2Docker),
   (publish in (root, Docker)),
   (semPublish in (haiku))
 )

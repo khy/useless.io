@@ -24,10 +24,6 @@ object Release extends AutoPlugin {
       "ReleaseSteps."
     )
 
-    val ensureBoot2Docker = taskKey[Unit](
-      "Ensure that boot2docker is running."
-    )
-
   }
 
   import autoImport._
@@ -38,10 +34,6 @@ object Release extends AutoPlugin {
 
     publishSteps := publishStepTasks.value.map { taskKey =>
       ReleaseStep(releaseStepTask(taskKey))
-    },
-
-    ensureBoot2Docker := {
-      "boot2docker up".!
     },
 
     releaseProcess := Seq(
