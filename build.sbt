@@ -43,7 +43,8 @@ useGpg := true
 publishStepTasks := Seq(
   (publishSigned in lib),
   (publish in (root, Docker)),
-  (semPublish in (haiku))
+  (semPublish in core),
+  (semPublish in haiku)
 )
 
 javaOptions in (ThisBuild, Test) += "-Dconfig.file=" + baseDirectory.value + "/conf/test.conf"
