@@ -13,7 +13,7 @@ lazy val lib = (project in file("modules/lib")).enablePlugins(Base).configs(Inte
 lazy val core = (project in file("modules/apis/core")).enablePlugins(Base, PlayScala, Mongo).dependsOn(lib % "test->test;compile->compile")
 
 lazy val books = (project in file("modules/apis/books")).enablePlugins(Base, PlayScala, Postgres).dependsOn(lib % "test->test;compile->compile")
-lazy val haiku = (project in file("modules/apis/haiku")).enablePlugins(Base, PlayScala, Mongo).dependsOn(lib % "test->test;compile->compile")
+lazy val haiku = (project in file("modules/apis/haiku")).enablePlugins(Base, PlayScala, Postgres, Sem).dependsOn(lib % "test->test;compile->compile")
 lazy val budget = (project in file("modules/apis/budget")).enablePlugins(Base, PlayScala, Postgres).dependsOn(lib % "test->test;compile->compile")
 
 lazy val auth = (project in file("modules/apps/auth")).enablePlugins(Base, PlayScala, Mongo).dependsOn(lib % "test->test;compile->compile")
@@ -40,6 +40,11 @@ dockerCmd := Seq(
 
 useGpg := true
 
-publishStepTasks := Seq((publishSigned in lib), (ensureBoot2Docker), (publish in (root, Docker)))
+publishStepTasks := Seq(
+  (publishSigned in lib),
+  (ensureBoot2Docker),
+  (publish in (root, Docker)),
+  (semPublish in (haiku))
+)
 
 javaOptions in (ThisBuild, Test) += "-Dconfig.file=" + baseDirectory.value + "/conf/test.conf"
