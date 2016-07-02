@@ -5,73 +5,53 @@ import scala.util.control.Exception._
 import play.api.mvc.Request
 import org.joda.time.DateTime
 
+import io.useless.typeclass.Parse
+import io.useless.validation.{Validation, Validator}
+
 object QueryStringUtil {
 
   implicit class RichQueryStringRequest(request: Request[_]) {
     val laxQueryString = new LaxQueryString(request)
   }
 
+  implicit val stringParse = new Parse[String] {
+    def parse(raw: String) = Validation.success(raw)
+  }
+
+  implicit val intParse = new Parse[Int] {
+    def parse(raw: String) = Validator.int(raw)
+  }
+
+  implicit val longParse = new Parse[Long] {
+    def parse(raw: String) = Validator.long(raw)
+  }
+
+  implicit val uuidParse = new Parse[UUID] {
+    def parse(raw: String) = Validator.uuid(raw)
+  }
+
+  implicit val dateTimeParse = new Parse[DateTime] {
+    def parse(raw: String) = Validator.dateTime(raw)
+  }
+
+  implicit val booleanParse = new Parse[Boolean] {
+    def parse(raw: String) = Validator.boolean(raw)
+  }
+
 }
 
 class LaxQueryString(request: Request[_]) {
-  def seq[T](key: String, delim: Option[String] = None)(parse: String => Option[T]) = LaxQueryString.seq(request, key, delim)(parse)
-  def seqString(key: String, delim: Option[String] = None) = LaxQueryString.seqString(request, key, delim)
-  def string(key: String) = LaxQueryString.seqString(request, key).flatMap(_.headOption)
-  def seqInt(key: String, delim: Option[String] = None) = LaxQueryString.seqInt(request, key, delim)
-  def int(key: String) = LaxQueryString.seqInt(request, key).flatMap(_.headOption)
-  def seqLong(key: String, delim: Option[String] = None) = LaxQueryString.seqLong(request, key, delim)
-  def long(key: String) = LaxQueryString.seqLong(request, key).flatMap(_.headOption)
-  def seqUuid(key: String, delim: Option[String] = None) = LaxQueryString.seqUuid(request, key, delim)
-  def uuid(key: String) = LaxQueryString.seqUuid(request, key).flatMap(_.headOption)
-  def seqDateTime(key: String, delim: Option[String] = None) = LaxQueryString.seqDateTime(request, key, delim)
-  def dateTime(key: String) = LaxQueryString.seqDateTime(request, key).flatMap(_.headOption)
-  def boolean(key: String) = LaxQueryString.boolean(request, key)
-}
 
-object LaxQueryString {
-
-  def seq[T](request: Request[_], key: String, delim: Option[String] = None)(parse: String => Option[T]): Option[Seq[T]] = {
+  def seq[T: Parse](key: String, delim: Option[String] = None): Option[Seq[T]] = {
     request.queryString.get(key).map { raws =>
       raws.flatMap { raw =>
         delim.map { delim => raw.split(delim).toSeq }.getOrElse(Seq(raw))
-      }.map(parse).filter(_.isDefined).map(_.get)
+      }.map { raw =>
+        implicitly[Parse[T]].parse(raw).toOption
+      }.filter(_.isDefined).map(_.get)
     }
   }
 
-  def seqString(request: Request[_], key: String, delim: Option[String] = None): Option[Seq[String]] = {
-    seq(request, key, delim) { Some(_) }
-  }
-
-  def seqInt(request: Request[_], key: String, delim: Option[String] = None): Option[Seq[Int]] = {
-    seq(request, key, delim) { rawInt =>
-      catching(classOf[NumberFormatException]) opt rawInt.toInt
-    }
-  }
-
-  def seqLong(request: Request[_], key: String, delim: Option[String] = None): Option[Seq[Long]] = {
-    seq(request, key, delim) { rawLong =>
-      catching(classOf[NumberFormatException]) opt rawLong.toLong
-    }
-  }
-
-  def seqUuid(request: Request[_], key: String, delim: Option[String] = None): Option[Seq[UUID]] = {
-    seq(request, key, delim) { rawUuid =>
-      catching(classOf[IllegalArgumentException]) opt UUID.fromString(rawUuid)
-    }
-  }
-
-  def seqDateTime(request: Request[_], key: String, delim: Option[String] = None): Option[Seq[DateTime]] = {
-    seq(request, key, delim) { rawDateTime =>
-      catching(classOf[IllegalArgumentException]) opt DateTime.parse(rawDateTime)
-    }
-  }
-
-  def boolean(request: Request[_], key: String): Option[Boolean] = {
-    seq(request, key, None) {
-      case "true" => Some(true)
-      case "false" => Some(false)
-      case _ => None
-    }.flatMap(_.headOption)
-  }
+  def get[T: Parse](key: String): Option[T] = seq(key).flatMap(_.headOption)
 
 }

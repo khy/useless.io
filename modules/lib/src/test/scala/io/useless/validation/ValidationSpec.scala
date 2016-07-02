@@ -76,6 +76,20 @@ class ValidationSpec
 
   }
 
+  "Validation#toOption" must {
+
+    "retrn a None if the validation is a Validation.Failure" in {
+      val validation = Validation.failure("resourceKey", "is.invalid")
+      validation.toOption mustBe None
+    }
+
+    "return a Some if the validation is a Validation.Success" in {
+      val validation = Validation.success(1)
+      validation.toOption mustBe Some(1)
+    }
+
+  }
+
   "Validation#map" must {
 
     "return Validation.Success with the result of the function, if the specified validation is a Validation.Success" in {

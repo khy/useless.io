@@ -49,6 +49,11 @@ sealed trait Validation[+T] {
     case _ => throw new NoSuchElementException
   }
 
+  def toOption: Option[T] = this match {
+    case Success(value) => Some(value)
+    case Failure(_) => None
+  }
+
   def map[S](f: T => S): Validation[S] = this match {
     case Success(value) => success(f(value))
     case Failure(errors) => failure(errors)
