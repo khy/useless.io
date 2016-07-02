@@ -5,26 +5,30 @@ import scala.util.control.Exception._
 import play.api.mvc.Request
 import org.joda.time.DateTime
 
-object LooseQueryStringUtil {
+object QueryStringUtil {
 
   implicit class RichQueryStringRequest(request: Request[_]) {
-    val richQueryString = new RichQueryString(request)
+    val laxQueryString = new LaxQueryString(request)
   }
 
-  class RichQueryString(request: Request[_]) {
-    def seq[T](key: String, delim: Option[String] = None)(parse: String => Option[T]) = LooseQueryStringUtil.seq(request, key, delim)(parse)
-    def seqString(key: String, delim: Option[String] = None) = LooseQueryStringUtil.seqString(request, key, delim)
-    def string(key: String) = LooseQueryStringUtil.seqString(request, key).flatMap(_.headOption)
-    def seqInt(key: String, delim: Option[String] = None) = LooseQueryStringUtil.seqInt(request, key, delim)
-    def int(key: String) = LooseQueryStringUtil.seqInt(request, key).flatMap(_.headOption)
-    def seqLong(key: String, delim: Option[String] = None) = LooseQueryStringUtil.seqLong(request, key, delim)
-    def long(key: String) = LooseQueryStringUtil.seqLong(request, key).flatMap(_.headOption)
-    def seqUuid(key: String, delim: Option[String] = None) = LooseQueryStringUtil.seqUuid(request, key, delim)
-    def uuid(key: String) = LooseQueryStringUtil.seqUuid(request, key).flatMap(_.headOption)
-    def seqDateTime(key: String, delim: Option[String] = None) = LooseQueryStringUtil.seqDateTime(request, key, delim)
-    def dateTime(key: String) = LooseQueryStringUtil.seqDateTime(request, key).flatMap(_.headOption)
-    def boolean(key: String) = LooseQueryStringUtil.boolean(request, key)
-  }
+}
+
+class LaxQueryString(request: Request[_]) {
+  def seq[T](key: String, delim: Option[String] = None)(parse: String => Option[T]) = LaxQueryString.seq(request, key, delim)(parse)
+  def seqString(key: String, delim: Option[String] = None) = LaxQueryString.seqString(request, key, delim)
+  def string(key: String) = LaxQueryString.seqString(request, key).flatMap(_.headOption)
+  def seqInt(key: String, delim: Option[String] = None) = LaxQueryString.seqInt(request, key, delim)
+  def int(key: String) = LaxQueryString.seqInt(request, key).flatMap(_.headOption)
+  def seqLong(key: String, delim: Option[String] = None) = LaxQueryString.seqLong(request, key, delim)
+  def long(key: String) = LaxQueryString.seqLong(request, key).flatMap(_.headOption)
+  def seqUuid(key: String, delim: Option[String] = None) = LaxQueryString.seqUuid(request, key, delim)
+  def uuid(key: String) = LaxQueryString.seqUuid(request, key).flatMap(_.headOption)
+  def seqDateTime(key: String, delim: Option[String] = None) = LaxQueryString.seqDateTime(request, key, delim)
+  def dateTime(key: String) = LaxQueryString.seqDateTime(request, key).flatMap(_.headOption)
+  def boolean(key: String) = LaxQueryString.boolean(request, key)
+}
+
+object LaxQueryString {
 
   def seq[T](request: Request[_], key: String, delim: Option[String] = None)(parse: String => Option[T]): Option[Seq[T]] = {
     request.queryString.get(key).map { raws =>

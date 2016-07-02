@@ -10,7 +10,7 @@ import play.api.libs.json.Json
 import play.api.libs.concurrent.Execution.Implicits._
 import io.useless.play.json.validation.ErrorsJson._
 import io.useless.play.pagination.PaginationController
-import io.useless.play.http.LooseQueryStringUtil.RichQueryStringRequest
+import io.useless.play.http.QueryStringUtil._
 
 import controllers.core.auth.Auth
 import models.core.social.JsonImplicits._
@@ -23,10 +23,10 @@ object LikeController extends Controller with PaginationController {
   def index = Action.async { implicit request =>
     withRawPaginationParams { pagination =>
       likeService.find(
-        request.richQueryString.seqString("resourceApi"),
-        request.richQueryString.seqString("resourceType"),
-        request.richQueryString.seqString("resourceId"),
-        request.richQueryString.seqUuid("accountGuid"),
+        request.laxQueryString.seqString("resourceApi"),
+        request.laxQueryString.seqString("resourceType"),
+        request.laxQueryString.seqString("resourceId"),
+        request.laxQueryString.seqUuid("accountGuid"),
         pagination
       ).flatMap { result =>
         result.fold(
@@ -42,10 +42,10 @@ object LikeController extends Controller with PaginationController {
   def aggregates = Action.async { implicit request =>
     withRawPaginationParams { pagination =>
       likeService.aggregates(
-        request.richQueryString.seqString("resourceApi"),
-        request.richQueryString.seqString("resourceType"),
-        request.richQueryString.seqString("resourceId"),
-        request.richQueryString.seqUuid("accountGuid"),
+        request.laxQueryString.seqString("resourceApi"),
+        request.laxQueryString.seqString("resourceType"),
+        request.laxQueryString.seqString("resourceId"),
+        request.laxQueryString.seqUuid("accountGuid"),
         pagination
       ).map { result =>
         result.fold(

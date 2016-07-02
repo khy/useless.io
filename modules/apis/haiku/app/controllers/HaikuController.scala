@@ -11,7 +11,7 @@ import play.api.libs.concurrent.Execution.Implicits._
 import io.useless.play.json.validation.ErrorsJson._
 import io.useless.play.pagination.PaginationController
 import io.useless.account.User
-import io.useless.play.http.LooseQueryStringUtil._
+import io.useless.play.http.QueryStringUtil._
 
 import services.haiku.HaikuService
 import models.haiku.JsonImplicits._
@@ -22,9 +22,9 @@ object HaikuController extends Controller with PaginationController {
   def index = Action.async { implicit request =>
     withRawPaginationParams { pagination =>
       HaikuService.find(
-        guids = request.richQueryString.seqUuid("guid"),
-        userHandles = request.richQueryString.seqString("user"),
-        inResponseToGuids = request.richQueryString.seqUuid("inResponseTo"),
+        guids = request.laxQueryString.seqUuid("guid"),
+        userHandles = request.laxQueryString.seqString("user"),
+        inResponseToGuids = request.laxQueryString.seqUuid("inResponseTo"),
         rawPaginationParams = pagination
       ).flatMap { result =>
         result.fold(
