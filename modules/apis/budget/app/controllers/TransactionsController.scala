@@ -9,6 +9,7 @@ import play.api.Play.current
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import play.api.data._
 import play.api.data.Forms._
+import play.api.i18n.Messages.Implicits._
 import org.joda.time.LocalDate
 import io.useless.play.json.DateTimeJson._
 import io.useless.play.json.validation.ErrorsJson._
@@ -17,7 +18,6 @@ import io.useless.play.pagination.PaginationController
 import controllers.budget.auth.Auth
 import services.budget.TransactionsService
 import models.budget.JsonImplicits._
-import util.FormFormats._
 
 object TransactionsController extends Controller with PaginationController {
 

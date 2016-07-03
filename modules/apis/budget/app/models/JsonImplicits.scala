@@ -14,7 +14,7 @@ object JsonImplicits {
   val userReads: Reads[User] = (
     (__ \ "guid").read[UUID] ~
     (__ \ "handle").read[String] ~
-    (__ \ "name").read[Option[String]]
+    (__ \ "name").readNullable[String]
   ) { (guid: UUID, handle: String, name: Option[String]) =>
     User(guid, handle, name)
   }

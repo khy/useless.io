@@ -19,7 +19,7 @@ object JsonImplicits {
     val user = new PublicUser(
       (json \ "guid").as[UUID],
       (json \ "handle").as[String],
-      (json \ "name").as[Option[String]]
+      (json \ "name").asOpt[String]
     )
 
     new JsSuccess(user)

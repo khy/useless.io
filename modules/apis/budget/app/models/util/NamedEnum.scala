@@ -26,7 +26,10 @@ object NamedEnumJson {
 
     def reads(json: JsValue) = json match {
       case JsString(key) => JsSuccess(companion(key))
-      case jsObject: JsObject => reads((jsObject \ "key"))
+      case jsObject: JsObject => (jsObject \ "key").toEither.fold(
+        error => JsError(Seq((__ \ "key") -> Seq(error))),
+        value => reads(value)
+      )
       case _ => JsError(Seq(JsPath() -> Seq(ValidationError("error.expected.jsstring"))))
     }
 
