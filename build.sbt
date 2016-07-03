@@ -2,7 +2,7 @@ import com.typesafe.sbt.pgp.PgpKeys.publishSigned
 
 name := "useless"
 
-scalaVersion in ThisBuild := "2.11.6"
+scalaVersion in ThisBuild := "2.11.8"
 
 scalacOptions in ThisBuild ++= Seq("-unchecked", "-deprecation", "-feature", "-language:reflectiveCalls")
 
