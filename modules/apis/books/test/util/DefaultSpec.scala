@@ -13,7 +13,7 @@ trait DefaultSpec
   with DefaultUselessMock
 {
 
-  implicit override lazy val app = {
+  implicit override lazy val app: FakeApplication = {
     FakeApplication(additionalConfiguration = Map("application.router" -> "books.Routes"))
   }
 
