@@ -1,5 +1,3 @@
-# --- !Ups
-
 CREATE TABLE editions (
   guid uuid PRIMARY KEY,
   book_guid uuid NOT NULL REFERENCES books(guid),
@@ -11,7 +9,3 @@ CREATE TABLE editions (
   deleted_by_account uuid,
   deleted_by_access_token uuid
 );
-
-# --- !Downs
-
-DROP TABLE editions;

@@ -12,7 +12,7 @@ lazy val lib = (project in file("modules/lib")).enablePlugins(Base).configs(Inte
 
 lazy val core = (project in file("modules/apis/core")).enablePlugins(Base, PlayScala, Mongo, Postgres, Sem).dependsOn(lib % "test->test;compile->compile")
 
-lazy val books = (project in file("modules/apis/books")).enablePlugins(Base, PlayScala, Postgres).dependsOn(lib % "test->test;compile->compile")
+lazy val books = (project in file("modules/apis/books")).enablePlugins(Base, PlayScala, Postgres, Sem).dependsOn(lib % "test->test;compile->compile")
 lazy val haiku = (project in file("modules/apis/haiku")).enablePlugins(Base, PlayScala, Postgres, Sem).dependsOn(lib % "test->test;compile->compile")
 lazy val budget = (project in file("modules/apis/budget")).enablePlugins(Base, PlayScala, Postgres).dependsOn(lib % "test->test;compile->compile")
 
@@ -34,7 +34,6 @@ maintainer in Docker := "Kevin Hyland <khy@me.com>"
 dockerRepository := Some("khyland")
 dockerCmd := Seq(
   "-Dconfig.file=conf/prod.conf",
-  "-DapplyEvolutions.books=true",
   "-DapplyEvolutions.budget=true"
 )
 
@@ -44,6 +43,7 @@ publishStepTasks := Seq(
   (publishSigned in lib),
   (publish in (root, Docker)),
   (semPublish in core),
+  (semPublish in books),
   (semPublish in haiku)
 )
 

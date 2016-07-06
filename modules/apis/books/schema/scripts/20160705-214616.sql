@@ -1,5 +1,3 @@
-# --- !Ups
-
 CREATE TABLE books (
   guid uuid PRIMARY KEY,
   title text NOT NULL,
@@ -16,7 +14,3 @@ CREATE UNIQUE INDEX books_title_author_guid_un_idx ON books(title, author_guid);
 
 CREATE INDEX books_title_fts_idx ON books
 USING gin(to_tsvector('english', title));
-
-# --- !Downs
-
-DROP TABLE books;

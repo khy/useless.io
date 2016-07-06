@@ -1,5 +1,3 @@
-# --- !Ups
-
 CREATE TABLE notes (
   guid uuid PRIMARY KEY,
   edition_guid uuid NOT NULL REFERENCES editions(guid),
@@ -15,7 +13,3 @@ CREATE TABLE notes (
 
 CREATE INDEX notes_content_fts_idx ON notes
 USING gin(to_tsvector('english', content));
-
-# --- !Downs
-
-DROP TABLE notes;

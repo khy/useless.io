@@ -1,5 +1,3 @@
-# --- !Ups
-
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
 
 CREATE TABLE authors (
@@ -17,8 +15,3 @@ CREATE UNIQUE INDEX authors_name_un_idx ON authors(name);
 
 CREATE INDEX authors_name_fts_idx ON authors
 USING gin(to_tsvector('simple', name));
-
-# --- !Downs
-
-DROP EXTENSION IF EXISTS pg_trgm;
-DROP TABLE authors;
