@@ -222,7 +222,7 @@ class NoteSpec extends DefaultSpec {
       (notes(1) \ "content").as[String] mustBe "This is good, guy."
     }
 
-    "return notes belonging to the specified account_guids" in {
+    "return notes belonging to the specified accountGuids" in {
       val bookGuid = Factory.addBook(title = "I Pass Like Night", authorName = "Jonathan Ames")
       val editionGuid = Factory.addEdition(bookGuid = bookGuid, pageCount = 164)
 
@@ -249,8 +249,8 @@ class NoteSpec extends DefaultSpec {
 
       val response = await {
         baseRequest().withQueryString(
-          "account_guid" -> mikeAccessToken.resourceOwner.guid.toString,
-          "account_guid" -> dennisAccessToken.resourceOwner.guid.toString
+          "accountGuid" -> mikeAccessToken.resourceOwner.guid.toString,
+          "accountGuid" -> dennisAccessToken.resourceOwner.guid.toString
         ).get()
       }
 

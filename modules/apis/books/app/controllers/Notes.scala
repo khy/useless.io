@@ -7,6 +7,7 @@ import play.api.mvc._
 import play.api.libs.json.Json
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import io.useless.util.Uuid
+import io.useless.play.http.QueryStringUtil._
 import io.useless.pagination._
 import io.useless.play.pagination.PaginationController
 import io.useless.play.json.MessageJson
@@ -30,13 +31,9 @@ object Notes extends Controller with PaginationController {
   }
 
   def index = Action.async { implicit request =>
-    val accountGuids = request.queryString.get("account_guid").map { rawGuids =>
-      rawGuids.map(Uuid.parseUuid(_)).filter(_.isSuccess).map(_.get)
-    }.getOrElse(Seq.empty)
-
     withRawPaginationParams { rawPaginationParams =>
       NoteService.findNotes(
-        accountGuids,
+        accountGuids = request.laxQueryString.seq[UUID]("accountGuid"),
         rawPaginationParams
       ).map { result =>
         result.fold(

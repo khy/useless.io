@@ -35,7 +35,7 @@ object NoteService extends BaseService with Configuration {
   )
 
   def findNotes(
-    accountGuids: Seq[UUID],
+    accountGuids: Option[Seq[UUID]],
     rawPaginationParams: RawPaginationParams
   ): Future[Validation[PaginatedResult[Note]]] = {
     val valPaginationParams = PaginationParams.build(rawPaginationParams, paginationConfig)
@@ -49,7 +49,7 @@ object NoteService extends BaseService with Configuration {
         }
       }
 
-      if (accountGuids.nonEmpty) {
+      accountGuids.foreach { accountGuids =>
         query = query.filter { note =>
           note.createdByAccount inSet accountGuids
         }
