@@ -18,13 +18,13 @@ class AuthorSpec extends DefaultSpec {
 
   "GET /authors" must {
 
-    "return an error if the request isn't authenticated" in {
+    "support unauthenticated access" in {
       val response = await {
         WS.url(s"http://localhost:$port/authors").
           withQueryString("name" -> "Jonathan Franzen").get
       }
 
-      response.status mustBe UNAUTHORIZED
+      response.status mustBe OK
     }
 
     "return exact matches on name" in {

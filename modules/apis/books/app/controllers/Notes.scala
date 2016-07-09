@@ -21,7 +21,7 @@ object Notes extends Controller with PaginationController {
 
   import MessageJson.format
 
-  def get(guid: UUID) = Auth.async {
+  def get(guid: UUID) = Action.async {
     NoteService.getNote(guid).map { optNote =>
       optNote.map { note =>
         Ok(Json.toJson(note))
@@ -29,7 +29,7 @@ object Notes extends Controller with PaginationController {
     }
   }
 
-  def index = Auth.async { implicit request =>
+  def index = Action.async { implicit request =>
     val accountGuids = request.queryString.get("account_guid").map { rawGuids =>
       rawGuids.map(Uuid.parseUuid(_)).filter(_.isSuccess).map(_.get)
     }.getOrElse(Seq.empty)

@@ -13,7 +13,7 @@ import controllers.books.auth.Auth
 
 object Authors extends Controller {
 
-  def index(name: String) = Auth.async {
+  def index(name: String) = Action.async {
     AuthorService.findAuthors(name).map { authors =>
       Ok(Json.toJson(authors))
     }

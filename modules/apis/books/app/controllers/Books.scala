@@ -14,7 +14,7 @@ import controllers.books.auth.Auth
 
 object Books extends Controller {
 
-  def get(guid: UUID) = Auth.async {
+  def get(guid: UUID) = Action.async {
     BookService.getBook(guid).map { optBook =>
       optBook.map { book =>
         Ok(Json.toJson(book))
@@ -22,7 +22,7 @@ object Books extends Controller {
     }
   }
 
-  def index(title: String) = Auth.async {
+  def index(title: String) = Action.async {
     BookService.findBooks(title).map { books =>
       Ok(Json.toJson(books))
     }

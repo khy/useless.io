@@ -24,7 +24,7 @@ class NoteSpec extends DefaultSpec {
 
   "GET /notes/:guid" must {
 
-    "require authenticated requests" in {
+    "support authenticated requests" in {
       val bookGuid = Factory.addBook(title = "I Pass Like Night", authorName = "Jonathan Ames")
       val editionGuid = Factory.addEdition(bookGuid, pageCount = 164)
       val noteGuid = Factory.addNote(editionGuid, 34, "A note.")
@@ -32,7 +32,7 @@ class NoteSpec extends DefaultSpec {
       val response = await {
         WS.url(s"http://localhost:$port/notes/$noteGuid").get
       }
-      response.status mustBe UNAUTHORIZED
+      response.status mustBe OK
     }
 
     "return a 404 if a non-existant GUID is specified" in {
@@ -167,6 +167,15 @@ class NoteSpec extends DefaultSpec {
       Factory.addNote(editionGuid, 68, "What do you think?")
       Factory.addNote(editionGuid, 103, "I'm feeling a little dizzy.")
       Factory.addNote(editionGuid, 140, "...")
+    }
+
+    "support unauthenticated requests" in {
+      buildNotes()
+      val response = await {
+        WS.url(s"http://localhost:$port/notes").withQueryString("p.limit" -> "3").get
+      }
+
+      response.status mustBe OK
     }
 
     "return the first page of results ordered by time, if no 'page' or 'order' is specified" in {

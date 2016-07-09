@@ -18,6 +18,16 @@ class BookSpec extends DefaultSpec {
 
   "GET /books/:guid" must {
 
+    "support unauthenticated access" in {
+      val guid = Factory.addBook("The Corrections", "Jonathan Franzen")
+      val response = await {
+        WS.url(s"http://localhost:$port/books/$guid").
+          withQueryString("title" -> "The Corrections").get
+      }
+
+      response.status mustBe OK
+    }
+
     "return a 404 if no book corresponds to the specified GUID" in {
       val guid = UUID.randomUUID
       val response = await { baseRequest(Some(s"/books/$guid")).get }
@@ -37,13 +47,13 @@ class BookSpec extends DefaultSpec {
 
   "GET /books" must {
 
-    "return an error if the request isn't authenticated" in {
+    "support unauthenticated access" in {
       val response = await {
         WS.url(s"http://localhost:$port/books").
           withQueryString("title" -> "The Corrections").get
       }
 
-      response.status mustBe UNAUTHORIZED
+      response.status mustBe OK
     }
 
     "return exact matches on name" in {
