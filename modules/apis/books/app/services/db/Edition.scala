@@ -5,7 +5,7 @@ import java.sql.Timestamp
 
 import Driver.api._
 
-case class Edition(
+case class EditionRecord(
   guid: UUID,
   bookGuid: UUID,
   pageCount: Int,
@@ -17,16 +17,16 @@ case class Edition(
   deletedByAccessToken: Option[UUID]
 )
 
-class Editions(tag: Tag)
-  extends Table[Edition](tag, "editions")
-  with AuditData[Edition]
+class EditionsTable(tag: Tag)
+  extends Table[EditionRecord](tag, "editions")
+  with AuditData[EditionRecord]
 {
   def guid = column[UUID]("guid")
   def bookGuid = column[UUID]("book_guid")
   def pageCount = column[Int]("page_count")
 
   def * = (guid, bookGuid, pageCount, createdAt, createdByAccount, createdByAccessToken,
-    deletedAt, deletedByAccount, deletedByAccessToken) <> (Edition.tupled, Edition.unapply)
+    deletedAt, deletedByAccount, deletedByAccessToken) <> (EditionRecord.tupled, EditionRecord.unapply)
 }
 
-object Editions extends TableQuery(new Editions(_))
+object Editions extends TableQuery(new EditionsTable(_))

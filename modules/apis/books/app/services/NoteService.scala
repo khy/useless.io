@@ -16,7 +16,7 @@ import io.useless.util.configuration.Configuration
 import io.useless.util.configuration.RichConfiguration._
 
 import db.Driver.api._
-import db.Notes
+import db.{Notes, NoteRecord}
 import models.books.Note
 
 object NoteService extends BaseService with Configuration {
@@ -82,7 +82,7 @@ object NoteService extends BaseService with Configuration {
     AccountClient.instance(authGuid)
   }
 
-  private def buildNotes(dbNotes: Seq[db.Note]): Future[Seq[Note]] = {
+  private def buildNotes(dbNotes: Seq[NoteRecord]): Future[Seq[Note]] = {
     def getAccounts(guids: Seq[UUID]): Future[Seq[Account]] = Future.sequence {
       guids.map(accountClient.getAccount(_))
     }.map { accounts =>

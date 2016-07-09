@@ -5,7 +5,7 @@ import java.sql.Timestamp
 
 import Driver.api._
 
-case class Note(
+case class NoteRecord(
   guid: UUID,
   editionGuid: UUID,
   pageNumber: Int,
@@ -18,9 +18,9 @@ case class Note(
   deletedByAccessToken: Option[UUID]
 )
 
-class Notes(tag: Tag)
-  extends Table[Note](tag, "notes")
-  with AuditData[Note]
+class NotesTable(tag: Tag)
+  extends Table[NoteRecord](tag, "notes")
+  with AuditData[NoteRecord]
 {
   def guid = column[UUID]("guid")
   def editionGuid = column[UUID]("edition_guid")
@@ -29,7 +29,7 @@ class Notes(tag: Tag)
 
   def * = (guid, editionGuid, pageNumber, content, createdAt, createdByAccount,
     createdByAccessToken, deletedAt, deletedByAccount,
-    deletedByAccessToken) <> (Note.tupled, Note.unapply)
+    deletedByAccessToken) <> (NoteRecord.tupled, NoteRecord.unapply)
 }
 
-object Notes extends TableQuery(new Notes(_))
+object Notes extends TableQuery(new NotesTable(_))

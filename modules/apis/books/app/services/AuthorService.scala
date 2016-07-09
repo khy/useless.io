@@ -6,7 +6,7 @@ import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import io.useless.accesstoken.AccessToken
 
 import db.Driver.api._
-import db.Authors
+import db.{Authors, AuthorRecord, AuthorsTable}
 import models.books.Author
 
 object AuthorService extends BaseService {
@@ -24,7 +24,7 @@ object AuthorService extends BaseService {
   def findAuthors(
     names: Option[Seq[String]]
   ): Future[Seq[Author]] =  {
-    var query: Query[Authors, db.Author, Seq] = Authors
+    var query: Query[AuthorsTable, AuthorRecord, Seq] = Authors
 
     names.foreach { names =>
       names.foreach { name =>

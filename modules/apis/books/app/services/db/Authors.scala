@@ -5,7 +5,7 @@ import java.sql.Timestamp
 
 import Driver.api._
 
-case class Author(
+case class AuthorRecord(
   guid: UUID,
   name: String,
   createdAt: Timestamp,
@@ -16,15 +16,15 @@ case class Author(
   deletedByAccessToken: Option[UUID]
 )
 
-class Authors(tag: Tag)
-  extends Table[Author](tag, "authors")
-  with AuditData[Author]
+class AuthorsTable(tag: Tag)
+  extends Table[AuthorRecord](tag, "authors")
+  with AuditData[AuthorRecord]
 {
   def guid = column[UUID]("guid")
   def name = column[String]("name")
 
   def * = (guid, name, createdAt, createdByAccount, createdByAccessToken, deletedAt,
-    deletedByAccount, deletedByAccessToken) <> (Author.tupled, Author.unapply)
+    deletedByAccount, deletedByAccessToken) <> (AuthorRecord.tupled, AuthorRecord.unapply)
 }
 
-object Authors extends TableQuery(new Authors(_))
+object Authors extends TableQuery(new AuthorsTable(_))

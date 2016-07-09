@@ -5,8 +5,8 @@ import scala.concurrent.Future
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import io.useless.accesstoken.AccessToken
 
-import db.Driver.api._
-import db.{ Books, Authors, Editions }
+import db._
+import Driver.api._
 import models.books.{ Book, Author, Edition }
 
 object BookService extends BaseService {
@@ -83,7 +83,7 @@ object BookService extends BaseService {
   )
 
   private def queryBooks(
-    filter: (((Books, Authors), Rep[Option[Editions]])) => Rep[Option[Boolean]]
+    filter: (((BooksTable, AuthorsTable), Rep[Option[EditionsTable]])) => Rep[Option[Boolean]]
   ) = {
     val query = Books.join(Authors).on { case (book, author) =>
       book.authorGuid === author.guid
