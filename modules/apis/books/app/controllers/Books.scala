@@ -6,6 +6,7 @@ import play.api._
 import play.api.mvc._
 import play.api.libs.json.Json
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
+import io.useless.play.http.QueryStringUtil._
 
 import services.books.BookService
 import models.books.Book
@@ -22,8 +23,10 @@ object Books extends Controller {
     }
   }
 
-  def index(title: String) = Action.async {
-    BookService.findBooks(title).map { books =>
+  def index = Action.async { request =>
+    BookService.findBooks(
+      titles = request.laxQueryString.seq[String]("title")
+    ).map { books =>
       Ok(Json.toJson(books))
     }
   }

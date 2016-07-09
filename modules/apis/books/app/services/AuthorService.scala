@@ -21,9 +21,17 @@ object AuthorService extends BaseService {
     }
   }
 
-  def findAuthors(name: String): Future[Seq[Author]] =  {
-    val query = Authors.filter { author =>
-      toTsVector(author.name) @@ toTsQuery(BaseService.scrubTsQuery(name))
+  def findAuthors(
+    names: Option[Seq[String]]
+  ): Future[Seq[Author]] =  {
+    var query: Query[Authors, db.Author, Seq] = Authors
+
+    names.foreach { names =>
+      names.foreach { name =>
+        query = query.filter { author =>
+          toTsVector(author.name) @@ toTsQuery(BaseService.scrubTsQuery(name))
+        }
+      }
     }
 
     database.run(query.result).map { results =>

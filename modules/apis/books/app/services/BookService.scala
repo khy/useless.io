@@ -29,9 +29,11 @@ object BookService extends BaseService {
     getBooksForEditions(Seq(editionGuid)).map(_.headOption)
   }
 
-  def findBooks(title: String): Future[Seq[Book]] = {
+  def findBooks(
+    titles: Option[Seq[String]]
+  ): Future[Seq[Book]] = {
     queryBooks { case ((book, _), _) =>
-      (toTsVector(book.title) @@ toTsQuery(BaseService.scrubTsQuery(title))).?
+      (toTsVector(book.title) @@ toTsQuery(BaseService.scrubTsQuery(titles.get.head))).?
     }
   }
 

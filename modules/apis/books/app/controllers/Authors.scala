@@ -5,6 +5,7 @@ import play.api._
 import play.api.mvc._
 import play.api.libs.json.Json
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
+import io.useless.play.http.QueryStringUtil._
 
 import services.books.AuthorService
 import models.books.Author
@@ -13,8 +14,10 @@ import controllers.books.auth.Auth
 
 object Authors extends Controller {
 
-  def index(name: String) = Action.async {
-    AuthorService.findAuthors(name).map { authors =>
+  def index = Action.async { request =>
+    AuthorService.findAuthors(
+      names = request.laxQueryString.seq[String]("name")
+    ).map { authors =>
       Ok(Json.toJson(authors))
     }
   }
