@@ -5,7 +5,7 @@ import play.api.libs.json._
 
 case class Edition(
   guid: UUID,
-  page_count: Int
+  pageCount: Int
 )
 
 object Edition {

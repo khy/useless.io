@@ -55,7 +55,7 @@ class NoteSpec extends DefaultSpec {
 
       val note = Json.parse(response.body).as[JsValue]
       (note \ "content").as[String] mustBe "A note."
-      (note \ "page_number").as[Int] mustBe 56
+      (note \ "pageNumber").as[Int] mustBe 56
     }
 
   }
@@ -68,8 +68,8 @@ class NoteSpec extends DefaultSpec {
       val response = await {
         WS.url(s"http://localhost:$port/notes").
           post(Json.obj(
-            "edition_guid" -> editionGuid,
-            "page_number" -> 50,
+            "editionGuid" -> editionGuid,
+            "pageNumber" -> 50,
             "content" -> "Some thoughts..."
           ))
       }
@@ -82,8 +82,8 @@ class NoteSpec extends DefaultSpec {
       val editionGuid = Factory.addEdition(bookGuid = bookGuid, pageCount = 164)
 
       val response1 = await { baseRequest().post(Json.obj(
-        "edition_guid" -> editionGuid,
-        "page_number" -> 0,
+        "editionGuid" -> editionGuid,
+        "pageNumber" -> 0,
         "content" -> "Where am I?"
       )) }
       response1.status mustBe CONFLICT
@@ -94,8 +94,8 @@ class NoteSpec extends DefaultSpec {
       (error1 \ "details" \ "minimum-page-number").as[String] mustBe "1"
 
       val response2 = await { baseRequest().post(Json.obj(
-        "edition_guid" -> editionGuid,
-        "page_number" -> -1,
+        "editionGuid" -> editionGuid,
+        "pageNumber" -> -1,
         "content" -> "Where am I?"
       )) }
       response2.status mustBe CONFLICT
@@ -111,15 +111,15 @@ class NoteSpec extends DefaultSpec {
       val editionGuid = Factory.addEdition(bookGuid = bookGuid, pageCount = 164)
 
       val response1 = await { baseRequest().post(Json.obj(
-        "edition_guid" -> editionGuid,
-        "page_number" -> 164,
+        "editionGuid" -> editionGuid,
+        "pageNumber" -> 164,
         "content" -> "At the end!"
       )) }
       response1.status mustBe CREATED
 
       val response2 = await { baseRequest().post(Json.obj(
-        "edition_guid" -> editionGuid,
-        "page_number" -> 165,
+        "editionGuid" -> editionGuid,
+        "pageNumber" -> 165,
         "content" -> "Beyond the end!"
       )) }
       response2.status mustBe CONFLICT
@@ -136,23 +136,23 @@ class NoteSpec extends DefaultSpec {
       val editionGuid = Factory.addEdition(bookGuid = bookGuid, pageCount = 164)
 
       val postResponse = await { baseRequest().post(Json.obj(
-        "edition_guid" -> editionGuid,
-        "page_number" -> 50,
+        "editionGuid" -> editionGuid,
+        "pageNumber" -> 50,
         "content" -> "I'm bored!"
       )) }
       postResponse.status mustBe CREATED
 
       val note = Json.parse(postResponse.body).as[JsValue]
       (note \ "edition" \ "guid").as[UUID] mustBe editionGuid
-      (note \ "edition" \ "page_count").as[Int] mustBe 164
+      (note \ "edition" \ "pageCount").as[Int] mustBe 164
       (note \ "book" \ "guid").as[UUID] mustBe bookGuid
       (note \ "book" \ "title").as[String] mustBe "I Pass Like Night"
       (note \ "book" \ "author" \ "guid").as[UUID] mustBe authorGuid
       (note \ "book" \ "author" \ "name").as[String] mustBe "Jonathan Ames"
-      (note \ "page_number").as[Int] mustBe 50
+      (note \ "pageNumber").as[Int] mustBe 50
       (note \ "content").as[String] mustBe "I'm bored!"
-      (note \ "created_by" \ "user" \ "handle").as[String] mustBe "khy"
-      (note \ "created_at").asOpt[String] mustBe ('defined)
+      (note \ "createdBy" \ "user" \ "handle").as[String] mustBe "khy"
+      (note \ "createdAt").asOpt[String] mustBe ('defined)
     }
 
   }
@@ -219,22 +219,22 @@ class NoteSpec extends DefaultSpec {
 
       val khyBaseRequest = baseRequest(_accessToken = Some(khyAccessToken))
       await { khyBaseRequest.post(Json.obj(
-        "edition_guid" -> editionGuid,
-        "page_number" -> 96,
+        "editionGuid" -> editionGuid,
+        "pageNumber" -> 96,
         "content" -> "I am khy"
       )) }
 
       val mikeBaseRequest = baseRequest(_accessToken = Some(mikeAccessToken))
       await { mikeBaseRequest.post(Json.obj(
-        "edition_guid" -> editionGuid,
-        "page_number" -> 45,
+        "editionGuid" -> editionGuid,
+        "pageNumber" -> 45,
         "content" -> "I am Mike"
       )) }
 
       val dennisBaseRequest = baseRequest(_accessToken = Some(dennisAccessToken))
       await { dennisBaseRequest.post(Json.obj(
-        "edition_guid" -> editionGuid,
-        "page_number" -> 99,
+        "editionGuid" -> editionGuid,
+        "pageNumber" -> 99,
         "content" -> "I am Dennis"
       )) }
 
@@ -250,30 +250,30 @@ class NoteSpec extends DefaultSpec {
       notes.length mustBe 2
     }
 
-    "return notes ordered by page_number, if specified" in {
+    "return notes ordered by pageNumber, if specified" in {
       val bookGuid = Factory.addBook(title = "I Pass Like Night", authorName = "Jonathan Ames")
       val editionGuid = Factory.addEdition(bookGuid = bookGuid, pageCount = 164)
 
       await { baseRequest().post(Json.obj(
-        "edition_guid" -> editionGuid,
-        "page_number" -> 123,
+        "editionGuid" -> editionGuid,
+        "pageNumber" -> 123,
         "content" -> "123"
       )) }
 
       await { baseRequest().post(Json.obj(
-        "edition_guid" -> editionGuid,
-        "page_number" -> 45,
+        "editionGuid" -> editionGuid,
+        "pageNumber" -> 45,
         "content" -> "45"
       )) }
 
       await { baseRequest().post(Json.obj(
-        "edition_guid" -> editionGuid,
-        "page_number" -> 92,
+        "editionGuid" -> editionGuid,
+        "pageNumber" -> 92,
         "content" -> "92"
       )) }
 
       val response = await {
-        baseRequest().withQueryString("p.order" -> "page_number").get()
+        baseRequest().withQueryString("p.order" -> "pageNumber").get()
       }
 
       response.status mustBe OK

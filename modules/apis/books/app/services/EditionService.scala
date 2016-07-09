@@ -41,7 +41,7 @@ object EditionService extends BaseService {
       optBook.map { book =>
         findEditions(bookGuid).flatMap { editions =>
           editions.find { edition =>
-            edition.page_count == pageCount
+            edition.pageCount == pageCount
           }.map { edition =>
             Future.successful(Right(edition))
           }.getOrElse {

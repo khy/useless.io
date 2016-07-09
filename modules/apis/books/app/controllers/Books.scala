@@ -28,7 +28,7 @@ object Books extends Controller {
     }
   }
 
-  case class NewBook(title: String, author_guid: UUID)
+  case class NewBook(title: String, authorGuid: UUID)
   private implicit val newBookReads = Json.reads[NewBook]
 
   def create = Auth.async(parse.json) { request =>
@@ -36,7 +36,7 @@ object Books extends Controller {
       error => Future.successful(Conflict),
       newBook => BookService.addBook(
         title = newBook.title,
-        authorGuid = newBook.author_guid,
+        authorGuid = newBook.authorGuid,
         accessToken = request.accessToken
       ).map { book =>
         Created(Json.toJson(book))

@@ -30,7 +30,8 @@ object NoteService extends BaseService with Configuration {
   }
 
   private val paginationConfig = PaginationParams.defaultPaginationConfig.copy(
-    validOrders = Seq("created_at", "page_number")
+    validOrders = Seq("createdAt", "pageNumber"),
+    defaultOrder = "createdAt"
   )
 
   def findNotes(
@@ -43,7 +44,7 @@ object NoteService extends BaseService with Configuration {
       // It's unclear to me why, but sortBy needs to go first.
       var query = Notes.sortBy { sort =>
         paginationParams.order match {
-          case "page_number" => sort.pageNumber.desc
+          case "pageNumber" => sort.pageNumber.desc
           case _ => sort.createdAt.desc
         }
       }
@@ -135,15 +136,15 @@ object NoteService extends BaseService with Configuration {
               "minimum-page-number" -> "1"
             ))
           }
-        } else if (pageNumber > edition.page_count) {
+        } else if (pageNumber > edition.pageCount) {
           Future.successful {
             Left(Message("invalid-page-number",
               "specified-page-number" -> pageNumber.toString,
-              "maximum-page-number" -> edition.page_count.toString
+              "maximum-page-number" -> edition.pageCount.toString
             ))
           }
         } else {
-          // Notice: created_at is approximated to avoid another DB call
+          // Notice: createdAt is approximated to avoid another DB call
           insertNote(editionGuid, pageNumber, content, accessToken).map { noteGuid =>
             Right(Note(noteGuid, pageNumber, content, edition, book, accessToken.resourceOwner, DateTime.now))
           }

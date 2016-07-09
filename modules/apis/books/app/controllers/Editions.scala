@@ -16,7 +16,7 @@ object Editions extends Controller {
 
   import MessageJson.format
 
-  case class NewEdition(book_guid: UUID, page_count: Int)
+  case class NewEdition(bookGuid: UUID, pageCount: Int)
   private implicit val newEditionReads = Json.reads[NewEdition]
 
   def create = Auth.async(parse.json) { request =>
@@ -24,8 +24,8 @@ object Editions extends Controller {
       error => Future.successful(Conflict),
       newEdition => {
         EditionService.addEdition(
-          bookGuid = newEdition.book_guid,
-          pageCount = newEdition.page_count,
+          bookGuid = newEdition.bookGuid,
+          pageCount = newEdition.pageCount,
           accessToken = request.accessToken
         ).map { result =>
           result.fold(

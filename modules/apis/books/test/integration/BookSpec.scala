@@ -108,7 +108,7 @@ class BookSpec extends DefaultSpec {
         WS.url(s"http://localhost:$port/authors").
           post(Json.obj(
             "title" -> "I Pass Like Night",
-            "author_guid" -> authorGuid
+            "authorGuid" -> authorGuid
           ))
       }
 
@@ -119,7 +119,7 @@ class BookSpec extends DefaultSpec {
       val authorGuid = Factory.addAuthor("Jonathan Ames")
       val postResponse = await { baseRequest().post(Json.obj(
         "title" -> "I Pass Like Night",
-        "author_guid" -> authorGuid
+        "authorGuid" -> authorGuid
       )) }
 
       postResponse.status mustBe CREATED
@@ -139,7 +139,7 @@ class BookSpec extends DefaultSpec {
 
       val postResponse = await { baseRequest().post(Json.obj(
         "title" -> "The Virgin Suicides",
-        "author_guid" -> authorGuid
+        "authorGuid" -> authorGuid
       )) }
 
       postResponse.status mustBe CREATED

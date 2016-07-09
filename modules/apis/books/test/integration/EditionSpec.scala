@@ -24,8 +24,8 @@ class EditionSpec extends DefaultSpec {
       val response = await {
         WS.url(s"http://localhost:$port/editions").
           post(Json.obj(
-            "book_guid" -> bookGuid,
-            "page_count" -> 100
+            "bookGuid" -> bookGuid,
+            "pageCount" -> 100
           ))
       }
 
@@ -35,8 +35,8 @@ class EditionSpec extends DefaultSpec {
     "respond with an error if the specified book doesn't exist" in {
       val guid = UUID.randomUUID
       val response = await { baseRequest.post(Json.obj(
-        "book_guid" -> guid,
-        "page_count" -> 164
+        "bookGuid" -> guid,
+        "pageCount" -> 164
       )) }
 
       response.status mustBe CONFLICT
@@ -49,8 +49,8 @@ class EditionSpec extends DefaultSpec {
       val bookGuid = Factory.addBook(title = "I Pass Like Night", authorName = "Jonathan Ames")
 
       val response1 = await { baseRequest.post(Json.obj(
-        "book_guid" -> bookGuid,
-        "page_count" -> 0
+        "bookGuid" -> bookGuid,
+        "pageCount" -> 0
       )) }
       response1.status mustBe CONFLICT
 
@@ -60,8 +60,8 @@ class EditionSpec extends DefaultSpec {
       (error1 \ "details" \ "minimum-page-count").as[String] mustBe "1"
 
       val response2 = await { baseRequest.post(Json.obj(
-        "book_guid" -> bookGuid,
-        "page_count" -> -1
+        "bookGuid" -> bookGuid,
+        "pageCount" -> -1
       )) }
       response2.status mustBe CONFLICT
 
@@ -75,20 +75,20 @@ class EditionSpec extends DefaultSpec {
       val bookGuid = Factory.addBook(title = "I Pass Like Night", authorName = "Jonathan Ames")
 
       val postResponse1 = await { baseRequest.post(Json.obj(
-        "book_guid" -> bookGuid,
-        "page_count" -> 164
+        "bookGuid" -> bookGuid,
+        "pageCount" -> 164
       )) }
       postResponse1.status mustBe CREATED
 
       val postResponse2 = await { baseRequest.post(Json.obj(
-        "book_guid" -> bookGuid,
-        "page_count" -> 164
+        "bookGuid" -> bookGuid,
+        "pageCount" -> 164
       )) }
       postResponse2.status mustBe CREATED
 
       val postResponse3 = await { baseRequest.post(Json.obj(
-        "book_guid" -> bookGuid,
-        "page_count" -> 174
+        "bookGuid" -> bookGuid,
+        "pageCount" -> 174
       )) }
       postResponse3.status mustBe CREATED
 
@@ -104,8 +104,8 @@ class EditionSpec extends DefaultSpec {
 
       val editions = (iPassLikeNight \ "editions").as[Seq[JsValue]]
       editions.length mustBe (2)
-      editions.find { json => (json \ "page_count").as[Int] == 164 } mustBe defined
-      editions.find { json => (json \ "page_count").as[Int] == 174 } mustBe defined
+      editions.find { json => (json \ "pageCount").as[Int] == 164 } mustBe defined
+      editions.find { json => (json \ "pageCount").as[Int] == 174 } mustBe defined
     }
 
   }

@@ -10,12 +10,12 @@ import io.useless.play.json.DateTimeJson._
 
 case class Note(
   guid: UUID,
-  page_number: Int,
+  pageNumber: Int,
   content: String,
   edition: Edition,
   book: Book,
-  created_by: Account,
-  created_at: DateTime
+  createdBy: Account,
+  createdAt: DateTime
 )
 
 object Note {
