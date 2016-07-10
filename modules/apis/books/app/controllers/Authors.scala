@@ -17,8 +17,10 @@ object Authors extends Controller {
   def index = Action.async { request =>
     AuthorService.findAuthors(
       names = request.laxQueryString.seq[String]("name")
-    ).map { authors =>
-      Ok(Json.toJson(authors))
+    ).flatMap { authors =>
+      AuthorService.db2api(authors).map { authors =>
+        Ok(Json.toJson(authors))
+      }
     }
   }
 
@@ -31,8 +33,10 @@ object Authors extends Controller {
       newAuthor => AuthorService.addAuthor(
         name = newAuthor.name,
         accessToken = request.accessToken
-      ).map { author =>
-        Created(Json.toJson(author))
+      ).flatMap { author =>
+        AuthorService.db2api(Seq(author)).map { authors =>
+          Created(Json.toJson(authors.head))
+        }
       }
     )
   }

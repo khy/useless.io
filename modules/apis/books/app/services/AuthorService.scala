@@ -11,20 +11,23 @@ import models.books.Author
 
 object AuthorService extends BaseService {
 
-  def getAuthor(guid: UUID): Future[Option[Author]] = {
-    val query = Authors.filter(_.guid === guid)
-
-    database.run(query.result).map { results =>
-      results.headOption.map { author =>
-        Author(author.guid, author.name)
-      }
+  def db2api(records: Seq[AuthorRecord]): Future[Seq[Author]] = Future.successful {
+    records.map { author =>
+      Author(author.guid, author.name)
     }
   }
 
   def findAuthors(
-    names: Option[Seq[String]]
-  ): Future[Seq[Author]] =  {
+    guids: Option[Seq[UUID]] = None,
+    names: Option[Seq[String]] = None
+  ): Future[Seq[AuthorRecord]] =  {
     var query: Query[AuthorsTable, AuthorRecord, Seq] = Authors
+
+    guids.foreach { guids =>
+      query = query.filter { author =>
+        author.guid inSet (guids)
+      }
+    }
 
     names.foreach { names =>
       names.foreach { name =>
@@ -34,17 +37,13 @@ object AuthorService extends BaseService {
       }
     }
 
-    database.run(query.result).map { results =>
-      results.map { author =>
-        Author(author.guid, author.name)
-      }
-    }
+    database.run(query.result)
   }
 
   def addAuthor(
     name: String,
     accessToken: AccessToken
-  ): Future[Author] = {
+  ): Future[AuthorRecord] = {
     val authorQuery = Authors.filter(_.name === name)
     database.run(authorQuery.result).flatMap { authors =>
       authors.headOption.map { author =>
@@ -53,8 +52,8 @@ object AuthorService extends BaseService {
         insertAuthor(name, accessToken)
       }
     }.flatMap { guid =>
-      getAuthor(guid).map { optAuthor =>
-        optAuthor.getOrElse {
+      findAuthors(guids = Some(Seq(guid))).map { authors =>
+        authors.headOption.getOrElse {
           throw new ResourceUnexpectedlyNotFound("Author", guid)
         }
       }
