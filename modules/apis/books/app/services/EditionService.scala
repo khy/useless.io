@@ -44,8 +44,8 @@ object EditionService extends BaseService {
     pageCount: Int,
     accessToken: AccessToken
   ): Future[Either[Message, EditionRecord]] = {
-    BookService.getBook(bookGuid).flatMap { optBook =>
-      optBook.map { book =>
+    BookService.findBooks(guids = Some(Seq(bookGuid))).flatMap { books =>
+      books.headOption.map { book =>
         findEditions(bookGuids = Some(Seq(bookGuid))).flatMap { editions =>
           editions.find { edition =>
             edition.pageCount == pageCount

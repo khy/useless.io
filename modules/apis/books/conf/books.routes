@@ -1,7 +1,6 @@
 GET     /authors    controllers.books.Authors.index
 POST    /authors    controllers.books.Authors.create
 
-GET     /books/:guid  controllers.books.Books.get(guid: java.util.UUID)
 GET     /books        controllers.books.Books.index
 POST    /books        controllers.books.Books.create
 

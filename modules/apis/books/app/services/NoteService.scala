@@ -22,36 +22,38 @@ import models.books.Note
 object NoteService extends BaseService with Configuration {
 
   def db2api(records: Seq[NoteRecord]): Future[Seq[Note]] = {
-    def getAccounts(guids: Seq[UUID]): Future[Seq[Account]] = Future.sequence {
-      guids.map(accountClient.getAccount(_))
+    val futBooks = BookService.findBooks(editionGuids = Some(records.map(_.editionGuid))).flatMap { books =>
+      BookService.db2api(books)
+    }
+
+    val futAccounts = Future.sequence {
+      records.map(_.createdByAccount).map(accountClient.getAccount(_))
     }.map { accounts =>
       accounts.filter(_.isDefined).map(_.get)
     }
 
     for {
-      books <- BookService.getBooksForEditions(records.map(_.editionGuid))
-      accounts <- getAccounts(records.map(_.createdByAccount))
+      books <- futBooks
+      accounts <- futAccounts
     } yield {
-      records.map { dbNote =>
-        val book = books.find { book =>
-          book.editions.map(_.guid).contains(dbNote.editionGuid)
-        }.getOrElse {
-          throw new ResourceUnexpectedlyNotFound("Book", dbNote.editionGuid)
+      records.map { record =>
+        val edition = books.flatMap(_.editions).find(_.guid == record.editionGuid).getOrElse {
+          throw new ResourceUnexpectedlyNotFound("Edition", record.editionGuid)
         }
 
-        val edition = book.editions.find(_.guid == dbNote.editionGuid).getOrElse {
-          throw new ResourceUnexpectedlyNotFound("Edition", dbNote.editionGuid)
+        val book = books.find { book =>
+          book.editions.map(_.guid).contains(record.editionGuid)
+        }.getOrElse {
+          throw new ResourceUnexpectedlyNotFound("Book", record.editionGuid, "editionGuid")
         }
 
         val user = accounts.find { account =>
-          account.guid == dbNote.createdByAccount
+          account.guid == record.createdByAccount
         }.getOrElse {
-          throw new ResourceUnexpectedlyNotFound("User", dbNote.createdByAccount)
+          throw new ResourceUnexpectedlyNotFound("User", record.createdByAccount)
         }
 
-        val createdAt = new DateTime(dbNote.createdAt)
-
-        Note(dbNote.guid, dbNote.pageNumber, dbNote.content, edition, book, user, createdAt)
+        Note(record.guid, record.pageNumber, record.content, edition, book, user, new DateTime(record.createdAt))
       }
     }
   }
@@ -122,8 +124,10 @@ object NoteService extends BaseService with Configuration {
     content: String,
     accessToken: AccessToken
   ): Future[Either[Message, NoteRecord]] = {
-    BookService.getBookForEdition(editionGuid).flatMap { optBook =>
-      optBook.map { book =>
+    BookService.findBooks(editionGuids = Some(Seq(editionGuid))).flatMap { books =>
+      BookService.db2api(books)
+    }.flatMap { books =>
+      books.headOption.map { book =>
         val edition = book.editions.find(_.guid == editionGuid).getOrElse {
           throw new ResourceUnexpectedlyNotFound("Edition", editionGuid)
         }

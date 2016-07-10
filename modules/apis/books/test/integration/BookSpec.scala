@@ -16,35 +16,6 @@ class BookSpec extends DefaultSpec {
       withHeaders(("Authorization" -> accessToken.guid.toString))
   }
 
-  "GET /books/:guid" must {
-
-    "support unauthenticated access" in {
-      val guid = Factory.addBook("The Corrections", "Jonathan Franzen")
-      val response = await {
-        WS.url(s"http://localhost:$port/books/$guid").
-          withQueryString("title" -> "The Corrections").get
-      }
-
-      response.status mustBe OK
-    }
-
-    "return a 404 if no book corresponds to the specified GUID" in {
-      val guid = UUID.randomUUID
-      val response = await { baseRequest(Some(s"/books/$guid")).get }
-      response.status mustBe NOT_FOUND
-    }
-
-    "return the book corresponding to the specified GUID" in {
-      val guid = Factory.addBook("The Corrections", "Jonathan Franzen")
-      val response = await { baseRequest(Some(s"/books/$guid")).get }
-
-      response.status mustBe OK
-      val book = Json.parse(response.body).as[JsValue]
-      (book \ "title").as[String] mustBe "The Corrections"
-    }
-
-  }
-
   "GET /books" must {
 
     "support unauthenticated access" in {
@@ -54,6 +25,15 @@ class BookSpec extends DefaultSpec {
       }
 
       response.status mustBe OK
+    }
+
+    "return the book corresponding to the specified GUID" in {
+      val guid = Factory.addBook("The Corrections", "Jonathan Franzen")
+      val response = await { baseRequest().withQueryString("guid" -> guid.toString).get }
+
+      response.status mustBe OK
+      val book = Json.parse(response.body).as[Seq[JsValue]].head
+      (book \ "title").as[String] mustBe "The Corrections"
     }
 
     "return exact matches on name" in {

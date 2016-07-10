@@ -11,46 +11,86 @@ import models.books.{ Book, Author, Edition }
 
 object BookService extends BaseService {
 
-  def getBook(guid: UUID): Future[Option[Book]] = {
-    queryBooks { case ((book, _), _) =>
-      (book.guid === guid).?
-    }.map(_.headOption)
-  }
+  def db2api(records: Seq[BookRecord]): Future[Seq[Book]] = {
+    val editionsQuery = Editions.filter(_.bookGuid inSet records.map(_.guid))
+    val futEditionsMap = database.run(editionsQuery.result).flatMap { dbEditions =>
+      EditionService.db2api(dbEditions).map { apiEditions =>
+        dbEditions.groupBy(_.bookGuid).map { case (bookGuid, dbEditions) =>
+          val _apiEditions = apiEditions.filter { apiEdition =>
+            dbEditions.map(_.guid).contains(apiEdition.guid)
+          }
 
-  def getBooksForEditions(editionGuids: Seq[UUID]): Future[Seq[Book]] = {
-    queryBooks { case (_, edition) =>
-      edition.map { edition =>
-        edition.guid inSet editionGuids
+          (bookGuid, _apiEditions)
+        }
+      }
+    }
+
+    val authorsQuery = Authors.filter(_.guid inSet records.map(_.authorGuid))
+    val futAuthors = database.run(authorsQuery.result).flatMap { authors =>
+      AuthorService.db2api(authors)
+    }
+
+    for {
+      editionsMap <- futEditionsMap
+      authors <- futAuthors
+    } yield {
+      records.map { record =>
+        val _editions = editionsMap.get(record.guid).getOrElse(Seq.empty)
+
+        val author = authors.find { author =>
+          author.guid == record.authorGuid
+        }.getOrElse {
+          throw new ResourceUnexpectedlyNotFound("Author", record.authorGuid)
+        }
+
+        Book(record.guid, record.title, author, _editions)
       }
     }
   }
 
-  def getBookForEdition(editionGuid: UUID): Future[Option[Book]] = {
-    getBooksForEditions(Seq(editionGuid)).map(_.headOption)
-  }
-
   def findBooks(
-    titles: Option[Seq[String]]
-  ): Future[Seq[Book]] = {
-    queryBooks { case ((book, _), _) =>
-      (toTsVector(book.title) @@ toTsQuery(BaseService.scrubTsQuery(titles.get.head))).?
+    guids: Option[Seq[UUID]] = None,
+    titles: Option[Seq[String]] = None,
+    editionGuids: Option[Seq[UUID]] = None
+  ): Future[Seq[BookRecord]] = {
+    var query: Query[BooksTable, BookRecord, Seq] = Books
+
+    guids.foreach { guids =>
+      query = query.filter { book =>
+        book.guid inSet guids
+      }
     }
+
+    titles.foreach { titles =>
+      titles.foreach { title =>
+        query = query.filter { book =>
+          (toTsVector(book.title) @@ toTsQuery(BaseService.scrubTsQuery(title)))
+        }
+      }
+    }
+
+    editionGuids.foreach { editionGuids =>
+      val bookGuids = Editions.filter(_.guid inSet editionGuids).map(_.bookGuid)
+      query = query.filter { book =>
+        book.guid in bookGuids
+      }
+    }
+
+    database.run(query.result)
   }
 
   def addBook(
     title: String,
     authorGuid: UUID,
     accessToken: AccessToken
-  ): Future[Book] = {
-    queryBooks { case ((book, _), _) =>
-      (book.title === title).?
-    }.flatMap { books =>
+  ): Future[BookRecord] = {
+    database.run(Books.filter(_.title === title).result).flatMap { books =>
       books.headOption.map { book =>
         Future.successful(book)
       }.getOrElse {
         insertBook(title, authorGuid, accessToken).flatMap { newBookGuid =>
-          getBook(newBookGuid).map { optBook =>
-            optBook.getOrElse {
+          findBooks(guids = Some(Seq(newBookGuid))).map { books =>
+            books.headOption.getOrElse {
               throw new ResourceUnexpectedlyNotFound("Book", newBookGuid)
             }
           }
@@ -71,50 +111,6 @@ object BookService extends BaseService {
     val bookInsert = projection += (UUID.randomUUID, title, authorGuid, accessToken.resourceOwner.guid, accessToken.guid)
 
     database.run(bookInsert)
-  }
-
-  private case class BookRecord(
-    bookGuid: UUID,
-    bookTitle: String,
-    authorGuid: UUID,
-    authorName: String,
-    editionGuid: Option[UUID],
-    editionPageCount: Option[Int]
-  )
-
-  private def queryBooks(
-    filter: (((BooksTable, AuthorsTable), Rep[Option[EditionsTable]])) => Rep[Option[Boolean]]
-  ) = {
-    val query = Books.join(Authors).on { case (book, author) =>
-      book.authorGuid === author.guid
-    }.joinLeft(Editions).on { case ((book, author), edition) =>
-      book.guid === edition.bookGuid
-    }.filter(filter).map { case ((book, author), edition) =>
-      (book.guid, book.title, author.guid, author.name, edition.map(_.guid), edition.map(_.pageCount))
-    }
-
-    database.run(query.result).map { records =>
-      val bookRecords = records.map(BookRecord.tupled)
-
-      val editionsMap = bookRecords.groupBy(_.bookGuid).map { case (bookGuid, bookRecords) =>
-        val editions = bookRecords.map { bookRecord =>
-          for {
-            guid <- bookRecord.editionGuid
-            pageCount <- bookRecord.editionPageCount
-          } yield Edition(guid, pageCount)
-        }.filter(_.isDefined).map(_.get)
-
-        (bookGuid, editions)
-      }
-
-      bookRecords.map { bookRecord =>
-        val _editions = editionsMap.get(bookRecord.bookGuid).getOrElse {
-          throw new ResourceUnexpectedlyNotFound("Edition", bookRecord.bookGuid, "book GUID")
-        }
-        val _author = Author(bookRecord.authorGuid, bookRecord.authorName)
-        Book(bookRecord.bookGuid, bookRecord.bookTitle, _author, _editions)
-      }
-    }
   }
 
 }
