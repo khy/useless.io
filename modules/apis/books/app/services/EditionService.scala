@@ -7,39 +7,46 @@ import io.useless.accesstoken.AccessToken
 import io.useless.Message
 
 import db.Driver.api._
-import db.Editions
+import db.{Editions, EditionRecord, EditionsTable}
 import models.books.Edition
 
 object EditionService extends BaseService {
 
-  def getEdition(guid: UUID): Future[Option[Edition]] = {
-    val query = Editions.filter(_.guid === guid)
-
-    database.run(query.result).map { records =>
-      records.headOption.map { edition =>
-        Edition(edition.guid, edition.pageCount)
-      }
+  def db2api(records: Seq[EditionRecord]): Future[Seq[Edition]] = Future.successful {
+    records.map { edition =>
+      Edition(edition.guid, edition.pageCount)
     }
   }
 
-  def findEditions(bookGuid: UUID): Future[Seq[Edition]] = {
-    val query = Editions.filter(_.bookGuid === bookGuid)
+  def findEditions(
+    guids: Option[Seq[UUID]] = None,
+    bookGuids: Option[Seq[UUID]] = None
+  ): Future[Seq[EditionRecord]] = {
+    var query: Query[EditionsTable, EditionRecord, Seq] = Editions
 
-    database.run(query.result).map { records =>
-      records.map { edition =>
-        Edition(edition.guid, edition.pageCount)
+    guids.foreach { guids =>
+      query = query.filter { edition =>
+        edition.guid inSet guids
       }
     }
+
+    bookGuids.foreach { bookGuids =>
+      query = query.filter { edition =>
+        edition.bookGuid inSet bookGuids
+      }
+    }
+
+    database.run(query.result)
   }
 
   def addEdition(
     bookGuid: UUID,
     pageCount: Int,
     accessToken: AccessToken
-  ): Future[Either[Message, Edition]] = {
+  ): Future[Either[Message, EditionRecord]] = {
     BookService.getBook(bookGuid).flatMap { optBook =>
       optBook.map { book =>
-        findEditions(bookGuid).flatMap { editions =>
+        findEditions(bookGuids = Some(Seq(bookGuid))).flatMap { editions =>
           editions.find { edition =>
             edition.pageCount == pageCount
           }.map { edition =>
@@ -54,8 +61,8 @@ object EditionService extends BaseService {
               }
             } else {
               insertEdition(bookGuid, pageCount, accessToken).flatMap { newEditionGuid =>
-                getEdition(newEditionGuid).map { optEdition =>
-                  val edition = optEdition.getOrElse {
+                findEditions(guids = Some(Seq(newEditionGuid))).map { editions =>
+                  val edition = editions.headOption.getOrElse {
                     throw new ResourceUnexpectedlyNotFound("Edition", newEditionGuid)
                   }
 

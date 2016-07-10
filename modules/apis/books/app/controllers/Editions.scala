@@ -27,10 +27,12 @@ object Editions extends Controller {
           bookGuid = newEdition.bookGuid,
           pageCount = newEdition.pageCount,
           accessToken = request.accessToken
-        ).map { result =>
+        ).flatMap { result =>
           result.fold(
-            error => Conflict(Json.toJson(error)),
-            edition => Created(Json.toJson(edition))
+            error => Future.successful(Conflict(Json.toJson(error))),
+            edition => EditionService.db2api(Seq(edition)).map { editions =>
+              Created(Json.toJson(editions.head))
+            }
           )
         }
       }
