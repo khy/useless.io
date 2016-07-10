@@ -21,12 +21,39 @@ import models.books.Note
 
 object NoteService extends BaseService with Configuration {
 
-  def getNote(guid: UUID): Future[Option[Note]] = {
-    val query = Notes.filter { note => note.guid === guid }
+  def db2api(records: Seq[NoteRecord]): Future[Seq[Note]] = {
+    def getAccounts(guids: Seq[UUID]): Future[Seq[Account]] = Future.sequence {
+      guids.map(accountClient.getAccount(_))
+    }.map { accounts =>
+      accounts.filter(_.isDefined).map(_.get)
+    }
 
-    database.run(query.result).flatMap { results =>
-      buildNotes(results)
-    }.map(_.headOption)
+    for {
+      books <- BookService.getBooksForEditions(records.map(_.editionGuid))
+      accounts <- getAccounts(records.map(_.createdByAccount))
+    } yield {
+      records.map { dbNote =>
+        val book = books.find { book =>
+          book.editions.map(_.guid).contains(dbNote.editionGuid)
+        }.getOrElse {
+          throw new ResourceUnexpectedlyNotFound("Book", dbNote.editionGuid)
+        }
+
+        val edition = book.editions.find(_.guid == dbNote.editionGuid).getOrElse {
+          throw new ResourceUnexpectedlyNotFound("Edition", dbNote.editionGuid)
+        }
+
+        val user = accounts.find { account =>
+          account.guid == dbNote.createdByAccount
+        }.getOrElse {
+          throw new ResourceUnexpectedlyNotFound("User", dbNote.createdByAccount)
+        }
+
+        val createdAt = new DateTime(dbNote.createdAt)
+
+        Note(dbNote.guid, dbNote.pageNumber, dbNote.content, edition, book, user, createdAt)
+      }
+    }
   }
 
   private val paginationConfig = PaginationParams.defaultPaginationConfig.copy(
@@ -35,9 +62,10 @@ object NoteService extends BaseService with Configuration {
   )
 
   def findNotes(
+    guids: Option[Seq[UUID]],
     accountGuids: Option[Seq[UUID]],
     rawPaginationParams: RawPaginationParams
-  ): Future[Validation[PaginatedResult[Note]]] = {
+  ): Future[Validation[PaginatedResult[NoteRecord]]] = {
     val valPaginationParams = PaginationParams.build(rawPaginationParams, paginationConfig)
 
     ValidationUtil.mapFuture(valPaginationParams) { paginationParams =>
@@ -46,6 +74,12 @@ object NoteService extends BaseService with Configuration {
         paginationParams.order match {
           case "pageNumber" => sort.pageNumber.desc
           case _ => sort.createdAt.desc
+        }
+      }
+
+      guids.foreach { guids =>
+        query = query.filter { note =>
+          note.guid inSet guids
         }
       }
 
@@ -71,7 +105,7 @@ object NoteService extends BaseService with Configuration {
 
       query = query.take(paginationParams.limit)
 
-      database.run(query.result).flatMap(buildNotes(_)).map { notes =>
+      database.run(query.result).map { notes =>
         PaginatedResult.build(notes, paginationParams)
       }
     }
@@ -82,47 +116,12 @@ object NoteService extends BaseService with Configuration {
     AccountClient.instance(authGuid)
   }
 
-  private def buildNotes(dbNotes: Seq[NoteRecord]): Future[Seq[Note]] = {
-    def getAccounts(guids: Seq[UUID]): Future[Seq[Account]] = Future.sequence {
-      guids.map(accountClient.getAccount(_))
-    }.map { accounts =>
-      accounts.filter(_.isDefined).map(_.get)
-    }
-
-    for {
-      books <- BookService.getBooksForEditions(dbNotes.map(_.editionGuid))
-      accounts <- getAccounts(dbNotes.map(_.createdByAccount))
-    } yield {
-      dbNotes.map { dbNote =>
-        val book = books.find { book =>
-          book.editions.map(_.guid).contains(dbNote.editionGuid)
-        }.getOrElse {
-          throw new ResourceUnexpectedlyNotFound("Book", dbNote.editionGuid)
-        }
-
-        val edition = book.editions.find(_.guid == dbNote.editionGuid).getOrElse {
-          throw new ResourceUnexpectedlyNotFound("Edition", dbNote.editionGuid)
-        }
-
-        val user = accounts.find { account =>
-          account.guid == dbNote.createdByAccount
-        }.getOrElse {
-          throw new ResourceUnexpectedlyNotFound("User", dbNote.createdByAccount)
-        }
-
-        val createdAt = new DateTime(dbNote.createdAt)
-
-        Note(dbNote.guid, dbNote.pageNumber, dbNote.content, edition, book, user, createdAt)
-      }
-    }
-  }
-
   def addNote(
     editionGuid: UUID,
     pageNumber: Int,
     content: String,
     accessToken: AccessToken
-  ): Future[Either[Message, Note]] = {
+  ): Future[Either[Message, NoteRecord]] = {
     BookService.getBookForEdition(editionGuid).flatMap { optBook =>
       optBook.map { book =>
         val edition = book.editions.find(_.guid == editionGuid).getOrElse {
@@ -144,9 +143,14 @@ object NoteService extends BaseService with Configuration {
             ))
           }
         } else {
-          // Notice: createdAt is approximated to avoid another DB call
-          insertNote(editionGuid, pageNumber, content, accessToken).map { noteGuid =>
-            Right(Note(noteGuid, pageNumber, content, edition, book, accessToken.resourceOwner, DateTime.now))
+          insertNote(editionGuid, pageNumber, content, accessToken).flatMap { newGuid =>
+            database.run(Notes.filter(_.guid === newGuid).result).map { records =>
+              val record = records.headOption.getOrElse {
+                throw new ResourceUnexpectedlyNotFound("Note", newGuid)
+              }
+
+              Right(record)
+            }
           }
         }
       }.getOrElse {

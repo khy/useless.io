@@ -22,23 +22,18 @@ object Notes extends Controller with PaginationController {
 
   import MessageJson.format
 
-  def get(guid: UUID) = Action.async {
-    NoteService.getNote(guid).map { optNote =>
-      optNote.map { note =>
-        Ok(Json.toJson(note))
-      }.getOrElse(NotFound)
-    }
-  }
-
   def index = Action.async { implicit request =>
     withRawPaginationParams { rawPaginationParams =>
       NoteService.findNotes(
+        guids = request.laxQueryString.seq[UUID]("guid"),
         accountGuids = request.laxQueryString.seq[UUID]("accountGuid"),
         rawPaginationParams
-      ).map { result =>
+      ).flatMap { result =>
         result.fold(
-          error => Conflict(Json.toJson(error)),
-          result => paginatedResult(routes.Notes.index(), result)
+          error => Future.successful(Conflict(Json.toJson(error))),
+          result => NoteService.db2api(result.items).map { notes =>
+            paginatedResult(routes.Notes.index(), result.copy(items = notes))
+          }
         )
       }
     }
@@ -56,10 +51,12 @@ object Notes extends Controller with PaginationController {
           pageNumber = newNote.pageNumber,
           content = newNote.content,
           accessToken = request.accessToken
-        ).map { result =>
+        ).flatMap { result =>
           result.fold(
-            error => Conflict(Json.toJson(error)),
-            note => Created(Json.toJson(note))
+            error => Future.successful(Conflict(Json.toJson(error))),
+            note => NoteService.db2api(Seq(note)).map { notes =>
+              Created(Json.toJson(notes.head))
+            }
           )
         }
       }

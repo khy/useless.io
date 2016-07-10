@@ -7,6 +7,5 @@ POST    /books        controllers.books.Books.create
 
 POST    /editions   controllers.books.Editions.create
 
-GET     /notes/:guid  controllers.books.Notes.get(guid: java.util.UUID)
 GET     /notes        controllers.books.Notes.index
 POST    /notes        controllers.books.Notes.create

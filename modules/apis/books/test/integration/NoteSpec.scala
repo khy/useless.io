@@ -22,44 +22,6 @@ class NoteSpec extends DefaultSpec {
       withHeaders(("Authorization" -> _accessToken.getOrElse(accessToken).guid.toString))
   }
 
-  "GET /notes/:guid" must {
-
-    "support authenticated requests" in {
-      val bookGuid = Factory.addBook(title = "I Pass Like Night", authorName = "Jonathan Ames")
-      val editionGuid = Factory.addEdition(bookGuid, pageCount = 164)
-      val noteGuid = Factory.addNote(editionGuid, 34, "A note.")
-
-      val response = await {
-        WS.url(s"http://localhost:$port/notes/$noteGuid").get
-      }
-      response.status mustBe OK
-    }
-
-    "return a 404 if a non-existant GUID is specified" in {
-      val nonExistantGuid = UUID.randomUUID
-      val response = await {
-        baseRequest(url = Some(s"http://localhost:$port/notes/$nonExistantGuid")).get
-      }
-      response.status mustBe NOT_FOUND
-    }
-
-    "return the note corresponding to the specified GUID, if one exists" in {
-      val bookGuid = Factory.addBook(title = "I Pass Like Night", authorName = "Jonathan Ames")
-      val editionGuid = Factory.addEdition(bookGuid, pageCount = 164)
-      val noteGuid = Factory.addNote(editionGuid, 56, "A note.")
-
-      val response = await {
-        baseRequest(url = Some(s"http://localhost:$port/notes/$noteGuid")).get
-      }
-      response.status mustBe OK
-
-      val note = Json.parse(response.body).as[JsValue]
-      (note \ "content").as[String] mustBe "A note."
-      (note \ "pageNumber").as[Int] mustBe 56
-    }
-
-  }
-
   "POST /notes" must {
 
     "return an error if the request isn't authenticated" in {
@@ -176,6 +138,22 @@ class NoteSpec extends DefaultSpec {
       }
 
       response.status mustBe OK
+    }
+
+    "return notes by guid" in {
+      val bookGuid = Factory.addBook(title = "I Pass Like Night", authorName = "Jonathan Ames")
+      val editionGuid = Factory.addEdition(bookGuid, pageCount = 164)
+      val noteGuid = Factory.addNote(editionGuid, 56, "A note.")
+
+      val response = await {
+        baseRequest(url = Some(s"http://localhost:$port/notes")).
+          withQueryString("guid" -> noteGuid.toString).get
+      }
+      response.status mustBe OK
+
+      val note = Json.parse(response.body).as[Seq[JsValue]].head
+      (note \ "content").as[String] mustBe "A note."
+      (note \ "pageNumber").as[Int] mustBe 56
     }
 
     "return the first page of results ordered by time, if no 'page' or 'order' is specified" in {
