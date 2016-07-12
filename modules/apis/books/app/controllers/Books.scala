@@ -15,12 +15,14 @@ import controllers.books.auth.Auth
 
 object Books extends Controller {
 
+  lazy val bookService = BookService.instance()
+
   def index = Action.async { request =>
-    BookService.findBooks(
+    bookService.findBooks(
       guids = request.laxQueryString.seq[UUID]("guid"),
       titles = request.laxQueryString.seq[String]("title")
     ).flatMap { books =>
-      BookService.db2api(books).map { books =>
+      bookService.db2api(books).map { books =>
         Ok(Json.toJson(books))
       }
     }
@@ -32,12 +34,12 @@ object Books extends Controller {
   def create = Auth.async(parse.json) { request =>
     request.body.validate[NewBook].fold(
       error => Future.successful(Conflict),
-      newBook => BookService.addBook(
+      newBook => bookService.addBook(
         title = newBook.title,
         authorGuid = newBook.authorGuid,
         accessToken = request.accessToken
       ).flatMap { book =>
-        BookService.db2api(Seq(book)).map { books =>
+        bookService.db2api(Seq(book)).map { books =>
           Created(Json.toJson(books.head))
         }
       }

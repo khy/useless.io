@@ -7,10 +7,18 @@ import io.useless.accesstoken.AccessToken
 import io.useless.Message
 
 import db.Driver.api._
-import db.{Editions, EditionRecord, EditionsTable}
+import db.{Books, Editions, EditionRecord, EditionsTable}
 import models.books.Edition
 
-object EditionService extends BaseService {
+object EditionService {
+
+  def instance(): EditionService = {
+    new EditionService
+  }
+
+}
+
+class EditionService extends BaseService {
 
   def db2api(records: Seq[EditionRecord]): Future[Seq[Edition]] = Future.successful {
     records.map { edition =>
@@ -44,7 +52,7 @@ object EditionService extends BaseService {
     pageCount: Int,
     accessToken: AccessToken
   ): Future[Either[Message, EditionRecord]] = {
-    BookService.findBooks(guids = Some(Seq(bookGuid))).flatMap { books =>
+    database.run(Books.filter(_.guid === bookGuid).result).flatMap { books =>
       books.headOption.map { book =>
         findEditions(bookGuids = Some(Seq(bookGuid))).flatMap { editions =>
           editions.find { edition =>

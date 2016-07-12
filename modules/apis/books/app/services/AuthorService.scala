@@ -9,7 +9,15 @@ import db.Driver.api._
 import db.{Authors, AuthorRecord, AuthorsTable}
 import models.books.Author
 
-object AuthorService extends BaseService {
+object AuthorService {
+
+  def instance() = {
+    new AuthorService()
+  }
+
+}
+
+class AuthorService extends BaseService {
 
   def db2api(records: Seq[AuthorRecord]): Future[Seq[Author]] = Future.successful {
     records.map { author =>

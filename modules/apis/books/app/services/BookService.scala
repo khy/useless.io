@@ -9,12 +9,28 @@ import db._
 import Driver.api._
 import models.books.{ Book, Author, Edition }
 
-object BookService extends BaseService {
+object BookService {
+
+  private lazy val editionService: EditionService = EditionService.instance()
+
+  def instance(): BookService = {
+    new BookService(
+      authorService = AuthorService.instance(),
+      editionService = editionService
+    )
+  }
+
+}
+
+class BookService(
+  authorService: AuthorService,
+  editionService: EditionService
+) extends BaseService {
 
   def db2api(records: Seq[BookRecord]): Future[Seq[Book]] = {
     val editionsQuery = Editions.filter(_.bookGuid inSet records.map(_.guid))
     val futEditionsMap = database.run(editionsQuery.result).flatMap { dbEditions =>
-      EditionService.db2api(dbEditions).map { apiEditions =>
+      editionService.db2api(dbEditions).map { apiEditions =>
         dbEditions.groupBy(_.bookGuid).map { case (bookGuid, dbEditions) =>
           val _apiEditions = apiEditions.filter { apiEdition =>
             dbEditions.map(_.guid).contains(apiEdition.guid)
@@ -27,7 +43,7 @@ object BookService extends BaseService {
 
     val authorsQuery = Authors.filter(_.guid inSet records.map(_.authorGuid))
     val futAuthors = database.run(authorsQuery.result).flatMap { authors =>
-      AuthorService.db2api(authors)
+      authorService.db2api(authors)
     }
 
     for {

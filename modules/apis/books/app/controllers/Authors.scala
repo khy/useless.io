@@ -14,11 +14,13 @@ import controllers.books.auth.Auth
 
 object Authors extends Controller {
 
+  lazy val authorService = AuthorService.instance()
+
   def index = Action.async { request =>
-    AuthorService.findAuthors(
+    authorService.findAuthors(
       names = request.laxQueryString.seq[String]("name")
     ).flatMap { authors =>
-      AuthorService.db2api(authors).map { authors =>
+      authorService.db2api(authors).map { authors =>
         Ok(Json.toJson(authors))
       }
     }
@@ -30,11 +32,11 @@ object Authors extends Controller {
   def create = Auth.async(parse.json) { request =>
     request.body.validate[NewAuthor].fold(
       error => Future.successful(Conflict),
-      newAuthor => AuthorService.addAuthor(
+      newAuthor => authorService.addAuthor(
         name = newAuthor.name,
         accessToken = request.accessToken
       ).flatMap { author =>
-        AuthorService.db2api(Seq(author)).map { authors =>
+        authorService.db2api(Seq(author)).map { authors =>
           Created(Json.toJson(authors.head))
         }
       }

@@ -14,6 +14,8 @@ import controllers.books.auth.Auth
 
 object Editions extends Controller {
 
+  val editionService = EditionService.instance()
+
   import MessageJson.format
 
   case class NewEdition(bookGuid: UUID, pageCount: Int)
@@ -23,14 +25,14 @@ object Editions extends Controller {
     request.body.validate[NewEdition].fold(
       error => Future.successful(Conflict),
       newEdition => {
-        EditionService.addEdition(
+        editionService.addEdition(
           bookGuid = newEdition.bookGuid,
           pageCount = newEdition.pageCount,
           accessToken = request.accessToken
         ).flatMap { result =>
           result.fold(
             error => Future.successful(Conflict(Json.toJson(error))),
-            edition => EditionService.db2api(Seq(edition)).map { editions =>
+            edition => editionService.db2api(Seq(edition)).map { editions =>
               Created(Json.toJson(editions.head))
             }
           )

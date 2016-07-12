@@ -20,18 +20,20 @@ import controllers.books.auth.Auth
 
 object Notes extends Controller with PaginationController {
 
+  val noteService = NoteService.instance()
+
   import MessageJson.format
 
   def index = Action.async { implicit request =>
     withRawPaginationParams { rawPaginationParams =>
-      NoteService.findNotes(
+      noteService.findNotes(
         guids = request.laxQueryString.seq[UUID]("guid"),
         accountGuids = request.laxQueryString.seq[UUID]("accountGuid"),
         rawPaginationParams
       ).flatMap { result =>
         result.fold(
           error => Future.successful(Conflict(Json.toJson(error))),
-          result => NoteService.db2api(result.items).map { notes =>
+          result => noteService.db2api(result.items).map { notes =>
             paginatedResult(routes.Notes.index(), result.copy(items = notes))
           }
         )
@@ -46,7 +48,7 @@ object Notes extends Controller with PaginationController {
     request.body.validate[NewNote].fold(
       error => Future.successful(Conflict),
       newNote => {
-        NoteService.addNote(
+        noteService.addNote(
           editionGuid = newNote.editionGuid,
           pageNumber = newNote.pageNumber,
           content = newNote.content,
@@ -54,7 +56,7 @@ object Notes extends Controller with PaginationController {
         ).flatMap { result =>
           result.fold(
             error => Future.successful(Conflict(Json.toJson(error))),
-            note => NoteService.db2api(Seq(note)).map { notes =>
+            note => noteService.db2api(Seq(note)).map { notes =>
               Created(Json.toJson(notes.head))
             }
           )
