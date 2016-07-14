@@ -135,7 +135,7 @@ class NoteService(
     pageNumber: Int,
     content: String,
     accessToken: AccessToken
-  ): Future[Either[Message, NoteRecord]] = {
+  ): Future[Validation[NoteRecord]] = {
     bookService.findBooks(editionGuids = Some(Seq(editionGuid))).flatMap { books =>
       bookService.db2api(books)
     }.flatMap { books =>
@@ -146,17 +146,17 @@ class NoteService(
 
         if (pageNumber < 1) {
           Future.successful {
-            Left(Message("invalid-page-number",
+            Validation.failure("pageNumber", "invalid-page-number",
               "specified-page-number" -> pageNumber.toString,
               "minimum-page-number" -> "1"
-            ))
+            )
           }
         } else if (pageNumber > edition.pageCount) {
           Future.successful {
-            Left(Message("invalid-page-number",
+            Validation.failure("pageNumber", "invalid-page-number",
               "specified-page-number" -> pageNumber.toString,
               "maximum-page-number" -> edition.pageCount.toString
-            ))
+            )
           }
         } else {
           insertNote(editionGuid, pageNumber, content, accessToken).flatMap { newGuid =>
@@ -165,13 +165,13 @@ class NoteService(
                 throw new ResourceUnexpectedlyNotFound("Note", newGuid)
               }
 
-              Right(record)
+              Validation.success(record)
             }
           }
         }
       }.getOrElse {
         Future.successful {
-          Left(Message("unknown-edition", "guid" -> editionGuid.toString))
+          Validation.failure("editionGuid", "unknown-edition", "guid" -> editionGuid.toString)
         }
       }
     }

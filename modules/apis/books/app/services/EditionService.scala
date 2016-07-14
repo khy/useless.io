@@ -4,7 +4,7 @@ import java.util.UUID
 import scala.concurrent.Future
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import io.useless.accesstoken.AccessToken
-import io.useless.Message
+import io.useless.validation._
 
 import db.Driver.api._
 import db.{Books, Editions, EditionRecord, EditionsTable}
@@ -51,21 +51,21 @@ class EditionService extends BaseService {
     bookGuid: UUID,
     pageCount: Int,
     accessToken: AccessToken
-  ): Future[Either[Message, EditionRecord]] = {
+  ): Future[Validation[EditionRecord]] = {
     database.run(Books.filter(_.guid === bookGuid).result).flatMap { books =>
       books.headOption.map { book =>
         findEditions(bookGuids = Some(Seq(bookGuid))).flatMap { editions =>
           editions.find { edition =>
             edition.pageCount == pageCount
           }.map { edition =>
-            Future.successful(Right(edition))
+            Future.successful(Validation.success(edition))
           }.getOrElse {
             if (pageCount < 1) {
               Future.successful {
-                Left(Message("invalid-page-count",
+                Validation.failure("pageCount", "invalid-page-count",
                   "specified-page-count" -> pageCount.toString,
                   "minimum-page-count" -> "1"
-                ))
+                )
               }
             } else {
               insertEdition(bookGuid, pageCount, accessToken).flatMap { newEditionGuid =>
@@ -74,7 +74,7 @@ class EditionService extends BaseService {
                     throw new ResourceUnexpectedlyNotFound("Edition", newEditionGuid)
                   }
 
-                  Right(edition)
+                  Validation.success(edition)
                 }
               }
             }
@@ -82,7 +82,7 @@ class EditionService extends BaseService {
         }
       }.getOrElse {
         Future.successful {
-          Left(Message("unknown-book", "guid" -> bookGuid.toString))
+          Validation.failure("bookGuid", "unknown-book", "guid" -> bookGuid.toString)
         }
       }
     }

@@ -50,10 +50,12 @@ class NoteSpec extends DefaultSpec {
       )) }
       response1.status mustBe CONFLICT
 
-      val error1 = Json.parse(response1.body).as[JsValue]
-      (error1 \ "key").as[String] mustBe "invalid-page-number"
-      (error1 \ "details" \ "specified-page-number").as[String] mustBe "0"
-      (error1 \ "details" \ "minimum-page-number").as[String] mustBe "1"
+      val error1 = Json.parse(response1.body).as[Seq[JsValue]].head
+      (error1 \ "key").as[String] mustBe "pageNumber"
+      val message1 = (error1 \ "messages").as[Seq[JsValue]].head
+      (message1 \ "key").as[String] mustBe "invalid-page-number"
+      (message1 \ "details" \ "specified-page-number").as[String] mustBe "0"
+      (message1 \ "details" \ "minimum-page-number").as[String] mustBe "1"
 
       val response2 = await { baseRequest().post(Json.obj(
         "editionGuid" -> editionGuid,
@@ -62,10 +64,12 @@ class NoteSpec extends DefaultSpec {
       )) }
       response2.status mustBe CONFLICT
 
-      val error2 = Json.parse(response2.body).as[JsValue]
-      (error2 \ "key").as[String] mustBe "invalid-page-number"
-      (error2 \ "details" \ "specified-page-number").as[String] mustBe "-1"
-      (error2 \ "details" \ "minimum-page-number").as[String] mustBe "1"
+      val error2 = Json.parse(response2.body).as[Seq[JsValue]].head
+      (error2 \ "key").as[String] mustBe "pageNumber"
+      val message2 = (error2 \ "messages").as[Seq[JsValue]].head
+      (message2 \ "key").as[String] mustBe "invalid-page-number"
+      (message2 \ "details" \ "specified-page-number").as[String] mustBe "-1"
+      (message2 \ "details" \ "minimum-page-number").as[String] mustBe "1"
     }
 
     "respond with an error if the page number is greater than the edition page count" in {
@@ -86,10 +90,12 @@ class NoteSpec extends DefaultSpec {
       )) }
       response2.status mustBe CONFLICT
 
-      val error2 = Json.parse(response2.body).as[JsValue]
-      (error2 \ "key").as[String] mustBe "invalid-page-number"
-      (error2 \ "details" \ "specified-page-number").as[String] mustBe "165"
-      (error2 \ "details" \ "maximum-page-number").as[String] mustBe "164"
+      val error2 = Json.parse(response2.body).as[Seq[JsValue]].head
+      (error2 \ "key").as[String] mustBe "pageNumber"
+      val message2 = (error2 \ "messages").as[Seq[JsValue]].head
+      (message2 \ "key").as[String] mustBe "invalid-page-number"
+      (message2 \ "details" \ "specified-page-number").as[String] mustBe "165"
+      (message2 \ "details" \ "maximum-page-number").as[String] mustBe "164"
     }
 
     "create a new note for the specified edition of the book, and authenticated user" in {

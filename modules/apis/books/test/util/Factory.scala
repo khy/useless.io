@@ -28,11 +28,11 @@ object Factory {
   }
 
   def addEdition(bookGuid: UUID, pageCount: Int)(implicit accessToken: AccessToken): UUID = await {
-    editionService.addEdition(bookGuid, pageCount, accessToken).map(_.right.get.guid)
+    editionService.addEdition(bookGuid, pageCount, accessToken).map(_.toSuccess.value.guid)
   }
 
   def addNote(editionGuid: UUID, pageNumber: Int, content: String)(implicit accessToken: AccessToken): UUID = await {
-    noteService.addNote(editionGuid, pageNumber, content, accessToken).map(_.right.get.guid)
+    noteService.addNote(editionGuid, pageNumber, content, accessToken).map(_.toSuccess.value.guid)
   }
 
 }

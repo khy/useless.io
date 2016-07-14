@@ -7,6 +7,7 @@ import play.api.mvc._
 import play.api.libs.json.Json
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import io.useless.play.json.MessageJson
+import io.useless.play.json.validation.ErrorsJson._
 
 import services.books.EditionService
 import models.books.Edition.format

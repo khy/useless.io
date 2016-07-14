@@ -40,9 +40,11 @@ class EditionSpec extends DefaultSpec {
       )) }
 
       response.status mustBe CONFLICT
-      val error = Json.parse(response.body).as[JsValue]
-      (error \ "key").as[String] mustBe "unknown-book"
-      (error \ "details" \ "guid").as[String] mustBe guid.toString
+      val error = Json.parse(response.body).as[Seq[JsValue]].head
+      (error \ "key").as[String] mustBe "bookGuid"
+      val message = (error \ "messages").as[Seq[JsValue]].head
+      (message \ "key").as[String] mustBe "unknown-book"
+      (message \ "details" \ "guid").as[String] mustBe guid.toString
     }
 
     "respond with an error if the page count is less than 1" in {
@@ -54,10 +56,12 @@ class EditionSpec extends DefaultSpec {
       )) }
       response1.status mustBe CONFLICT
 
-      val error1 = Json.parse(response1.body).as[JsValue]
-      (error1 \ "key").as[String] mustBe "invalid-page-count"
-      (error1 \ "details" \ "specified-page-count").as[String] mustBe "0"
-      (error1 \ "details" \ "minimum-page-count").as[String] mustBe "1"
+      val error1 = Json.parse(response1.body).as[Seq[JsValue]].head
+      (error1 \ "key").as[String] mustBe "pageCount"
+      val message1 = (error1 \ "messages").as[Seq[JsValue]].head
+      (message1 \ "key").as[String] mustBe "invalid-page-count"
+      (message1 \ "details" \ "specified-page-count").as[String] mustBe "0"
+      (message1 \ "details" \ "minimum-page-count").as[String] mustBe "1"
 
       val response2 = await { baseRequest.post(Json.obj(
         "bookGuid" -> bookGuid,
@@ -65,10 +69,12 @@ class EditionSpec extends DefaultSpec {
       )) }
       response2.status mustBe CONFLICT
 
-      val error2 = Json.parse(response2.body).as[JsValue]
-      (error2 \ "key").as[String] mustBe "invalid-page-count"
-      (error2 \ "details" \ "specified-page-count").as[String] mustBe "-1"
-      (error2 \ "details" \ "minimum-page-count").as[String] mustBe "1"
+      val error2 = Json.parse(response2.body).as[Seq[JsValue]].head
+      (error2 \ "key").as[String] mustBe "pageCount"
+      val message2 = (error2 \ "messages").as[Seq[JsValue]].head
+      (message2 \ "key").as[String] mustBe "invalid-page-count"
+      (message2 \ "details" \ "specified-page-count").as[String] mustBe "-1"
+      (message2 \ "details" \ "minimum-page-count").as[String] mustBe "1"
     }
 
     "create new editions for a book, idempotently" in {
