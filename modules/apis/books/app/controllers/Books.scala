@@ -9,7 +9,6 @@ import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import io.useless.play.http.QueryStringUtil._
 
 import services.books.BookService
-import models.books.Book
 import models.books.Book.format
 import controllers.books.auth.Auth
 

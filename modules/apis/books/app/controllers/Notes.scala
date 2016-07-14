@@ -6,13 +6,10 @@ import play.api._
 import play.api.mvc._
 import play.api.libs.json.Json
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
-import io.useless.util.Uuid
 import io.useless.play.http.QueryStringUtil._
 import io.useless.pagination._
 import io.useless.play.pagination.PaginationController
-import io.useless.play.json.MessageJson
 import io.useless.play.json.validation.ErrorsJson._
-import io.useless.http.LinkHeader
 
 import services.books.NoteService
 import models.books.Note.format
@@ -21,8 +18,6 @@ import controllers.books.auth.Auth
 object Notes extends Controller with PaginationController {
 
   val noteService = NoteService.instance()
-
-  import MessageJson.format
 
   def index = Action.async { implicit request =>
     withRawPaginationParams { rawPaginationParams =>

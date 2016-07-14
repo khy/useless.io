@@ -6,7 +6,6 @@ import play.api._
 import play.api.mvc._
 import play.api.libs.json.Json
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
-import io.useless.play.json.MessageJson
 import io.useless.play.json.validation.ErrorsJson._
 
 import services.books.EditionService
@@ -16,8 +15,6 @@ import controllers.books.auth.Auth
 object Editions extends Controller {
 
   val editionService = EditionService.instance()
-
-  import MessageJson.format
 
   case class NewEdition(bookGuid: UUID, pageCount: Int)
   private implicit val newEditionReads = Json.reads[NewEdition]

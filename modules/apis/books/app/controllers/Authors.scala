@@ -8,7 +8,6 @@ import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import io.useless.play.http.QueryStringUtil._
 
 import services.books.AuthorService
-import models.books.Author
 import models.books.Author.format
 import controllers.books.auth.Auth
 
