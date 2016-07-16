@@ -13,6 +13,32 @@ class ValidationUtilSpec
   with MustMatchers
 {
 
+  "ValidationUtil.sequence" must {
+
+    "return a Validation.Success of the contained sequence if all Validations are successes" in {
+      val validation1 = Validation.success(1)
+      val validation2 = Validation.success(2)
+      val validation3 = Validation.success(3)
+
+      val validations = Seq(validation1, validation2, validation3)
+      val result = ValidationUtil.sequence(validations)
+      result.toSuccess.value mustBe Seq(1,2,3)
+    }
+
+    "return a Validation.Failure with any failures included in the sequence" in {
+      val validation1 = Validation.success(1)
+      val validation2 = Validation.failure("key2", "is.invalid")
+      val validation3 = Validation.failure("key3", "is.also.invalid")
+
+      val validations = Seq(validation1, validation2, validation3)
+      val result = ValidationUtil.sequence(validations)
+      val errors = result.toFailure.errors
+      errors.getMessages("key2").head.key mustBe "is.invalid"
+      errors.getMessages("key3").head.key mustBe "is.also.invalid"
+    }
+
+  }
+
   "ValidationUtil.mapFuture" must {
 
     "return a Future of a Validation.Success of the function's result, if the specified validation is a Validation.Success" in {
