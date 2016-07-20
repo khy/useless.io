@@ -23,10 +23,10 @@ object LikeController extends Controller with PaginationController {
   def index = Action.async { implicit request =>
     withRawPaginationParams { pagination =>
       likeService.find(
-        request.laxQueryString.seq[String]("resourceApi"),
-        request.laxQueryString.seq[String]("resourceType"),
-        request.laxQueryString.seq[String]("resourceId"),
-        request.laxQueryString.seq[UUID]("accountGuid"),
+        request.richQueryString.get[String]("resourceApi"),
+        request.richQueryString.get[String]("resourceType"),
+        request.richQueryString.get[String]("resourceId"),
+        request.richQueryString.get[UUID]("accountGuid"),
         pagination
       ).flatMap { result =>
         result.fold(
@@ -42,10 +42,10 @@ object LikeController extends Controller with PaginationController {
   def aggregates = Action.async { implicit request =>
     withRawPaginationParams { pagination =>
       likeService.aggregates(
-        request.laxQueryString.seq[String]("resourceApi"),
-        request.laxQueryString.seq[String]("resourceType"),
-        request.laxQueryString.seq[String]("resourceId"),
-        request.laxQueryString.seq[UUID]("accountGuid"),
+        request.richQueryString.get[String]("resourceApi"),
+        request.richQueryString.get[String]("resourceType"),
+        request.richQueryString.get[String]("resourceId"),
+        request.richQueryString.get[UUID]("accountGuid"),
         pagination
       ).map { result =>
         result.fold(

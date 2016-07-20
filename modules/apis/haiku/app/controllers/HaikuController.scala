@@ -22,9 +22,9 @@ object HaikuController extends Controller with PaginationController {
   def index = Action.async { implicit request =>
     withRawPaginationParams { pagination =>
       HaikuService.find(
-        guids = request.laxQueryString.seq[UUID]("guid"),
-        userHandles = request.laxQueryString.seq[String]("user"),
-        inResponseToGuids = request.laxQueryString.seq[UUID]("inResponseTo"),
+        guids = request.richQueryString.get[UUID]("guid"),
+        userHandles = request.richQueryString.get[String]("user"),
+        inResponseToGuids = request.richQueryString.get[UUID]("inResponseTo"),
         rawPaginationParams = pagination
       ).flatMap { result =>
         result.fold(

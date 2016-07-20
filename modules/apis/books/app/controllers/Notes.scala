@@ -22,8 +22,8 @@ object Notes extends Controller with PaginationController {
   def index = Action.async { implicit request =>
     withRawPaginationParams { rawPaginationParams =>
       noteService.findNotes(
-        guids = request.laxQueryString.seq[UUID]("guid"),
-        accountGuids = request.laxQueryString.seq[UUID]("accountGuid"),
+        guids = request.richQueryString.get[UUID]("guid"),
+        accountGuids = request.richQueryString.get[UUID]("accountGuid"),
         rawPaginationParams
       ).flatMap { result =>
         result.fold(

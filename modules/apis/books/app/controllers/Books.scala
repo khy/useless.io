@@ -18,8 +18,8 @@ object Books extends Controller {
 
   def index = Action.async { request =>
     bookService.findBooks(
-      guids = request.laxQueryString.seq[UUID]("guid"),
-      titles = request.laxQueryString.seq[String]("title")
+      guids = request.richQueryString.get[UUID]("guid"),
+      titles = request.richQueryString.get[String]("title")
     ).flatMap { books =>
       bookService.db2api(books).map { books =>
         Ok(Json.toJson(books))

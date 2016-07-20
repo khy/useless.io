@@ -6,12 +6,12 @@ import play.api.mvc.Request
 import org.joda.time.DateTime
 
 import io.useless.typeclass.Parse
-import io.useless.validation.{Validation, Validator}
+import io.useless.validation._
 
 object QueryStringUtil {
 
   implicit class RichQueryStringRequest(request: Request[_]) {
-    val laxQueryString = new LaxQueryString(request)
+    val richQueryString = new RichQueryString(request)
   }
 
   implicit val stringParse = new Parse[String] {
@@ -40,9 +40,9 @@ object QueryStringUtil {
 
 }
 
-class LaxQueryString(request: Request[_]) {
+class RichQueryString(request: Request[_]) {
 
-  def seq[T: Parse](key: String, delim: Option[String] = None): Option[Seq[T]] = {
+  def get[T: Parse](key: String, delim: Option[String] = None): Option[Seq[T]] = {
     request.queryString.get(key).map { raws =>
       raws.flatMap { raw =>
         delim.map { delim => raw.split(delim).toSeq }.getOrElse(Seq(raw))
@@ -52,6 +52,19 @@ class LaxQueryString(request: Request[_]) {
     }
   }
 
-  def get[T: Parse](key: String): Option[T] = seq(key).flatMap(_.headOption)
+  // TODO: test, consider keying the validation
+  def validate[T: Parse](key: String, delim: Option[String] = None): Validation[Seq[T]] = {
+    request.queryString.get(key).map { raws =>
+      raws.flatMap { raw =>
+        delim.map { delim => raw.split(delim).toSeq }.getOrElse(Seq(raw))
+      }.map { raw =>
+        implicitly[Parse[T]].parse(raw)
+      }
+    }.map { validations =>
+      ValidationUtil.sequence(validations)
+    }.getOrElse {
+      Validation.success(Seq.empty)
+    }
+  }
 
 }

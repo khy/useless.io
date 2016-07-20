@@ -17,7 +17,7 @@ object Authors extends Controller {
 
   def index = Action.async { request =>
     authorService.findAuthors(
-      names = request.laxQueryString.seq[String]("name")
+      names = request.richQueryString.get[String]("name")
     ).flatMap { authors =>
       authorService.db2api(authors).map { authors =>
         Ok(Json.toJson(authors))
