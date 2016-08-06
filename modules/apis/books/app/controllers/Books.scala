@@ -4,13 +4,17 @@ import java.util.UUID
 import scala.concurrent.Future
 import play.api._
 import play.api.mvc._
+import play.api.Play.current
+import play.api.libs.ws.WS
 import play.api.libs.json.Json
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import io.useless.play.http.QueryStringUtil._
 
 import services.books.BookService
-import models.books.Book.format
+import models.books.Book._
 import controllers.books.auth.Auth
+
+import clients.books.GoogleBooksClient
 
 object Books extends Controller {
 
@@ -24,6 +28,20 @@ object Books extends Controller {
       bookService.db2api(books).map { books =>
         Ok(Json.toJson(books))
       }
+    }
+  }
+
+  val googleBooksClient = new GoogleBooksClient(WS.client)
+
+  def externalIndex = Action.async { request =>
+    request.richQueryString.get[String]("title").flatMap { titles =>
+      titles.headOption
+    }.map { title =>
+      googleBooksClient.query(title).map { externalBooks =>
+        Ok(Json.toJson(externalBooks))
+      }
+    }.getOrElse {
+      Future.successful(Conflict("must specify 'title' query param"))
     }
   }
 
