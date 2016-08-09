@@ -1,11 +1,6 @@
-GET     /authors    controllers.books.Authors.index
-POST    /authors    controllers.books.Authors.create
+GET     /books        controllers.books.Books.index
 
-GET     /books          controllers.books.Books.index
-GET     /books/external controllers.books.Books.externalIndex
-POST    /books          controllers.books.Books.create
-
-POST    /editions   controllers.books.Editions.create
+GET     /editions     controllers.books.Editions.index
 
 GET     /notes        controllers.books.Notes.index
 POST    /notes        controllers.books.Notes.create

@@ -13,7 +13,6 @@ case class Note(
   pageNumber: Int,
   content: String,
   edition: Edition,
-  book: Book,
   createdBy: Account,
   createdAt: DateTime
 )

@@ -17,27 +17,29 @@ import io.useless.util.configuration.RichConfiguration._
 
 import db.Driver.api._
 import db.{Notes, NoteRecord}
-import models.books.Note
+import models.books.{Edition, Note}
 
 object NoteService {
 
   def instance() = {
-    new NoteService(
-      bookService = BookService.instance()
-    )
+    new NoteService
   }
 
 }
 
-class NoteService(
-  bookService: BookService
-) extends BaseService with Configuration {
+class NoteService extends BaseService with Configuration {
+
+  val tmpEdition = Edition(
+    isbn = "JAH",
+    title = "JAH",
+    subtitle = None,
+    authors = Seq.empty,
+    pageCount = 500,
+    imageUrl = None,
+    thumbnailUrl = None
+  )
 
   def db2api(records: Seq[NoteRecord]): Future[Seq[Note]] = {
-    val futBooks = bookService.findBooks(editionGuids = Some(records.map(_.editionGuid))).flatMap { books =>
-      bookService.db2api(books)
-    }
-
     val futAccounts = Future.sequence {
       records.map(_.createdByAccount).map(accountClient.getAccount(_))
     }.map { accounts =>
@@ -45,27 +47,16 @@ class NoteService(
     }
 
     for {
-      books <- futBooks
       accounts <- futAccounts
     } yield {
       records.map { record =>
-        val edition = books.flatMap(_.editions).find(_.guid == record.editionGuid).getOrElse {
-          throw new ResourceUnexpectedlyNotFound("Edition", record.editionGuid)
-        }
-
-        val book = books.find { book =>
-          book.editions.map(_.guid).contains(record.editionGuid)
-        }.getOrElse {
-          throw new ResourceUnexpectedlyNotFound("Book", record.editionGuid, "editionGuid")
-        }
-
         val user = accounts.find { account =>
           account.guid == record.createdByAccount
         }.getOrElse {
           throw new ResourceUnexpectedlyNotFound("User", record.createdByAccount)
         }
 
-        Note(record.guid, record.pageNumber, record.content, edition, book, user, new DateTime(record.createdAt))
+        Note(record.guid, record.pageNumber, record.content, tmpEdition, user, new DateTime(record.createdAt))
       }
     }
   }
@@ -136,42 +127,30 @@ class NoteService(
     content: String,
     accessToken: AccessToken
   ): Future[Validation[NoteRecord]] = {
-    bookService.findBooks(editionGuids = Some(Seq(editionGuid))).flatMap { books =>
-      bookService.db2api(books)
-    }.flatMap { books =>
-      books.headOption.map { book =>
-        val edition = book.editions.find(_.guid == editionGuid).getOrElse {
-          throw new ResourceUnexpectedlyNotFound("Edition", editionGuid)
-        }
+    val edition = tmpEdition
 
-        if (pageNumber < 1) {
-          Future.successful {
-            Validation.failure("pageNumber", "invalid-page-number",
-              "specified-page-number" -> pageNumber.toString,
-              "minimum-page-number" -> "1"
-            )
+    if (pageNumber < 1) {
+      Future.successful {
+        Validation.failure("pageNumber", "invalid-page-number",
+          "specified-page-number" -> pageNumber.toString,
+          "minimum-page-number" -> "1"
+        )
+      }
+    } else if (pageNumber > edition.pageCount) {
+      Future.successful {
+        Validation.failure("pageNumber", "invalid-page-number",
+          "specified-page-number" -> pageNumber.toString,
+          "maximum-page-number" -> edition.pageCount.toString
+        )
+      }
+    } else {
+      insertNote(editionGuid, pageNumber, content, accessToken).flatMap { newGuid =>
+        database.run(Notes.filter(_.guid === newGuid).result).map { records =>
+          val record = records.headOption.getOrElse {
+            throw new ResourceUnexpectedlyNotFound("Note", newGuid)
           }
-        } else if (pageNumber > edition.pageCount) {
-          Future.successful {
-            Validation.failure("pageNumber", "invalid-page-number",
-              "specified-page-number" -> pageNumber.toString,
-              "maximum-page-number" -> edition.pageCount.toString
-            )
-          }
-        } else {
-          insertNote(editionGuid, pageNumber, content, accessToken).flatMap { newGuid =>
-            database.run(Notes.filter(_.guid === newGuid).result).map { records =>
-              val record = records.headOption.getOrElse {
-                throw new ResourceUnexpectedlyNotFound("Note", newGuid)
-              }
 
-              Validation.success(record)
-            }
-          }
-        }
-      }.getOrElse {
-        Future.successful {
-          Validation.failure("editionGuid", "unknown-edition", "guid" -> editionGuid.toString)
+          Validation.success(record)
         }
       }
     }

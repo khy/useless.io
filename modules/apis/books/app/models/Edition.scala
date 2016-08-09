@@ -4,8 +4,13 @@ import java.util.UUID
 import play.api.libs.json._
 
 case class Edition(
-  guid: UUID,
-  pageCount: Int
+  isbn: String,
+  title: String,
+  subtitle: Option[String],
+  authors: Seq[String],
+  pageCount: Int,
+  imageUrl: Option[String],
+  thumbnailUrl: Option[String]
 )
 
 object Edition {

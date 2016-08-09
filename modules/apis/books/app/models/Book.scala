@@ -10,13 +10,6 @@ case class Book(
   editions: Seq[Edition]
 )
 
-case class ExternalBook(
-  title: String,
-  author: Option[String],
-  editions: Seq[Edition]
-)
-
 object Book {
   implicit val formatBook = Json.format[Book]
-  implicit val formatExternalBook = Json.format[ExternalBook]
 }
