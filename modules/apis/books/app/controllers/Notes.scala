@@ -36,7 +36,7 @@ object Notes extends Controller with PaginationController {
     }
   }
 
-  case class NewNote(editionGuid: UUID, pageNumber: Int, content: String)
+  case class NewNote(isbn: String, pageNumber: Int, content: String)
   private implicit val newNoteReads = Json.reads[NewNote]
 
   def create = Auth.async(parse.json) { request =>
@@ -44,7 +44,7 @@ object Notes extends Controller with PaginationController {
       error => Future.successful(Conflict),
       newNote => {
         noteService.addNote(
-          editionGuid = newNote.editionGuid,
+          isbn = newNote.isbn,
           pageNumber = newNote.pageNumber,
           content = newNote.content,
           accessToken = request.accessToken

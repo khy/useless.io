@@ -34,7 +34,7 @@ class NoteService extends BaseService with Configuration {
     title = "JAH",
     subtitle = None,
     authors = Seq.empty,
-    pageCount = 500,
+    pageCount = 5000,
     imageUrl = None,
     thumbnailUrl = None
   )
@@ -122,7 +122,7 @@ class NoteService extends BaseService with Configuration {
   }
 
   def addNote(
-    editionGuid: UUID,
+    isbn: String,
     pageNumber: Int,
     content: String,
     accessToken: AccessToken
@@ -144,7 +144,7 @@ class NoteService extends BaseService with Configuration {
         )
       }
     } else {
-      insertNote(editionGuid, pageNumber, content, accessToken).flatMap { newGuid =>
+      insertNote(isbn, pageNumber, content, accessToken).flatMap { newGuid =>
         database.run(Notes.filter(_.guid === newGuid).result).map { records =>
           val record = records.headOption.getOrElse {
             throw new ResourceUnexpectedlyNotFound("Note", newGuid)
@@ -157,17 +157,17 @@ class NoteService extends BaseService with Configuration {
   }
 
   private def insertNote(
-    editionGuid: UUID,
+    isbn: String,
     pageNumber: Int,
     content: String,
     accessToken: AccessToken
   ): Future[UUID] = {
     val projection = Notes.map { note =>
-      (note.guid, note.editionGuid, note.pageNumber, note.content,
+      (note.guid, note.isbn, note.pageNumber, note.content,
         note.createdByAccount, note.createdByAccessToken)
     }.returning(Notes.map(_.guid))
 
-    val noteInsert = projection += (UUID.randomUUID, editionGuid, pageNumber, content,
+    val noteInsert = projection += (UUID.randomUUID, isbn, pageNumber, content,
       accessToken.resourceOwner.guid, accessToken.guid)
 
     database.run(noteInsert)

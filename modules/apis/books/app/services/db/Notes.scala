@@ -7,7 +7,7 @@ import Driver.api._
 
 case class NoteRecord(
   guid: UUID,
-  editionGuid: UUID,
+  isbn: String,
   pageNumber: Int,
   content: String,
   createdAt: Timestamp,
@@ -23,11 +23,11 @@ class NotesTable(tag: Tag)
   with AuditData[NoteRecord]
 {
   def guid = column[UUID]("guid")
-  def editionGuid = column[UUID]("edition_guid")
+  def isbn = column[String]("isbn")
   def pageNumber = column[Int]("page_number")
   def content = column[String]("content")
 
-  def * = (guid, editionGuid, pageNumber, content, createdAt, createdByAccount,
+  def * = (guid, isbn, pageNumber, content, createdAt, createdByAccount,
     createdByAccessToken, deletedAt, deletedByAccount,
     deletedByAccessToken) <> (NoteRecord.tupled, NoteRecord.unapply)
 }
