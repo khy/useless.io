@@ -110,7 +110,7 @@ class AccountSpec
       val accessToken = Helpers.await { user.addAccessToken(Some(app.guid), Seq.empty) }.right.get
       Helpers.await { user.deleteAccessToken(accessToken.guid) }
       val _user = Helpers.await { user.reload() }
-      _user.accessTokens(0) must be ('defined)
+      _user.accessTokens.headOption must be ('defined)
     }
 
     "appropriately set deletedAt if there are multiple, deleted access tokens" in {

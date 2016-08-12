@@ -20,6 +20,7 @@ class ApiSpec
 
   override implicit lazy val app = appWithRoute
 
+  MongoHelper.clearDb()
   val adminUser = createUser("khy@useless.io", "khy", None, Seq(Scope.Platform))
   val adminAccessToken = adminUser.accessTokens(0).guid.toString
   val url = s"http://localhost:$port/apis"

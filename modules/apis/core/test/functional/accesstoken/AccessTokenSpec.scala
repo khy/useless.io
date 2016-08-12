@@ -23,10 +23,6 @@ class AccessTokenSpec
 
   override implicit lazy val app = appWithRoute
 
-  // override def beforeEach {
-  //   MongoHelper.clearDb()
-  // }
-
   "GET /access_tokens/[UUID]" should {
 
     val user = createUser("khy@useless.io", "khy", Some("Kevin Hyland"))
@@ -46,7 +42,9 @@ class AccessTokenSpec
 
     "return a 404 if the access token has been deleted" in {
       val api = createApi("haiku")
+      val userAccessToken = block { user.addAccessToken(Some(_app.guid), Seq(UselessScope("haiku/read"))) }.right.get
       userAccessToken.delete()
+      val url = s"http://localhost:$port/access_tokens/${userAccessToken.guid}"
       val response = get(url, auth = api.accessTokens(0).guid)
       response.status mustBe (NOT_FOUND)
     }
