@@ -13,6 +13,7 @@ import clients.auth.accesstoken._
 import clients.auth.account._
 import services.auth.LoginService
 
+/*
 class FunctionalSpec
   extends PlaySpec
   with OneServerPerSuite
@@ -30,110 +31,107 @@ class FunctionalSpec
     s"${username}@useless-auth-functional-test.dev"
   }
 
-  if (false) {
+  "User first needs to create an account" in {
+    goTo(authUrl)
+    currentUrl mustBe "/sign-in"
+    clickOn("a.sign-up")
 
-    "User first needs to create an account" in {
-      goTo(authUrl)
-      currentUrl mustBe "/sign-in"
-      clickOn("a.sign-up")
+    val handle = UUID.randomUUID.toString
+    currentUrl mustBe "/sign-up"
+    textField("input.name").value = "Kevin Hyland"
+    textField("input.email").value = testEmail(handle)
+    textField("input.handle").value = handle
+    textField("input.password").value = "secret"
+    submit()
 
-      val handle = UUID.randomUUID.toString
-      currentUrl mustBe "/sign-up"
-      textField("input.name").value = "Kevin Hyland"
-      textField("input.email").value = testEmail(handle)
-      textField("input.handle").value = handle
-      textField("input.password").value = "secret"
-      submit()
+    currentUrl mustBe authUrl
+    find("h2").get.text mustBe "Account would like to access your useless.io account. In particular, it has requested the following special permissions:"
+    find("table.scope td.scope-name").get.text mustBe "Admin"
+    clickOn("input.allow")
 
-      currentUrl mustBe authUrl
-      find("h2").get.text mustBe "Account would like to access your useless.io account. In particular, it has requested the following special permissions:"
-      find("table.scope td.scope-name").get.text mustBe "Admin"
-      clickOn("input.allow")
+    currentUrl must fullyMatch regex (appRedirectRx)
+  }
 
-      currentUrl must fullyMatch regex (appRedirectRx)
-    }
+  "User first needs to sign in, and does not have requested access token" in {
+    val email = testEmail()
+    LoginService.create(email, "secret", None, None)
+    goTo(authUrl)
 
-    "User first needs to sign in, and does not have requested access token" in {
-      val email = testEmail()
-      LoginService.create(email, "secret", None, None)
-      goTo(authUrl)
+    currentUrl mustBe "/sign-in"
+    textField("input.email").value = email
+    textField("input.password").value = "secret"
+    submit()
 
-      currentUrl mustBe "/sign-in"
-      textField("input.email").value = email
-      textField("input.password").value = "secret"
-      submit()
+    currentUrl mustBe authUrl
+    find("h2").get.text mustBe "Account would like to access your useless.io account. In particular, it has requested the following special permissions:"
+    find("table.scope td.scope-name").get.text mustBe "Admin"
+    clickOn("input.allow")
 
-      currentUrl mustBe authUrl
-      find("h2").get.text mustBe "Account would like to access your useless.io account. In particular, it has requested the following special permissions:"
-      find("table.scope td.scope-name").get.text mustBe "Admin"
-      clickOn("input.allow")
+    currentUrl must fullyMatch regex (appRedirectRx)
+  }
 
-      currentUrl must fullyMatch regex (appRedirectRx)
-    }
+  "User is already signed in, but does not have requested access token" in {
+    val email = testEmail()
+    LoginService.create(email, "secret", None, None)
+    goTo("/sign-in")
+    textField("input.email").value = email
+    textField("input.password").value = "secret"
+    submit()
 
-    "User is already signed in, but does not have requested access token" in {
-      val email = testEmail()
-      LoginService.create(email, "secret", None, None)
-      goTo("/sign-in")
-      textField("input.email").value = email
-      textField("input.password").value = "secret"
-      submit()
+    goTo(authUrl)
+    currentUrl mustBe authUrl
+    find("h2").get.text mustBe "Account would like to access your useless.io account. In particular, it has requested the following special permissions:"
+    find("table.scope td.scope-name").get.text mustBe "Admin"
+    clickOn("input.allow")
 
-      goTo(authUrl)
-      currentUrl mustBe authUrl
-      find("h2").get.text mustBe "Account would like to access your useless.io account. In particular, it has requested the following special permissions:"
-      find("table.scope td.scope-name").get.text mustBe "Admin"
-      clickOn("input.allow")
+    currentUrl must fullyMatch regex (appRedirectRx)
+  }
 
-      currentUrl must fullyMatch regex (appRedirectRx)
-    }
+  "User first needs to sign in, but has an access token with the request scope" in {
+    val email = testEmail()
+    val result = LoginService.create(email, "secret", None, None)
+    val userAccessToken = Helpers.await(result).right.get
+    AccessTokenClient.instance(Some(userAccessToken)).createAccessToken(accountAppGuid, Seq(Scope("admin")))
 
-    "User first needs to sign in, but has an access token with the request scope" in {
-      val email = testEmail()
-      val result = LoginService.create(email, "secret", None, None)
-      val userAccessToken = Helpers.await(result).right.get
-      AccessTokenClient.instance(Some(userAccessToken)).createAccessToken(accountAppGuid, Seq(Scope("admin")))
+    goTo(authUrl)
+    currentUrl mustBe "/sign-in"
+    textField("input.email").value = email
+    textField("input.password").value = "secret"
+    submit()
 
-      goTo(authUrl)
-      currentUrl mustBe "/sign-in"
-      textField("input.email").value = email
-      textField("input.password").value = "secret"
-      submit()
+    currentUrl must fullyMatch regex (appRedirectRx)
+  }
 
-      currentUrl must fullyMatch regex (appRedirectRx)
-    }
+  "User is already signed in and has an access token with the request scope" in {
+    val email = testEmail()
+    val result = LoginService.create(email, "secret", None, None)
+    val userAccessToken = Helpers.await(result).right.get
+    AccessTokenClient.instance(Some(userAccessToken)).createAccessToken(accountAppGuid, Seq(Scope("admin")))
 
-    "User is already signed in and has an access token with the request scope" in {
-      val email = testEmail()
-      val result = LoginService.create(email, "secret", None, None)
-      val userAccessToken = Helpers.await(result).right.get
-      AccessTokenClient.instance(Some(userAccessToken)).createAccessToken(accountAppGuid, Seq(Scope("admin")))
+    goTo("/sign-in")
+    textField("input.email").value = email
+    textField("input.password").value = "secret"
+    submit()
 
-      goTo("/sign-in")
-      textField("input.email").value = email
-      textField("input.password").value = "secret"
-      submit()
+    goTo(authUrl)
+    currentUrl must fullyMatch regex (appRedirectRx)
+  }
 
-      goTo(authUrl)
-      currentUrl must fullyMatch regex (appRedirectRx)
-    }
+  "App requests an access token without scopes" in {
+    val authUrlWithoutScope = s"/auth?app_guid=${accountAppGuid}"
+    val email = testEmail()
+    LoginService.create(email, "secret", None, None)
 
-    "App requests an access token without scopes" in {
-      val authUrlWithoutScope = s"/auth?app_guid=${accountAppGuid}"
-      val email = testEmail()
-      LoginService.create(email, "secret", None, None)
+    goTo(authUrlWithoutScope)
+    textField("input.email").value = email
+    textField("input.password").value = "secret"
+    submit()
 
-      goTo(authUrlWithoutScope)
-      textField("input.email").value = email
-      textField("input.password").value = "secret"
-      submit()
+    find("h2").get.text mustBe "Account would like to access your useless.io account. It has not requested any special permissions."
+    clickOn("input.allow")
 
-      find("h2").get.text mustBe "Account would like to access your useless.io account. It has not requested any special permissions."
-      clickOn("input.allow")
-
-      currentUrl must fullyMatch regex (appRedirectRx)
-    }
-
+    currentUrl must fullyMatch regex (appRedirectRx)
   }
 
 }
+*/
