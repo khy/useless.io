@@ -1,7 +1,8 @@
 package test.auth
 
 import java.util.UUID
-import org.specs2.mutable._
+import org.scalatest._
+import org.scalatestplus.play._
 import play.api.test._
 import play.api.test.Helpers._
 import play.api.{ Application, Plugin }
@@ -12,7 +13,12 @@ import clients.auth.accesstoken._
 import clients.auth.account._
 import services.auth.LoginService
 
-class FunctionalSpec extends Specification {
+class FunctionalSpec
+  extends PlaySpec
+  with OneServerPerSuite
+  with OneBrowserPerSuite
+  with FirefoxFactory
+{
 
   val accountAppGuid = UUID.fromString("a198fb60-f97c-4837-a47b-d12eaae0d0f7")
   val authUrl = s"/auth?app_guid=${accountAppGuid}&scopes=admin"
@@ -26,106 +32,106 @@ class FunctionalSpec extends Specification {
 
   if (false) {
 
-    "User first needs to create an account" in new WithBrowser(webDriver = WebDriverFactory(FIREFOX)) {
-      browser.goTo(authUrl)
-      browser.url must beEqualTo("/sign-in")
-      browser.click("a.sign-up")
+    "User first needs to create an account" in {
+      goTo(authUrl)
+      currentUrl mustBe "/sign-in"
+      clickOn("a.sign-up")
 
       val handle = UUID.randomUUID.toString
-      browser.url must beEqualTo("/sign-up")
-      browser.fill("input.name").`with`("Kevin Hyland")
-      browser.fill("input.email").`with`(testEmail(handle))
-      browser.fill("input.handle").`with`(handle)
-      browser.fill("input.password").`with`("secret")
-      browser.submit("form.login")
+      currentUrl mustBe "/sign-up"
+      textField("input.name").value = "Kevin Hyland"
+      textField("input.email").value = testEmail(handle)
+      textField("input.handle").value = handle
+      textField("input.password").value = "secret"
+      submit()
 
-      browser.url must beEqualTo(authUrl)
-      browser.findFirst("h2").getText must beEqualTo("Account would like to access your useless.io account. In particular, it has requested the following special permissions:")
-      browser.findFirst("table.scope td.scope-name").getText must beEqualTo("Admin")
-      browser.click("input.allow")
+      currentUrl mustBe authUrl
+      find("h2").get.text mustBe "Account would like to access your useless.io account. In particular, it has requested the following special permissions:"
+      find("table.scope td.scope-name").get.text mustBe "Admin"
+      clickOn("input.allow")
 
-      browser.url must beMatching(appRedirectRx)
+      currentUrl must fullyMatch regex (appRedirectRx)
     }
 
-    "User first needs to sign in, and does not have requested access token" in new WithBrowser(webDriver = WebDriverFactory(FIREFOX)) {
+    "User first needs to sign in, and does not have requested access token" in {
       val email = testEmail()
       LoginService.create(email, "secret", None, None)
-      browser.goTo(authUrl)
+      goTo(authUrl)
 
-      browser.url must beEqualTo("/sign-in")
-      browser.fill("input.email").`with`(email)
-      browser.fill("input.password").`with`("secret")
-      browser.submit("form.session")
+      currentUrl mustBe "/sign-in"
+      textField("input.email").value = email
+      textField("input.password").value = "secret"
+      submit()
 
-      browser.url must beEqualTo(authUrl)
-      browser.findFirst("h2").getText must beEqualTo("Account would like to access your useless.io account. In particular, it has requested the following special permissions:")
-      browser.findFirst("table.scope td.scope-name").getText must beEqualTo("Admin")
-      browser.click("input.allow")
+      currentUrl mustBe authUrl
+      find("h2").get.text mustBe "Account would like to access your useless.io account. In particular, it has requested the following special permissions:"
+      find("table.scope td.scope-name").get.text mustBe "Admin"
+      clickOn("input.allow")
 
-      browser.url must beMatching(appRedirectRx)
+      currentUrl must fullyMatch regex (appRedirectRx)
     }
 
-    "User is already signed in, but does not have requested access token" in new WithBrowser(webDriver = WebDriverFactory(FIREFOX)) {
+    "User is already signed in, but does not have requested access token" in {
       val email = testEmail()
       LoginService.create(email, "secret", None, None)
-      browser.goTo("/sign-in")
-      browser.fill("input.email").`with`(email)
-      browser.fill("input.password").`with`("secret")
-      browser.submit("form.session")
+      goTo("/sign-in")
+      textField("input.email").value = email
+      textField("input.password").value = "secret"
+      submit()
 
-      browser.goTo(authUrl)
-      browser.url must beEqualTo(authUrl)
-      browser.findFirst("h2").getText must beEqualTo("Account would like to access your useless.io account. In particular, it has requested the following special permissions:")
-      browser.findFirst("table.scope td.scope-name").getText must beEqualTo("Admin")
-      browser.click("input.allow")
+      goTo(authUrl)
+      currentUrl mustBe authUrl
+      find("h2").get.text mustBe "Account would like to access your useless.io account. In particular, it has requested the following special permissions:"
+      find("table.scope td.scope-name").get.text mustBe "Admin"
+      clickOn("input.allow")
 
-      browser.url must beMatching(appRedirectRx)
+      currentUrl must fullyMatch regex (appRedirectRx)
     }
 
-    "User first needs to sign in, but has an access token with the request scope" in new WithBrowser(webDriver = WebDriverFactory(FIREFOX)) {
+    "User first needs to sign in, but has an access token with the request scope" in {
       val email = testEmail()
       val result = LoginService.create(email, "secret", None, None)
       val userAccessToken = Helpers.await(result).right.get
       AccessTokenClient.instance(Some(userAccessToken)).createAccessToken(accountAppGuid, Seq(Scope("admin")))
 
-      browser.goTo(authUrl)
-      browser.url must beEqualTo("/sign-in")
-      browser.fill("input.email").`with`(email)
-      browser.fill("input.password").`with`("secret")
-      browser.submit("form.session")
+      goTo(authUrl)
+      currentUrl mustBe "/sign-in"
+      textField("input.email").value = email
+      textField("input.password").value = "secret"
+      submit()
 
-      browser.url must beMatching(appRedirectRx)
+      currentUrl must fullyMatch regex (appRedirectRx)
     }
 
-    "User is already signed in and has an access token with the request scope" in new WithBrowser(webDriver = WebDriverFactory(FIREFOX)) {
+    "User is already signed in and has an access token with the request scope" in {
       val email = testEmail()
       val result = LoginService.create(email, "secret", None, None)
       val userAccessToken = Helpers.await(result).right.get
       AccessTokenClient.instance(Some(userAccessToken)).createAccessToken(accountAppGuid, Seq(Scope("admin")))
 
-      browser.goTo("/sign-in")
-      browser.fill("input.email").`with`(email)
-      browser.fill("input.password").`with`("secret")
-      browser.submit("form.session")
+      goTo("/sign-in")
+      textField("input.email").value = email
+      textField("input.password").value = "secret"
+      submit()
 
-      browser.goTo(authUrl)
-      browser.url must beMatching(appRedirectRx)
+      goTo(authUrl)
+      currentUrl must fullyMatch regex (appRedirectRx)
     }
 
-    "App requests an access token without scopes" in new WithBrowser(webDriver = WebDriverFactory(FIREFOX)) {
+    "App requests an access token without scopes" in {
       val authUrlWithoutScope = s"/auth?app_guid=${accountAppGuid}"
       val email = testEmail()
       LoginService.create(email, "secret", None, None)
 
-      browser.goTo(authUrlWithoutScope)
-      browser.fill("input.email").`with`(email)
-      browser.fill("input.password").`with`("secret")
-      browser.submit("form.session")
+      goTo(authUrlWithoutScope)
+      textField("input.email").value = email
+      textField("input.password").value = "secret"
+      submit()
 
-      browser.findFirst("h2").getText must beEqualTo("Account would like to access your useless.io account. It has not requested any special permissions.")
-      browser.click("input.allow")
+      find("h2").get.text mustBe "Account would like to access your useless.io account. It has not requested any special permissions."
+      clickOn("input.allow")
 
-      browser.url must beMatching(appRedirectRx)
+      currentUrl must fullyMatch regex (appRedirectRx)
     }
 
   }
