@@ -13,7 +13,7 @@ object AuthorizedUserJson {
     (__ \ "guid").read[UUID] ~
     (__ \ "user" \ "email").read[String] ~
     (__ \ "user" \ "handle").read[String] ~
-    (__ \ "user" \ "name").read[Option[String]]
+    (__ \ "user" \ "name").readNullable[String]
   ) { (guid: UUID, email: String, handle: String, name: Option[String]) =>
     User.authorized(guid, email, handle, name)
   }

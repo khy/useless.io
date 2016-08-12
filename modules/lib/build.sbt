@@ -1,12 +1,10 @@
 organization := "io.useless"
 
-val playVersion = "2.3.9"
-
 libraryDependencies ++= Seq(
   Default.Dependency.reactiveMongo,
   Default.Dependency.jodaTime,
-  "com.typesafe.play" %%  "play"          % playVersion,
-  "com.typesafe.play" %%  "play-ws"       % playVersion,
+  "com.typesafe.play" %%  "play"          % Default.playVersion,
+  "com.typesafe.play" %%  "play-ws"       % Default.playVersion,
   "com.typesafe"      %   "config"        % "1.2.1"
 ) ++ Seq(
   Default.Dependency.scalaTestPlay,

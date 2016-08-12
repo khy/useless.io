@@ -1,28 +1,27 @@
 package io.useless.play.filter
 
 import scala.concurrent.Future
-import org.specs2.mutable.{ Specification, Before }
-import play.api.mvc._
-import play.api.mvc.Results.Ok
+import org.scalatest._
+import org.scalatestplus.play._
+import play.api.test.Helpers._
 import play.api.test._
+import play.api.mvc._
 
-class HttpsRedirectFilterSpec extends PlaySpecification {
+class HttpsRedirectFilterSpec extends PlaySpec with OneAppPerTest {
 
-  def buildGlobal() = new WithFilters(new HttpsRedirectFilter) {}
-
-  def buildApplication(protocol: String) = new FakeApplication(
-    withGlobal = Some(buildGlobal()),
-    additionalConfiguration = Map(
-      "application.router" -> "io.useless.play.filter.EmptyRouter",
-      "application.protocol" -> protocol
-    ),
-    withRoutes = {
-      case ("GET", "/path") => Action { Ok }
-    }
-  )
-
-  val httpApplication = buildApplication("http")
-  val httpsApplication = buildApplication("https")
+  override def newAppForTest(td: TestData): FakeApplication = {
+    val global = new WithFilters(new HttpsRedirectFilter) {}
+    new FakeApplication(
+      withGlobal = Some(global),
+      additionalConfiguration = Map(
+        "application.router" -> "io.useless.play.filter.EmptyRouter",
+        "application.protocol" -> "http"
+      ),
+      withRoutes = {
+        case ("GET", "/path") => Action { Results.Ok }
+      }
+    )
+  }
 
   val baseRequest = FakeRequest("GET", "/path")
 
@@ -30,14 +29,14 @@ class HttpsRedirectFilterSpec extends PlaySpecification {
 
     val request = baseRequest
 
-    "respond 200 if the configured protocol is http" in new WithApplication(httpApplication) {
+    "respond 200 if the configured protocol is http" in {
       val result = route(request).get
-      status(result) must equalTo(OK)
+      status(result) mustBe OK
     }
 
-    "respond 200 if the configured protocol is https" in new WithApplication(httpsApplication) {
+    "respond 200 if the configured protocol is https" in {
       val result = route(request).get
-      status(result) must equalTo(OK)
+      status(result) mustBe OK
     }
 
   }
@@ -46,15 +45,15 @@ class HttpsRedirectFilterSpec extends PlaySpecification {
 
     val request = baseRequest.withHeaders("X-Forwarded-Proto" -> "http")
 
-    "respond 200 if the configured protocol is http" in new WithApplication(httpApplication) {
+    "respond 200 if the configured protocol is http" in {
       val result = route(request).get
-      status(result) must equalTo(OK)
+      status(result) mustBe OK
     }
 
-    "respond 302 if the configured protocol is https" in new WithApplication(httpsApplication) {
+    "respond 302 if the configured protocol is https" in  {
       val result = route(request).get
-      status(result) must equalTo(MOVED_PERMANENTLY)
-      redirectLocation(result) must beEqualTo(Some("https:///path"))
+      status(result) mustBe MOVED_PERMANENTLY
+      redirectLocation(result) mustBe Some("https:///path")
     }
 
   }
@@ -63,15 +62,15 @@ class HttpsRedirectFilterSpec extends PlaySpecification {
 
     val request = baseRequest.withHeaders("X-Forwarded-Proto" -> "https")
 
-    "respond 302 if the configured protocol is http" in new WithApplication(httpApplication) {
+    "respond 302 if the configured protocol is http" in {
       val result = route(request).get
-      status(result) must equalTo(MOVED_PERMANENTLY)
-      redirectLocation(result) must beEqualTo(Some("http:///path"))
+      status(result) mustBe MOVED_PERMANENTLY
+      redirectLocation(result) mustBe Some("http:///path")
     }
 
-    "respond 200 if the configured protocol is https" in new WithApplication(httpsApplication) {
+    "respond 200 if the configured protocol is https" in {
       val result = route(request).get
-      status(result) must equalTo(OK)
+      status(result) mustBe OK
     }
 
   }

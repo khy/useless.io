@@ -3,7 +3,7 @@ package io.useless.client.account
 import org.scalatest.FunSpec
 import org.scalatest.Matchers
 import java.util.UUID
-import play.api.libs.ws.Response
+import play.api.libs.ws.WSResponse
 import play.api.libs.json._
 import org.scalatestplus.play.OneAppPerSuite
 

@@ -8,8 +8,6 @@ trait ImplicitPlayApplication extends OneAppPerSuite {
 
   self: Suite =>
 
-  implicit override lazy val app = new FakeApplication {
-    override lazy val routes = None
-  }
+  implicit override lazy val app = new FakeApplication {}
 
 }

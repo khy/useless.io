@@ -8,7 +8,7 @@ import io.useless.accesstoken._
 import io.useless.account._
 import io.useless.play.json.UuidJson._
 import io.useless.play.json.account.AccountJson._
-import ScopeJson._  
+import ScopeJson._
 
 object AuthorizedAccessTokenJson {
 
@@ -16,7 +16,7 @@ object AuthorizedAccessTokenJson {
     (__ \ "guid").read[UUID] ~
     (__ \ "authorization_code").read[UUID] ~
     (__ \ "resource_owner").read[Account] ~
-    (__ \ "client").read[Option[Account]] ~
+    (__ \ "client").readNullable[Account] ~
     (__ \ "scopes").read[Seq[Scope]]
   ) {(guid: UUID, authorizationCode: UUID, resourceOwner: Account, client: Option[Account], scopes: Seq[Scope]) =>
     AccessToken.authorized(guid, authorizationCode, resourceOwner, client, scopes)

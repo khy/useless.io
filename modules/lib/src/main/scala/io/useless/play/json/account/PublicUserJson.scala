@@ -12,7 +12,7 @@ object PublicUserJson {
   val reads: Reads[PublicUser] = (
     (__ \ "guid").read[UUID] ~
     (__ \ "user" \ "handle").read[String] ~
-    (__ \ "user" \ "name").read[Option[String]]
+    (__ \ "user" \ "name").readNullable[String]
   ) { (guid: UUID, handle: String, name: Option[String]) =>
     User.public(guid, handle, name)
   }
