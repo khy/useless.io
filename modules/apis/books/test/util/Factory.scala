@@ -11,8 +11,8 @@ object Factory {
 
   val noteService = NoteService.instance()
 
-  def addNote(editionGuid: UUID, pageNumber: Int, content: String)(implicit accessToken: AccessToken): UUID = await {
-    noteService.addNote(editionGuid, pageNumber, content, accessToken).map(_.toSuccess.value.guid)
+  def addNote(isbn: String, pageNumber: Int, content: String)(implicit accessToken: AccessToken): UUID = await {
+    noteService.addNote(isbn, pageNumber, content, accessToken).map(_.toSuccess.value.guid)
   }
 
 }

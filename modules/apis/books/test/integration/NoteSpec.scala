@@ -115,12 +115,12 @@ class NoteSpec extends DefaultSpec {
   "GET /notes" must {
 
     def buildNotes() {
-      val editionGuid = UUID.randomUUID
-      Factory.addNote(editionGuid, 34, "This is good, guy.")
-      Factory.addNote(editionGuid, 57, "Amiright?")
-      Factory.addNote(editionGuid, 68, "What do you think?")
-      Factory.addNote(editionGuid, 103, "I'm feeling a little dizzy.")
-      Factory.addNote(editionGuid, 140, "...")
+      val isbn = "9781250014764"
+      Factory.addNote(isbn, 34, "This is good, guy.")
+      Factory.addNote(isbn, 57, "Amiright?")
+      Factory.addNote(isbn, 68, "What do you think?")
+      Factory.addNote(isbn, 103, "I'm feeling a little dizzy.")
+      Factory.addNote(isbn, 140, "...")
     }
 
     "support unauthenticated requests" ignore {
@@ -133,8 +133,8 @@ class NoteSpec extends DefaultSpec {
     }
 
     "return notes by guid" ignore {
-      val editionGuid = UUID.randomUUID
-      val noteGuid = Factory.addNote(editionGuid, 56, "A note.")
+      val isbn = "9781250014764"
+      val noteGuid = Factory.addNote(isbn, 56, "A note.")
 
       val response = await {
         baseRequest(url = Some(s"http://localhost:$port/notes")).
