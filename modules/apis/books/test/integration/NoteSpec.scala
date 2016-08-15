@@ -99,7 +99,6 @@ class NoteSpec extends DefaultSpec {
       postResponse.status mustBe CREATED
 
       val note = Json.parse(postResponse.body).as[JsValue]
-      println(note)
       // (note \ "edition" \ "guid").as[UUID] mustBe "1112333444445"
       // (note \ "edition" \ "pageCount").as[Int] mustBe 164
       // (note \ "book" \ "title").as[String] mustBe "I Pass Like Night"

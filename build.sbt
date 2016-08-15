@@ -47,4 +47,7 @@ publishStepTasks := Seq(
   (semPublish in haiku)
 )
 
-javaOptions in (ThisBuild, Test) += "-Dconfig.file=" + baseDirectory.value + "/conf/test.conf"
+javaOptions in (ThisBuild, Test) ++= Seq(
+  "-Dconfig.file=" + baseDirectory.value + "/conf/test.conf",
+  "-Dlogger.file=" + baseDirectory.value + "/conf/logback-test.xml"
+)

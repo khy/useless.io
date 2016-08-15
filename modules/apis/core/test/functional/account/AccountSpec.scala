@@ -109,12 +109,10 @@ class AccountSpec
       response.status mustBe(OK)
 
       val json = Json.parse(response.body)
-      println(json)
       val accounts = Json.fromJson[Seq[Account]](json).get
       accounts.length mustBe(1)
 
       val _user = accounts(0).asInstanceOf[User]
-      println(_user)
       _user.guid mustBe(user.guid)
       _user.handle mustBe("khy")
       _user.name mustBe(Some("Kevin Hyland"))
