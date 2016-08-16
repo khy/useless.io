@@ -41,7 +41,7 @@ class ApplicationComponents(context: Context)
   lazy val router: Router = new Routes(
     httpErrorHandler,
     core.Routes,
-    books.Routes,
+    init.books.ApplicationComponents.router(context),
     haiku.Routes,
     budget.Routes
   )

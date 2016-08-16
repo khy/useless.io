@@ -11,7 +11,7 @@ import io.useless.play.http.QueryStringUtil._
 import models.books.Book._
 import controllers.books.auth.Auth
 
-object Books extends Controller {
+class Books extends Controller {
 
   def index = Action.async { request =>
     Future.successful(Ok(Json.toJson(Seq.empty)))
