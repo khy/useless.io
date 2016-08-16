@@ -26,7 +26,8 @@ lazy val root = (project in file(".")).
   settings(
     aggregate in stage := false,
     aggregate in publishLocal := false,
-    aggregate in publish := false
+    aggregate in publish := false,
+    routesGenerator := InjectedRoutesGenerator
   )
 
 dockerBaseImage := "java:8"
