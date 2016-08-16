@@ -8,6 +8,8 @@ import play.api.{
 }
 import play.api.ApplicationLoader.Context
 import play.api.routing.Router
+import play.api.inject.{Injector, SimpleInjector, NewInstanceInjector}
+import play.api.libs.ws.ning.NingWSComponents
 import com.typesafe.config.ConfigRenderOptions
 import io.useless.play.filter._
 
@@ -24,6 +26,7 @@ class ApplicationLoader extends PlayApplicationLoader {
 
 class ApplicationComponents(context: Context)
   extends BuiltInComponentsFromContext(context)
+  with NingWSComponents
 {
 
   Logger.info(configuration.underlying.root.render(ConfigRenderOptions.concise))
@@ -42,5 +45,10 @@ class ApplicationComponents(context: Context)
     haiku.Routes,
     budget.Routes
   )
+
+  override lazy val injector: Injector = {
+    new SimpleInjector(NewInstanceInjector) + router + crypto + httpConfiguration +
+      tempFileCreator + wsApi
+  }
 
 }
