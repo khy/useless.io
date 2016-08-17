@@ -19,17 +19,11 @@ import models.books.{Edition, Note}
 
 class NoteService(
   dbConfig: DatabaseConfig[Driver],
-  accessTokenGuid: UUID
+  accountClient: AccountClient
 ) {
 
   import dbConfig.db
   import dbConfig.driver.api._
-
-  lazy val accountClient = {
-    // TODO: Remove this once AccountClient is fixed.
-    import play.api.Play.current
-    AccountClient.instance(accessTokenGuid)
-  }
 
   val tmpEdition = Edition(
     isbn = "JAH",

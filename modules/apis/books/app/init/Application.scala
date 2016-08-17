@@ -1,47 +1,40 @@
 package init.books
 
-import play.api.{
-  ApplicationLoader => PlayApplicationLoader,
-  BuiltInComponents,
-  BuiltInComponentsFromContext
-}
+import play.api.{BuiltInComponents, BuiltInComponentsFromContext}
 import play.api.ApplicationLoader.Context
+import play.api.inject.{Injector, SimpleInjector, NewInstanceInjector}
 import play.api.routing.Router
-import play.api.libs.ws.ning.NingWSComponents
 import play.api.db.slick.{SlickComponents, DbName}
-import io.useless.util.configuration.RichConfiguration._
+import play.api.libs.ws.ning.NingWSComponents
 
 import books.Routes
 import controllers.books._
-import clients.books._
-import services.books._
+import services.books.db.DbConfigComponents
+import clients.books.{ClientComponents, ProdClientComponents}
+import services.books.ServiceComponents
 
-class ApplicationLoader extends PlayApplicationLoader {
+object ApplicationComponents {
 
-  def load(context: Context) = ApplicationComponents.default(context).application
+  def router(context: Context) = {
+    val applicationComponents = {
+      new AbstractApplicationComponents(context)
+        with ProdClientComponents
+    }
+
+    applicationComponents.booksRouter
+  }
 
 }
 
-object  ApplicationComponents {
-
-  def default(context: Context) = new ApplicationComponents(context)
-
-  def router(context: Context) = default(context).booksRouter
-
-}
-
-class ApplicationComponents(context: Context)
+class AbstractApplicationComponents(context: Context)
   extends BuiltInComponentsFromContext(context)
   with NingWSComponents
   with SlickComponents
+  with DbConfigComponents
+  with ServiceComponents
 {
 
-  val accessTokenGuid = configuration.underlying.getUuid("books.accessTokenGuid")
-
-  lazy val editionClient: EditionClient = new GoogleEditionClient(wsClient)
-
-  lazy val dbConfig = api.dbConfig[db.Driver](DbName("books"))
-  lazy val notesService: NoteService = new NoteService(dbConfig, accessTokenGuid)
+  self: ClientComponents =>
 
   lazy val router: Router = booksRouter
 
@@ -49,7 +42,12 @@ class ApplicationComponents(context: Context)
     httpErrorHandler,
     new Books,
     new Editions(editionClient),
-    new Notes(notesService)
+    new Notes(noteService)
   )
+
+  override lazy val injector: Injector = {
+    new SimpleInjector(NewInstanceInjector) + router + crypto + httpConfiguration +
+      tempFileCreator + wsApi
+  }
 
 }
