@@ -2,32 +2,34 @@ package services.books
 
 import java.util.UUID
 import java.sql.Timestamp
-import scala.concurrent.Future
-import play.api.Play.current
-import play.api.libs.concurrent.Execution.Implicits.defaultContext
+import scala.concurrent.{ExecutionContext, Future}
+import play.api.Configuration
 import org.joda.time.DateTime
+import slick.backend.DatabaseConfig
 import io.useless.Message
 import io.useless.account.Account
 import io.useless.accesstoken.AccessToken
 import io.useless.client.account.AccountClient
 import io.useless.pagination._
 import io.useless.validation._
-import io.useless.util.configuration.Configuration
-import io.useless.util.configuration.RichConfiguration._
 
-import db.Driver.api._
+import services.books.db.Driver
 import db.{Notes, NoteRecord}
 import models.books.{Edition, Note}
 
-object NoteService {
+class NoteService(
+  dbConfig: DatabaseConfig[Driver],
+  accessTokenGuid: UUID
+) {
 
-  def instance() = {
-    new NoteService
+  import dbConfig.db
+  import dbConfig.driver.api._
+
+  lazy val accountClient = {
+    // TODO: Remove this once AccountClient is fixed.
+    import play.api.Play.current
+    AccountClient.instance(accessTokenGuid)
   }
-
-}
-
-class NoteService extends BaseService with Configuration {
 
   val tmpEdition = Edition(
     isbn = "JAH",
@@ -39,7 +41,7 @@ class NoteService extends BaseService with Configuration {
     thumbnailUrl = None
   )
 
-  def db2api(records: Seq[NoteRecord]): Future[Seq[Note]] = {
+  def db2api(records: Seq[NoteRecord])(implicit ec: ExecutionContext): Future[Seq[Note]] = {
     val futAccounts = Future.sequence {
       records.map(_.createdByAccount).map(accountClient.getAccount(_))
     }.map { accounts =>
@@ -70,7 +72,7 @@ class NoteService extends BaseService with Configuration {
     guids: Option[Seq[UUID]],
     accountGuids: Option[Seq[UUID]],
     rawPaginationParams: RawPaginationParams
-  ): Future[Validation[PaginatedResult[NoteRecord]]] = {
+  )(implicit ec: ExecutionContext): Future[Validation[PaginatedResult[NoteRecord]]] = {
     val valPaginationParams = PaginationParams.build(rawPaginationParams, paginationConfig)
 
     ValidationUtil.mapFuture(valPaginationParams) { paginationParams =>
@@ -110,15 +112,10 @@ class NoteService extends BaseService with Configuration {
 
       query = query.take(paginationParams.limit)
 
-      database.run(query.result).map { notes =>
+      db.run(query.result).map { notes =>
         PaginatedResult.build(notes, paginationParams)
       }
     }
-  }
-
-  lazy val accountClient = {
-    val authGuid = configuration.underlying.getUuid("books.accessTokenGuid")
-    AccountClient.instance(authGuid)
   }
 
   def addNote(
@@ -126,7 +123,7 @@ class NoteService extends BaseService with Configuration {
     pageNumber: Int,
     content: String,
     accessToken: AccessToken
-  ): Future[Validation[NoteRecord]] = {
+  )(implicit ec: ExecutionContext): Future[Validation[NoteRecord]] = {
     val edition = tmpEdition
 
     if (pageNumber < 1) {
@@ -145,7 +142,7 @@ class NoteService extends BaseService with Configuration {
       }
     } else {
       insertNote(isbn, pageNumber, content, accessToken).flatMap { newGuid =>
-        database.run(Notes.filter(_.guid === newGuid).result).map { records =>
+        db.run(Notes.filter(_.guid === newGuid).result).map { records =>
           val record = records.headOption.getOrElse {
             throw new ResourceUnexpectedlyNotFound("Note", newGuid)
           }
@@ -161,7 +158,7 @@ class NoteService extends BaseService with Configuration {
     pageNumber: Int,
     content: String,
     accessToken: AccessToken
-  ): Future[UUID] = {
+  )(implicit ec: ExecutionContext): Future[UUID] = {
     val projection = Notes.map { note =>
       (note.guid, note.isbn, note.pageNumber, note.content,
         note.createdByAccount, note.createdByAccessToken)
@@ -170,7 +167,7 @@ class NoteService extends BaseService with Configuration {
     val noteInsert = projection += (UUID.randomUUID, isbn, pageNumber, content,
       accessToken.resourceOwner.guid, accessToken.guid)
 
-    database.run(noteInsert)
+    db.run(noteInsert)
   }
 
 }

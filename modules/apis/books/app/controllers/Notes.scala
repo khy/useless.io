@@ -15,9 +15,9 @@ import services.books.NoteService
 import models.books.Note.format
 import controllers.books.auth.Auth
 
-class Notes extends Controller with PaginationController {
-
-  val noteService = NoteService.instance()
+class Notes(
+  noteService: NoteService
+) extends Controller with PaginationController {
 
   def index = Action.async { implicit request =>
     withRawPaginationParams { rawPaginationParams =>
