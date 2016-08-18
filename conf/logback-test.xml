@@ -12,17 +12,12 @@
     <appender-ref ref="STDOUT" />
   </appender>
 
-  <logger name="play" level="INFO" />
-  <logger name="application" level="OFF" />
-
-  <logger name="com.avaje.ebean.config.PropertyMapLoader" level="OFF" />
-  <logger name="com.avaje.ebeaninternal.server.core.XmlConfigLoader" level="OFF" />
-  <logger name="com.avaje.ebeaninternal.server.lib.BackgroundThread" level="OFF" />
-  <logger name="com.gargoylesoftware.htmlunit.javascript" level="OFF" />
-  <logger name="com.zaxxer.hikari" level="OFF" />
-
   <root level="WARN">
     <appender-ref ref="ASYNCSTDOUT" />
   </root>
+
+  <logger name="play" level="INFO" />
+  <logger name="application" level="OFF" />
+  <logger name="com.zaxxer.hikari" level="OFF" />
 
 </configuration>

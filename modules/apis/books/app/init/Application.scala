@@ -1,6 +1,6 @@
 package init.books
 
-import play.api.{BuiltInComponents, BuiltInComponentsFromContext}
+import play.api.{BuiltInComponents, BuiltInComponentsFromContext, Logger}
 import play.api.ApplicationLoader.Context
 import play.api.inject.{Injector, SimpleInjector, NewInstanceInjector}
 import play.api.routing.Router
@@ -35,6 +35,8 @@ class AbstractApplicationComponents(context: Context)
 {
 
   self: ClientComponents =>
+
+  Logger.configure(context.environment)
 
   lazy val router: Router = booksRouter
 
