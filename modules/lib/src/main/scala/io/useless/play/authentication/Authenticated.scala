@@ -4,7 +4,6 @@ import play.api.Application
 
 class Authenticated(guidConfigKey: String)(implicit app: Application)
   extends BaseAuthenticated
-  with    ClientAuthDaoComponent
 {
 
   lazy val authDao = new ClientAuthDao(guidConfigKey)

@@ -2,17 +2,21 @@ package io.useless.play.client
 
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
-import play.api.Application
 import play.api.libs.json.{ Json, JsValue, JsResult, JsSuccess, JsError }
 import play.api.libs.json.Reads
+import play.api.libs.ws.WSClient
 
 import io.useless.accesstoken.AccessToken
 import io.useless.client._
 
 object ResourceClient {
 
-  def apply(baseUrl: String, auth: String)(implicit app: Application): ResourceClient = {
-    val jsonClient = JsonClient(baseUrl, auth)
+  def apply(
+    client: WSClient,
+    baseUrl: String,
+    auth: String
+  ): ResourceClient = {
+    val jsonClient = JsonClient(client, baseUrl, auth)
     new DefaultResourceClient(jsonClient)
   }
 

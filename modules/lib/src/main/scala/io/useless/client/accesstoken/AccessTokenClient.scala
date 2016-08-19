@@ -3,14 +3,27 @@ package io.useless.client.accesstoken
 import java.util.UUID
 import scala.concurrent.Future
 import play.api.Application
+import play.api.libs.ws.WSClient
 
 import io.useless.client.Mockable
 import io.useless.accesstoken.AccessToken
 
+trait AccessTokenClientComponent {
+
+
+
+  def accessTokenClient: AccessTokenClient
+
+}
+
 object AccessTokenClient extends Mockable[AccessTokenClient] {
 
-  def instance(authGuid: UUID)(implicit app: Application): AccessTokenClient = {
-    mock.getOrElse(new PlayAccessTokenClient(authGuid))
+  def instance(
+    client: WSClient,
+    baseUrl: String,
+    authGuid: UUID
+  ): AccessTokenClient = {
+    mock.getOrElse(new PlayAccessTokenClient(client, baseUrl, authGuid))
   }
 
 }

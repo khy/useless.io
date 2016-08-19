@@ -3,7 +3,6 @@ package io.useless.play.client
 import java.util.UUID
 import scala.concurrent.Future
 import com.ning.http.client.AsyncHttpClientConfig
-import play.api.Application
 import play.api.libs.ws.{ WS, WSResponse, WSClient }
 import play.api.libs.json.JsValue
 
@@ -11,8 +10,12 @@ import io.useless.util.Logger
 
 object BaseClient {
 
-  def apply(baseUrl: String, auth: String)(implicit app: Application): BaseClient = {
-    new DefaultBaseClient(WS.client, baseUrl, auth)
+  def apply(
+    client: WSClient,
+    baseUrl: String,
+    auth: String
+  ): BaseClient = {
+    new DefaultBaseClient(client, baseUrl, auth)
   }
 
 }
