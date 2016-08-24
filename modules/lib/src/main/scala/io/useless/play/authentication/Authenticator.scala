@@ -7,6 +7,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import play.api.mvc._
 
 import io.useless.accesstoken.AccessToken
+import io.useless.client.accesstoken.AccessTokenClient
 import io.useless.util.{ Logger, Uuid }
 
 trait AuthenticatorComponent {
@@ -43,7 +44,7 @@ trait CompositeAuthenticatorComponent extends AuthenticatorComponent {
 
 trait GuidAuthenticatorComponent extends AuthenticatorComponent with Logger {
 
-  self: AuthDaoComponent =>
+  protected def accessTokenClient: AccessTokenClient
 
   trait GuidAuthenticator extends Authenticator {
 
@@ -53,7 +54,7 @@ trait GuidAuthenticatorComponent extends AuthenticatorComponent with Logger {
       guid(request).map{ rawGuid =>
         logger.debug("Authenticating guid: %s".format(rawGuid))
         Uuid.parseUuid(rawGuid) match {
-          case Success(guid: UUID) => authDao.getAccessToken(guid)
+          case Success(guid: UUID) => accessTokenClient.getAccessToken(guid)
           case _: Failure[UUID] => Future.successful(None)
         }
       }.getOrElse { Future.successful(None) }
@@ -65,8 +66,6 @@ trait GuidAuthenticatorComponent extends AuthenticatorComponent with Logger {
 
 trait HeaderAuthenticatorComponent extends GuidAuthenticatorComponent {
 
-  self: AuthDaoComponent =>
-
   class HeaderAuthenticator(header: String) extends GuidAuthenticator {
 
     def guid[A](request: Request[A]) = request.headers.get(header)
@@ -77,8 +76,6 @@ trait HeaderAuthenticatorComponent extends GuidAuthenticatorComponent {
 
 trait QueryParameterAuthenticatorComponent extends GuidAuthenticatorComponent {
 
-  self: AuthDaoComponent =>
-
   class QueryParameterAuthenticator(queryParameter: String) extends GuidAuthenticator {
 
     def guid[A](request: Request[A]) = request.getQueryString(queryParameter)
@@ -88,8 +85,6 @@ trait QueryParameterAuthenticatorComponent extends GuidAuthenticatorComponent {
 }
 
 trait CookieAuthenticatorComponent extends GuidAuthenticatorComponent {
-
-  self: AuthDaoComponent =>
 
   class CookieAuthenticator(cookie: String) extends GuidAuthenticator {
 

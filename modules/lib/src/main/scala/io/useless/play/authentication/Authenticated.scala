@@ -1,14 +1,36 @@
 package io.useless.play.authentication
 
-import play.api.Application
+import play.api.{Application, BuiltInComponents}
+import play.api.libs.ws.WS
+import play.api.libs.ws.ning.NingWSComponents
 
-class Authenticated(guidConfigKey: String)(implicit app: Application)
-  extends BaseAuthenticated
-{
+import io.useless.client.accesstoken.{AccessTokenClient, AccessTokenClientComponent}
+import io.useless.util.configuration.RichConfiguration._
 
-  lazy val authDao = new ClientAuthDao(guidConfigKey)
+trait AuthenticatedComponent {
+
+  self: BuiltInComponents with
+    NingWSComponents with
+    AccessTokenClientComponent =>
+
+  val authenticated = new Authenticated(accessTokenClient)
 
 }
+
+object Authenticated {
+
+  def apply(guidConfigKey: String)(implicit app: Application) = {
+    val accessTokenClient = AccessTokenClient.instance(
+      client = WS.client,
+      baseUrl = app.configuration.underlying.getString("useless.core.baseUrl"),
+      authGuid = app.configuration.underlying.getUuid(guidConfigKey)
+    )
+  }
+
+}
+
+class Authenticated(protected val accessTokenClient: AccessTokenClient)
+  extends BaseAuthenticated
 
 trait BaseAuthenticated
   extends AuthenticatedBuilder
@@ -19,8 +41,6 @@ trait BaseAuthenticated
   with    IdentityAuthorizerComponent
   with    ApiRejectorComponent
 {
-
-  self: AuthDaoComponent =>
 
   val authenticator: Authenticator = new CompositeAuthenticator(Seq(
     new HeaderAuthenticator("Authorization"),

@@ -1,22 +1,27 @@
 package io.useless.play.authentication
 
-import play.api.Application
+import play.api.{Application, BuiltInComponents}
+import play.api.libs.ws.ning.NingWSComponents
 
 import io.useless.accesstoken.Scope
+import io.useless.client.accesstoken.{AccessTokenClient, AccessTokenClientComponent}
 
-object Authorized {
+trait AuthorizedComponent {
 
-  def apply(scopes: Scope*)(implicit app: Application) = new Authorized("useless.client.accessTokenGuid", scopes)
+  self: BuiltInComponents with
+    NingWSComponents with
+    AccessTokenClientComponent =>
+
+  def authorized(scopes: Seq[Scope]) = {
+    new Authorized(accessTokenClient, scopes)
+  }
 
 }
 
-class Authorized(guidConfigKey: String, scopes: Seq[Scope])(implicit app: Application)
-  extends BaseAuthenticated
-  with    ClientAuthDaoComponent
-  with    ScopeAuthorizerComponent
+class Authorized(accessTokenClient: AccessTokenClient, scopes: Seq[Scope])
+  extends Authenticated(accessTokenClient)
+  with ScopeAuthorizerComponent
 {
-
-  lazy val authDao = new ClientAuthDao(guidConfigKey)
 
   override val authorizer = new ScopeAuthorizer(scopes)
 
