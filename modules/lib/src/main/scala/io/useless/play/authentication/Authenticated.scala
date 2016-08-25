@@ -17,15 +17,13 @@ trait AuthenticatedComponent {
 
 }
 
-object Authenticated {
+class LegacyAuthenticated(guidConfigKey: String)(implicit app: Application) extends BaseAuthenticated {
 
-  def apply(guidConfigKey: String)(implicit app: Application) = {
-    val accessTokenClient = AccessTokenClient.instance(
-      client = WS.client,
-      baseUrl = app.configuration.underlying.getString("useless.core.baseUrl"),
-      authGuid = app.configuration.underlying.getUuid(guidConfigKey)
-    )
-  }
+  lazy val accessTokenClient = AccessTokenClient.instance(
+    client = WS.client,
+    baseUrl = app.configuration.underlying.getString("useless.core.baseUrl"),
+    authGuid = app.configuration.underlying.getUuid(guidConfigKey)
+  )
 
 }
 

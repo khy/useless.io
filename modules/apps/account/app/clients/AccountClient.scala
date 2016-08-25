@@ -3,6 +3,7 @@ package clients.account
 import java.util.UUID
 import scala.concurrent.Future
 import play.api.Play.current
+import play.api.libs.ws.WS
 import play.api.libs.concurrent.Execution.Implicits._
 import io.useless.client.ClientException
 import io.useless.play.client.ResourceClient
@@ -18,7 +19,7 @@ object AccountClient
 
   def instance(accessToken: AccessToken): AccountClient = {
     val baseUrl = configuration.underlying.getString("useless.core.baseUrl")
-    val resourceClient = ResourceClient(baseUrl, accessToken.guid.toString)
+    val resourceClient = ResourceClient(WS.client, baseUrl, accessToken.guid.toString)
     new DefaultAccountClient(resourceClient)
   }
 

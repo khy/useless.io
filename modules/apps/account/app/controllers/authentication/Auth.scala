@@ -2,19 +2,26 @@ package controllers.account.authentication
 
 import java.util.UUID
 import play.api.mvc.{ Cookie, Request, Results }
+import play.api.Play
 import play.api.Play.current
+import play.api.libs.ws.WS
 import io.useless.play.authentication._
+import io.useless.client.accesstoken.AccessTokenClient
+import io.useless.util.configuration.RichConfiguration._
 
 import controllers.account.routes.ApplicationController
 
 object Auth
   extends BaseAuthenticated
-  with    ClientAuthDaoComponent
   with    SessionAuthenticatorComponent
   with    SignInRejectorComponent
 {
 
-  val authDao = new ClientAuthDao("account.accessTokenGuid")
+  lazy val accessTokenClient = AccessTokenClient.instance(
+    client = WS.client,
+    baseUrl = Play.configuration.underlying.getString("useless.core.baseUrl"),
+    authGuid = Play.configuration.underlying.getUuid("account.accessTokenGuid")
+  )
 
   override val authenticator = new SessionAuthenticator("auth")
 
@@ -23,8 +30,6 @@ object Auth
 }
 
 trait SessionAuthenticatorComponent extends GuidAuthenticatorComponent {
-
-  self: AuthDaoComponent =>
 
   class SessionAuthenticator(key: String) extends GuidAuthenticator {
 

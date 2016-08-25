@@ -3,6 +3,7 @@ package services.budget.util
 import java.util.UUID
 import scala.concurrent.{Future, ExecutionContext}
 import play.api.{Play, Application}
+import play.api.libs.ws.WS
 import io.useless.account.{User, PublicUser}
 import io.useless.client.account.AccountClient
 import io.useless.util.configuration.RichConfiguration._
@@ -10,8 +11,11 @@ import io.useless.util.configuration.RichConfiguration._
 object UsersHelper {
 
   def default()(implicit app: Application) = {
-    val authGuid = Play.configuration.underlying.getUuid("budget.accessTokenGuid")
-    new UsersHelper(AccountClient.instance(authGuid))
+    new UsersHelper(AccountClient.instance(
+      client = WS.client,
+      baseUrl = Play.configuration.underlying.getString("useless.core.baseUrl"),
+      authGuid = Play.configuration.underlying.getUuid("budget.accessTokenGuid")
+    ))
   }
 
   val AnonUser: User = new PublicUser(

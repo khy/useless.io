@@ -3,6 +3,7 @@ package clients.auth.account
 import java.util.UUID
 import scala.concurrent.Future
 import play.api.Play.current
+import play.api.libs.ws.WS
 
 import io.useless.play.client.ResourceClient
 import io.useless.accesstoken.AccessToken
@@ -19,7 +20,7 @@ object AccountClient
     val auth = optAccessToken.map(_.guid.toString).getOrElse {
       configuration.underlying.getString("account.accessTokenGuid")
     }
-    val resourceClient = ResourceClient(baseUrl, auth)
+    val resourceClient = ResourceClient(WS.client, baseUrl, auth)
     new DefaultAccountClient(resourceClient)
   }
 

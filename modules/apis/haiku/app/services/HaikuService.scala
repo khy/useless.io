@@ -3,6 +3,7 @@ package services.haiku
 import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
 import play.api.Application
+import play.api.libs.ws.WS
 import org.joda.time.DateTime
 import slick.driver.PostgresDriver.api._
 import io.useless.Message
@@ -23,8 +24,11 @@ object HaikuService extends Configuration {
   val database = Database.forConfig("db.haiku")
 
   def accountClient(implicit app: Application) = {
-    val authGuid = configuration.underlying.getUuid("haiku.accessTokenGuid")
-    AccountClient.instance(authGuid)
+    AccountClient.instance(
+      client = WS.client,
+      baseUrl = app.configuration.underlying.getString("useless.core.baseUrl"),
+      authGuid = app.configuration.underlying.getUuid("haiku.accessTokenGuid")
+    )
   }
 
   private val paginationConfig = PaginationParams.defaultPaginationConfig.copy(

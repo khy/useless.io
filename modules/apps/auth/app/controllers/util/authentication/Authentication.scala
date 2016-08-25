@@ -1,20 +1,27 @@
 package controllers.auth.util.authentication
 
 import java.util.UUID
+import play.api.Play
+import play.api.Play.current
 import play.api.mvc.{ Cookie, Request, Results }
+import play.api.libs.ws.WS
 import io.useless.play.authentication._
+import io.useless.client.accesstoken.AccessTokenClient
+import io.useless.util.configuration.RichConfiguration._
 
 import controllers.auth.routes.SessionController
-import clients.auth.accesstoken.AccessTokenClient
 
 object Authenticated
   extends BaseAuthenticated
-  with    ApplicationClientAuthDaoComponent
   with    SessionAuthenticatorComponent
   with    SignInRejectorComponent
 {
 
-  val authDao = new ApplicationClientAuthDao
+  lazy val accessTokenClient = AccessTokenClient.instance(
+    client = WS.client,
+    baseUrl = Play.configuration.underlying.getString("useless.core.baseUrl"),
+    authGuid = Play.configuration.underlying.getUuid("account.accessTokenGuid")
+  )
 
   override val authenticator = new SessionAuthenticator("auth")
 
@@ -23,8 +30,6 @@ object Authenticated
 }
 
 trait SessionAuthenticatorComponent extends GuidAuthenticatorComponent {
-
-  self: AuthDaoComponent =>
 
   class SessionAuthenticator(key: String) extends GuidAuthenticator {
 
@@ -47,22 +52,6 @@ trait SignInRejectorComponent extends RejectorComponent {
       Results.Redirect(SessionController.form).
         withCookies(Cookie("return_path", returnPath))
     }
-
-  }
-
-}
-
-/*
- * In order to ensure proper mocking, use the application's AccessTokenClient
- * as opposed to useless.scala's.
- */
-trait ApplicationClientAuthDaoComponent extends AuthDaoComponent {
-
-  class ApplicationClientAuthDao extends AuthDao {
-
-    private lazy val client = AccessTokenClient.instance()
-
-    def getAccessToken(guid: UUID) = client.getAccessToken(guid)
 
   }
 

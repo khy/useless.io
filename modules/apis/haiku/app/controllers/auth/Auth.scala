@@ -2,6 +2,6 @@ package controllers.haiku.auth
 
 import play.api.Play.current
 
-import io.useless.play.authentication.Authenticated
+import io.useless.play.authentication.LegacyAuthenticated
 
-object Auth extends Authenticated("haiku.accessTokenGuid")
+object Auth extends LegacyAuthenticated("haiku.accessTokenGuid")

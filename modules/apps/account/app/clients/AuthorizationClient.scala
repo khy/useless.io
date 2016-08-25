@@ -4,6 +4,7 @@ import java.util.UUID
 import scala.concurrent.Future
 import play.api.Play.current
 import play.api.libs.json.Json
+import play.api.libs.ws.WS
 import io.useless.play.client.ResourceClient
 import io.useless.accesstoken.AccessToken
 import io.useless.play.json.accesstoken.AccessTokenJson._
@@ -17,7 +18,7 @@ object AuthorizationClient
   lazy val instance = {
     val baseUrl = configuration.underlying.getString("useless.core.baseUrl")
     val auth = configuration.underlying.getString("account.accessTokenGuid")
-    val resourceClient = ResourceClient(baseUrl, auth)
+    val resourceClient = ResourceClient(WS.client, baseUrl, auth)
     new DefaultAuthorizationClient(resourceClient)
   }
 

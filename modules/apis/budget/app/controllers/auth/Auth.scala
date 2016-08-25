@@ -2,6 +2,6 @@ package controllers.budget.auth
 
 import play.api.Play.current
 
-import io.useless.play.authentication.Authenticated
+import io.useless.play.authentication.LegacyAuthenticated
 
-object Auth extends Authenticated("budget.accessTokenGuid")
+object Auth extends LegacyAuthenticated("budget.accessTokenGuid")
