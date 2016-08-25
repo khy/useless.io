@@ -9,7 +9,6 @@ import play.api.libs.concurrent.Execution.Implicits.defaultContext
 import io.useless.play.http.QueryStringUtil._
 
 import models.books.Book._
-import controllers.books.auth.Auth
 
 class Books extends Controller {
 

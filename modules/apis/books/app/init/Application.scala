@@ -6,6 +6,9 @@ import play.api.inject.{Injector, SimpleInjector, NewInstanceInjector}
 import play.api.routing.Router
 import play.api.db.slick.{SlickComponents, DbName}
 import play.api.libs.ws.ning.NingWSComponents
+import io.useless.client.account.{AccountClientComponents, DefaultAccountClientComponents}
+import io.useless.client.accesstoken.AccessTokenClientComponent
+import io.useless.play.authentication.AuthenticatedComponent
 
 import books.Routes
 import controllers.books._
@@ -19,6 +22,7 @@ object ApplicationComponents {
     val applicationComponents = {
       new AbstractApplicationComponents(context)
         with ProdClientComponents
+        with DefaultAccountClientComponents
     }
 
     applicationComponents.booksRouter
@@ -32,9 +36,11 @@ class AbstractApplicationComponents(context: Context)
   with SlickComponents
   with DbConfigComponents
   with ServiceComponents
+  with AccessTokenClientComponent
+  with AuthenticatedComponent
 {
 
-  self: ClientComponents =>
+  self: ClientComponents with AccountClientComponents =>
 
   Logger.configure(context.environment)
 
@@ -44,7 +50,7 @@ class AbstractApplicationComponents(context: Context)
     httpErrorHandler,
     new Books,
     new Editions(editionClient),
-    new Notes(noteService)
+    new Notes(authenticated, noteService)
   )
 
   override lazy val injector: Injector = {

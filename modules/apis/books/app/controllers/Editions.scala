@@ -11,7 +11,6 @@ import io.useless.play.http.QueryStringUtil._
 import io.useless.play.json.validation.ErrorsJson._
 
 import models.books.Edition.format
-import controllers.books.auth.Auth
 import clients.books._
 
 class Editions(editionClient: EditionClient) extends Controller {

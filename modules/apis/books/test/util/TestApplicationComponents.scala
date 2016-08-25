@@ -2,7 +2,7 @@ package test.util
 
 import scala.concurrent.{ExecutionContext, Future}
 import play.api.ApplicationLoader.Context
-import io.useless.client.account.AccountClient
+import io.useless.client.account.{AccountClient, AccountClientComponents}
 
 import init.books.AbstractApplicationComponents
 import models.books.Edition
@@ -19,6 +19,7 @@ class TestApplicationComponents(
   val accountClient: AccountClient,
   val editionClient: EditionClient = TestApplicationComponents.editionClient
 ) extends AbstractApplicationComponents(context)
+  with AccountClientComponents
   with ClientComponents
 
 class TestEditionClient(editions: Seq[Edition]) extends EditionClient {

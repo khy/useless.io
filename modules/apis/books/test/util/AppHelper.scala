@@ -1,10 +1,11 @@
 package test.util
 
 import java.util.UUID
+import play.api.BuiltInComponents
 import play.api.test.Helpers._
 import play.api.db.slick.SlickComponents
 import play.api.libs.concurrent.Execution.Implicits.defaultContext
-
+import io.useless.client.account.AccountClientComponents
 import io.useless.accesstoken.AccessToken
 
 import init.books.AbstractApplicationComponents
@@ -14,9 +15,10 @@ import services.books.db.DbConfigComponents
 import services.books.db._
 
 class AppHelper(
-  applicationComponents: AbstractApplicationComponents with ClientComponents
+  applicationComponents: AbstractApplicationComponents with ClientComponents with AccountClientComponents
 )
   extends SlickComponents
+  with AccountClientComponents
   with DbConfigComponents
   with ClientComponents
   with ServiceComponents
