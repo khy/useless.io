@@ -45,11 +45,8 @@ class AuthorizedSpec
     scopes = Seq(readScope, writeScope)
   )
 
-  implicit def mockClient = new MockAccessTokenClient(Seq(readAccessToken, writeAccessToken))
-
-  object TestAuthorized extends Authorized("accessTokenGuid", Seq(writeScope, deleteScope)) {
-    override lazy val authDao = new ClientAuthDao(UUID.randomUUID)
-  }
+  val mockClient = new MockAccessTokenClient(Seq(readAccessToken, writeAccessToken))
+  object TestAuthorized extends Authorized(mockClient, Seq(writeScope, deleteScope))
 
   object TestController
     extends Controller
@@ -67,31 +64,25 @@ class AuthorizedSpec
   describe ("Authorized") {
 
     it ("should reject an unathenticated request") {
-      AccessTokenClient.withMock {
-        val result = TestController.index()(FakeRequest())
-        status(result) should be (UNAUTHORIZED)
-      }
+      val result = TestController.index()(FakeRequest())
+      status(result) should be (UNAUTHORIZED)
     }
 
     it ("should reject an authenticated request with insufficient scope") {
-      AccessTokenClient.withMock {
-        val request = FakeRequest().
-          withHeaders(("Authorization" -> readAccessToken.guid.toString))
+      val request = FakeRequest().
+        withHeaders(("Authorization" -> readAccessToken.guid.toString))
 
-        val result = TestController.index()(request)
-        status(result) should be (UNAUTHORIZED)
-      }
+      val result = TestController.index()(request)
+      status(result) should be (UNAUTHORIZED)
     }
 
     it ("should authorize a request with sufficient scope") {
-      AccessTokenClient.withMock {
-        val request = FakeRequest().
-          withHeaders(("Authorization" -> writeAccessToken.guid.toString))
+      val request = FakeRequest().
+        withHeaders(("Authorization" -> writeAccessToken.guid.toString))
 
-        val result = TestController.index()(request)
-        status(result) should be (OK)
-        contentAsString(result) should be ("Hi, khy")
-      }
+      val result = TestController.index()(request)
+      status(result) should be (OK)
+      contentAsString(result) should be ("Hi, khy")
     }
 
   }

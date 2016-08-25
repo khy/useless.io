@@ -4,6 +4,7 @@ import org.scalatest.FunSpec
 import org.scalatest.Matchers
 import java.util.UUID
 import play.api.libs.json._
+import play.api.libs.ws.WS
 import org.scalatestplus.play.OneAppPerSuite
 
 import io.useless.accesstoken.AccessToken
@@ -19,7 +20,7 @@ class PlayAccessTokenClientSpec
 {
 
   class MockPlayAccessTokenClient(status: Int, json: JsValue)
-    extends PlayAccessTokenClient(UUID.randomUUID)
+    extends PlayAccessTokenClient(WS.client, "", UUID.randomUUID)
   {
 
     override lazy val resourceClient = {

@@ -3,7 +3,7 @@ package io.useless.client.account
 import org.scalatest.FunSpec
 import org.scalatest.Matchers
 import java.util.UUID
-import play.api.libs.ws.WSResponse
+import play.api.libs.ws.{WS, WSResponse}
 import play.api.libs.json._
 import org.scalatestplus.play.OneAppPerSuite
 
@@ -19,7 +19,7 @@ class PlayAccountClientSpec
 {
 
   class MockPlayAccountClient(status: Int, json: JsValue)
-    extends PlayAccountClient(UUID.randomUUID)
+    extends PlayAccountClient(WS.client, "", UUID.randomUUID)
   {
 
     override lazy val resourceClient = {
