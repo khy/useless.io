@@ -4,14 +4,14 @@ import play.api.{Application, BuiltInComponents}
 import play.api.libs.ws.WS
 import play.api.libs.ws.ning.NingWSComponents
 
-import io.useless.client.accesstoken.{AccessTokenClient, AccessTokenClientComponent}
+import io.useless.client.accesstoken.{AccessTokenClient, AccessTokenClientComponents}
 import io.useless.util.configuration.RichConfiguration._
 
-trait AuthenticatedComponent {
+trait AuthenticatedComponents {
 
   self: BuiltInComponents with
     NingWSComponents with
-    AccessTokenClientComponent =>
+    AccessTokenClientComponents =>
 
   val authenticated = new Authenticated(accessTokenClient)
 

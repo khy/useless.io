@@ -7,8 +7,9 @@ import play.api.routing.Router
 import play.api.db.slick.{SlickComponents, DbName}
 import play.api.libs.ws.ning.NingWSComponents
 import io.useless.client.account.{AccountClientComponents, DefaultAccountClientComponents}
-import io.useless.client.accesstoken.AccessTokenClientComponent
-import io.useless.play.authentication.AuthenticatedComponent
+import io.useless.client.accesstoken.{AccessTokenClientComponents, DefaultAccessTokenClientComponents}
+import io.useless.play.authentication.AuthenticatedComponents
+import io.useless.util.configuration.RichConfiguration._
 
 import books.Routes
 import controllers.books._
@@ -23,6 +24,10 @@ object ApplicationComponents {
       new AbstractApplicationComponents(context)
         with ProdClientComponents
         with DefaultAccountClientComponents
+        with DefaultAccessTokenClientComponents
+      {
+        override val accessTokenClientAuthGuid = configuration.underlying.getUuid("books.accessTokenGuid")
+      }
     }
 
     applicationComponents.booksRouter
@@ -36,11 +41,12 @@ class AbstractApplicationComponents(context: Context)
   with SlickComponents
   with DbConfigComponents
   with ServiceComponents
-  with AccessTokenClientComponent
-  with AuthenticatedComponent
+  with AuthenticatedComponents
 {
 
-  self: ClientComponents with AccountClientComponents =>
+  self: ClientComponents with
+    AccountClientComponents with
+    AccessTokenClientComponents =>
 
   Logger.configure(context.environment)
 

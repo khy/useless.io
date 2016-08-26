@@ -12,7 +12,8 @@ trait DefaultSpec
   lazy val applicationComponents = {
     new TestApplicationComponents(
       context = ApplicationLoader.createContext(Environment.simple()),
-      accountClient = mockAccountClient
+      accountClient = mockAccountClient,
+      accessTokenClient = mockAccessTokenClient
     )
   }
 

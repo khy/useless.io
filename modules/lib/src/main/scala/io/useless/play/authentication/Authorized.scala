@@ -4,13 +4,13 @@ import play.api.{Application, BuiltInComponents}
 import play.api.libs.ws.ning.NingWSComponents
 
 import io.useless.accesstoken.Scope
-import io.useless.client.accesstoken.{AccessTokenClient, AccessTokenClientComponent}
+import io.useless.client.accesstoken.{AccessTokenClient, AccessTokenClientComponents}
 
-trait AuthorizedComponent {
+trait AuthorizedComponents {
 
   self: BuiltInComponents with
     NingWSComponents with
-    AccessTokenClientComponent =>
+    AccessTokenClientComponents =>
 
   def authorized(scopes: Seq[Scope]) = {
     new Authorized(accessTokenClient, scopes)
