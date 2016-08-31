@@ -34,7 +34,7 @@ class AppHelper(
   def accountClient = applicationComponents.accountClient
   def editionClient = applicationComponents.editionClient
 
-  def clearDb() {
+  def clearNotes() {
     val query = Notes.filter { r => r.guid === r.guid }
     db.run(query.result)
   }

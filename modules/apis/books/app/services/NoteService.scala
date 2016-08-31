@@ -19,21 +19,12 @@ import models.books.{Edition, Note}
 
 class NoteService(
   dbConfig: DatabaseConfig[Driver],
-  accountClient: AccountClient
+  accountClient: AccountClient,
+  editionService: EditionService
 ) {
 
   import dbConfig.db
   import dbConfig.driver.api._
-
-  val tmpEdition = Edition(
-    isbn = "JAH",
-    title = "JAH",
-    subtitle = None,
-    authors = Seq.empty,
-    pageCount = 5000,
-    imageUrl = None,
-    thumbnailUrl = None
-  )
 
   def db2api(records: Seq[NoteRecord])(implicit ec: ExecutionContext): Future[Seq[Note]] = {
     val futAccounts = Future.sequence {
@@ -42,17 +33,26 @@ class NoteService(
       accounts.filter(_.isDefined).map(_.get)
     }
 
+    val futEditions = editionService.getEditions(records.map(_.isbn))
+
     for {
       accounts <- futAccounts
+      editions <- futEditions
     } yield {
       records.map { record =>
+        val edition = editions.find { edition =>
+          edition.isbn == record.isbn
+        }.getOrElse {
+          throw new RuntimeException(s"Could not find editions for ISBN [${record.isbn}]")
+        }
+
         val user = accounts.find { account =>
           account.guid == record.createdByAccount
         }.getOrElse {
           throw new ResourceUnexpectedlyNotFound("User", record.createdByAccount)
         }
 
-        Note(record.guid, record.pageNumber, record.content, tmpEdition, user, new DateTime(record.createdAt))
+        Note(record.guid, record.pageNumber, record.content, edition, user, new DateTime(record.createdAt))
       }
     }
   }
@@ -118,8 +118,6 @@ class NoteService(
     content: String,
     accessToken: AccessToken
   )(implicit ec: ExecutionContext): Future[Validation[NoteRecord]] = {
-    val edition = tmpEdition
-
     if (pageNumber < 1) {
       Future.successful {
         Validation.failure("pageNumber", "invalid-page-number",
@@ -127,21 +125,33 @@ class NoteService(
           "minimum-page-number" -> "1"
         )
       }
-    } else if (pageNumber > edition.pageCount) {
-      Future.successful {
-        Validation.failure("pageNumber", "invalid-page-number",
-          "specified-page-number" -> pageNumber.toString,
-          "maximum-page-number" -> edition.pageCount.toString
-        )
-      }
     } else {
-      insertNote(isbn, pageNumber, content, accessToken).flatMap { newGuid =>
-        db.run(Notes.filter(_.guid === newGuid).result).map { records =>
-          val record = records.headOption.getOrElse {
-            throw new ResourceUnexpectedlyNotFound("Note", newGuid)
-          }
+      editionService.getEditions(Seq(isbn)).flatMap { editions =>
+        editions.headOption.map { edition =>
+          if (pageNumber > edition.pageCount) {
+            Future.successful {
+              Validation.failure("pageNumber", "invalid-page-number",
+                "specified-page-number" -> pageNumber.toString,
+                "maximum-page-number" -> edition.pageCount.toString
+              )
+            }
+          } else {
+            insertNote(isbn, pageNumber, content, accessToken).flatMap { newGuid =>
+              db.run(Notes.filter(_.guid === newGuid).result).map { records =>
+                val record = records.headOption.getOrElse {
+                  throw new ResourceUnexpectedlyNotFound("Note", newGuid)
+                }
 
-          Validation.success(record)
+                Validation.success(record)
+              }
+            }
+          }
+        }.getOrElse {
+          Future.successful {
+            Validation.failure("isbn", "unknown-isbn",
+              "specified-isbn" -> isbn
+            )
+          }
         }
       }
     }

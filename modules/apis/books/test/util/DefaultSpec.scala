@@ -13,9 +13,12 @@ trait DefaultSpec
     new TestApplicationComponents(
       context = ApplicationLoader.createContext(Environment.simple()),
       accountClient = mockAccountClient,
-      accessTokenClient = mockAccessTokenClient
+      accessTokenClient = mockAccessTokenClient,
+      editionClient = editionClient
     )
   }
+
+  val editionClient = new TestEditionClient(Seq.empty)
 
   override implicit lazy val app = applicationComponents.application
 

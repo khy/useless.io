@@ -9,6 +9,8 @@ trait ServiceComponents {
 
   self: DbConfigComponents with ClientComponents with AccountClientComponents =>
 
-  lazy val noteService: NoteService = new NoteService(dbConfig, accountClient)
+  lazy val editionService: EditionService = new EditionService(dbConfig, editionClient)
+
+  lazy val noteService: NoteService = new NoteService(dbConfig, accountClient, editionService)
 
 }

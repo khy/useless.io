@@ -10,6 +10,7 @@ import org.scalatestplus.play._
 import io.useless.accesstoken.AccessToken
 import io.useless.http.LinkHeader
 
+import models.books.{Edition, Provider}
 import test.util._
 
 class NoteSpec extends DefaultSpec {
@@ -21,6 +22,36 @@ class NoteSpec extends DefaultSpec {
     WS.url(url.getOrElse(s"http://localhost:$port/notes")).
       withHeaders(("Authorization" -> _accessToken.getOrElse(accessToken).guid.toString))
   }
+
+  val theMarriagePlot = Edition(
+    isbn = "1112333444445",
+    title = "The Marriage Plot",
+    subtitle = None,
+    authors = Seq("Jeffrey Eugenides"),
+    pageCount = 406,
+    smallImageUrl = None,
+    largeImageUrl = None,
+    publisher = None,
+    publishedAt = None,
+    provider = Provider.Google,
+    providerId = None
+  )
+
+  val iPassLikeNight = Edition(
+    isbn = "9781250014764",
+    title = "I Pass Like Night",
+    subtitle = None,
+    authors = Seq("Jonathan Ames"),
+    pageCount = 164,
+    smallImageUrl = None,
+    largeImageUrl = None,
+    publisher = None,
+    publishedAt = None,
+    provider = Provider.Google,
+    providerId = None
+  )
+
+  override val editionClient = new TestEditionClient(Seq(theMarriagePlot, iPassLikeNight))
 
   "POST /notes" must {
 
@@ -67,17 +98,17 @@ class NoteSpec extends DefaultSpec {
       (message2 \ "details" \ "minimum-page-number").as[String] mustBe "1"
     }
 
-    "respond with an error if the page number is greater than the edition page count" ignore {
+    "respond with an error if the page number is greater than the edition page count" in {
       val response1 = await { baseRequest().post(Json.obj(
         "isbn" -> "1112333444445",
-        "pageNumber" -> 164,
+        "pageNumber" -> 406,
         "content" -> "At the end!"
       )) }
       response1.status mustBe CREATED
 
       val response2 = await { baseRequest().post(Json.obj(
         "isbn" -> "1112333444445",
-        "pageNumber" -> 165,
+        "pageNumber" -> 407,
         "content" -> "Beyond the end!"
       )) }
       response2.status mustBe CONFLICT
@@ -86,8 +117,8 @@ class NoteSpec extends DefaultSpec {
       (error2 \ "key").as[String] mustBe "pageNumber"
       val message2 = (error2 \ "messages").as[Seq[JsValue]].head
       (message2 \ "key").as[String] mustBe "invalid-page-number"
-      (message2 \ "details" \ "specified-page-number").as[String] mustBe "165"
-      (message2 \ "details" \ "maximum-page-number").as[String] mustBe "164"
+      (message2 \ "details" \ "specified-page-number").as[String] mustBe "407"
+      (message2 \ "details" \ "maximum-page-number").as[String] mustBe "406"
     }
 
     "create a new note for the specified edition of the book, and authenticated user" in {
@@ -99,10 +130,10 @@ class NoteSpec extends DefaultSpec {
       postResponse.status mustBe CREATED
 
       val note = Json.parse(postResponse.body).as[JsValue]
-      // (note \ "edition" \ "guid").as[UUID] mustBe "1112333444445"
-      // (note \ "edition" \ "pageCount").as[Int] mustBe 164
-      // (note \ "book" \ "title").as[String] mustBe "I Pass Like Night"
-      // (note \ "book" \ "author" \ "name").as[String] mustBe "Jonathan Ames"
+      (note \ "edition" \ "isbn").as[String] mustBe "1112333444445"
+      (note \ "edition" \ "pageCount").as[Int] mustBe 406
+      (note \ "edition" \ "title").as[String] mustBe "The Marriage Plot"
+      (note \ "edition" \ "authors").as[Seq[String]] mustBe Seq("Jeffrey Eugenides")
       (note \ "pageNumber").as[Int] mustBe 50
       (note \ "content").as[String] mustBe "I'm bored!"
       (note \ "createdBy" \ "user" \ "handle").as[String] mustBe "khy"
@@ -115,6 +146,7 @@ class NoteSpec extends DefaultSpec {
 
     def buildNotes() {
       val isbn = "9781250014764"
+      appHelper.clearNotes()
       appHelper.addNote(isbn, 34, "This is good, guy.")
       appHelper.addNote(isbn, 57, "Amiright?")
       appHelper.addNote(isbn, 68, "What do you think?")
@@ -122,7 +154,7 @@ class NoteSpec extends DefaultSpec {
       appHelper.addNote(isbn, 140, "...")
     }
 
-    "support unauthenticated requests" ignore {
+    "support unauthenticated requests" in {
       buildNotes()
       val response = await {
         WS.url(s"http://localhost:$port/notes").withQueryString("p.limit" -> "3").get
@@ -131,7 +163,7 @@ class NoteSpec extends DefaultSpec {
       response.status mustBe OK
     }
 
-    "return notes by guid" ignore {
+    "return notes by guid" in {
       val isbn = "9781250014764"
       val noteGuid = appHelper.addNote(isbn, 56, "A note.")
 
@@ -146,7 +178,7 @@ class NoteSpec extends DefaultSpec {
       (note \ "pageNumber").as[Int] mustBe 56
     }
 
-    "return the first page of results ordered by time, if no 'page' or 'order' is specified" ignore {
+    "return the first page of results ordered by time, if no 'page' or 'order' is specified" in {
       buildNotes()
       val response = await { baseRequest().withQueryString("p.limit" -> "3").get() }
       response.status mustBe OK

@@ -9,17 +9,11 @@ import init.books.AbstractApplicationComponents
 import models.books.Edition
 import clients.books.{EditionClient, ClientComponents}
 
-object TestApplicationComponents {
-
-  val editionClient = new TestEditionClient(Seq.empty)
-
-}
-
 class TestApplicationComponents(
   context: Context,
   val accountClient: AccountClient,
   val accessTokenClient: AccessTokenClient,
-  val editionClient: EditionClient = TestApplicationComponents.editionClient
+  val editionClient: EditionClient
 ) extends AbstractApplicationComponents(context)
   with AccountClientComponents
   with AccessTokenClientComponents
@@ -29,6 +23,14 @@ class TestEditionClient(editions: Seq[Edition]) extends EditionClient {
 
   def query(query: String)(implicit ec: ExecutionContext) = {
     Future.successful(editions)
+  }
+
+  def findByIsbn(isbns: Seq[String])(implicit ec: ExecutionContext) = {
+    val edition = editions.filter { edition =>
+      isbns.contains(edition.isbn)
+    }
+
+    Future.successful(edition)
   }
 
 }
