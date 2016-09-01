@@ -26,7 +26,8 @@ object ApplicationComponents {
         with DefaultAccountClientComponents
         with DefaultAccessTokenClientComponents
       {
-        override val accessTokenClientAuthGuid = configuration.underlying.getUuid("books.accessTokenGuid")
+        val accessTokenClientAuthGuid = configuration.underlying.getUuid("books.accessTokenGuid")
+        val accountClientAuthGuid = configuration.underlying.getUuid("books.accessTokenGuid")
       }
     }
 

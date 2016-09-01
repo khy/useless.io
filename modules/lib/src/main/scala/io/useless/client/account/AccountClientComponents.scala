@@ -1,5 +1,6 @@
 package io.useless.client.account
 
+import java.util.UUID
 import play.api.BuiltInComponents
 import play.api.libs.ws.ning.NingWSComponents
 
@@ -16,7 +17,7 @@ trait DefaultAccountClientComponents extends AccountClientComponents {
   self: NingWSComponents with BuiltInComponents =>
 
   val accountClientBaseUrl = configuration.underlying.getString("useless.core.baseUrl")
-  val accountClientAuthGuid = configuration.underlying.getUuid("useless.core.authGuid")
+  def accountClientAuthGuid: UUID
 
   val accountClient: AccountClient = {
     new PlayAccountClient(wsClient, accountClientBaseUrl, accountClientAuthGuid)
