@@ -20,19 +20,23 @@ object GoogleEditionClient {
 
   def toEdition(jsons: JsObject): Seq[Edition] = {
     (jsons \ "items").as[Seq[JsObject]].map { json =>
+      val isbn = (json \ "volumeInfo" \ "industryIdentifiers").as[Seq[JsObject]].
+        filter { json => (json \ "type").as[String] == "ISBN_13" }.
+        map { json => (json \ "identifier").as[String] }.
+        head
 
       Edition(
-        isbn = "DUMMY-ISBN",
+        isbn = isbn,
         title = (json \ "volumeInfo" \ "title").as[String],
         subtitle = (json \ "volumeInfo" \ "subtitle").asOpt[String],
         authors = (json \ "volumeInfo" \ "authors").asOpt[Seq[String]].getOrElse(Seq.empty),
         pageCount = (json \ "volumeInfo" \ "pageCount").asOpt[Int].getOrElse(100),
-        smallImageUrl = (json \ "volumeInfo" \ "imageLinks" \ "thumbnail").asOpt[String],
-        largeImageUrl = (json \ "volumeInfo" \ "imageLinks" \ "smallThumbnail").asOpt[String],
-        publisher = Some("DUMMY PUBLISHER"),
-        publishedAt = Some(LocalDate.now),
+        smallImageUrl = (json \ "volumeInfo" \ "imageLinks" \ "smallThumbnail").asOpt[String],
+        largeImageUrl = (json \ "volumeInfo" \ "imageLinks" \ "thumbnail").asOpt[String],
+        publisher = (json \ "volumeInfo" \ "publisher").asOpt[String],
+        publishedAt = (json \ "volumeInfo" \ "publishedDate").asOpt[String].map(LocalDate.parse),
         provider = Provider.Google,
-        providerId = Some("DUMMY PROVIDER ID")
+        providerId = (json \ "id").asOpt[String]
       )
     }
   }
