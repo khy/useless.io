@@ -18,7 +18,7 @@ trait DefaultSpec
     )
   }
 
-  val editionClient = new TestEditionClient(Seq.empty)
+  val editionClient = new MockEditionClient(Seq.empty)
 
   override implicit lazy val app = applicationComponents.application
 

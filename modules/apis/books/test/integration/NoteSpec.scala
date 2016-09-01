@@ -51,7 +51,7 @@ class NoteSpec extends DefaultSpec {
     providerId = None
   )
 
-  override val editionClient = new TestEditionClient(Seq(theMarriagePlot, iPassLikeNight))
+  override val editionClient = new MockEditionClient(Seq(theMarriagePlot, iPassLikeNight))
 
   "POST /notes" must {
 
