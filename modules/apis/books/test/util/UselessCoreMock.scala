@@ -58,6 +58,4 @@ trait DefaultUselessCoreMock extends UselessCoreMock {
 
   val accessTokens = Seq(khyAccessToken, mikeAccessToken, dennisAccessToken)
 
-  implicit val accessToken = accessTokens.head
-
 }

@@ -16,11 +16,10 @@ import test.util._
 class NoteSpec extends DefaultSpec {
 
   def baseRequest(
-    url: Option[String] = None,
-    _accessToken: Option[AccessToken] = None
-  ) = {
+    url: Option[String] = None
+  )(implicit accessToken: AccessToken) = {
     WS.url(url.getOrElse(s"http://localhost:$port/notes")).
-      withHeaders(("Authorization" -> _accessToken.getOrElse(accessToken).guid.toString))
+      withHeaders(("Authorization" -> accessToken.guid.toString))
   }
 
   val theMarriagePlot = Edition(
@@ -223,21 +222,21 @@ class NoteSpec extends DefaultSpec {
     }
 
     "return notes belonging to the specified accountGuids" in {
-      val khyBaseRequest = baseRequest(_accessToken = Some(khyAccessToken))
+      val khyBaseRequest = baseRequest()(khyAccessToken)
       await { khyBaseRequest.post(Json.obj(
         "isbn" -> iPassLikeNight.isbn,
         "pageNumber" -> 96,
         "content" -> "I am khy"
       )) }
 
-      val mikeBaseRequest = baseRequest(_accessToken = Some(mikeAccessToken))
+      val mikeBaseRequest = baseRequest()(mikeAccessToken)
       await { mikeBaseRequest.post(Json.obj(
         "isbn" -> iPassLikeNight.isbn,
         "pageNumber" -> 45,
         "content" -> "I am Mike"
       )) }
 
-      val dennisBaseRequest = baseRequest(_accessToken = Some(dennisAccessToken))
+      val dennisBaseRequest = baseRequest()(dennisAccessToken)
       await { dennisBaseRequest.post(Json.obj(
         "isbn" -> iPassLikeNight.isbn,
         "pageNumber" -> 99,
