@@ -190,7 +190,7 @@ class NoteSpec extends DefaultSpec {
       (notes(2) \ "content").as[String] mustBe "What do you think?"
     }
 
-    "return a Link header with pagination information" ignore {
+    "return a Link header with pagination information" in {
       buildNotes()
       val response1 = await { baseRequest().withQueryString("p.limit" -> "3").get() }
       response1.status mustBe OK
@@ -205,7 +205,7 @@ class NoteSpec extends DefaultSpec {
       (notes(1) \ "content").as[String] mustBe "This is good, guy."
     }
 
-    "return a Link header with precendence-style pagination, if specified" ignore {
+    "return a Link header with precendence-style pagination, if specified" in {
       buildNotes()
       val response1 = await {
         baseRequest().withQueryString("p.limit" -> "3", "p.style" -> "precedence").get()
@@ -222,26 +222,24 @@ class NoteSpec extends DefaultSpec {
       (notes(1) \ "content").as[String] mustBe "This is good, guy."
     }
 
-    "return notes belonging to the specified accountGuids" ignore {
-      val editionGuid = UUID.randomUUID
-
+    "return notes belonging to the specified accountGuids" in {
       val khyBaseRequest = baseRequest(_accessToken = Some(khyAccessToken))
       await { khyBaseRequest.post(Json.obj(
-        "editionGuid" -> editionGuid,
+        "isbn" -> iPassLikeNight.isbn,
         "pageNumber" -> 96,
         "content" -> "I am khy"
       )) }
 
       val mikeBaseRequest = baseRequest(_accessToken = Some(mikeAccessToken))
       await { mikeBaseRequest.post(Json.obj(
-        "editionGuid" -> editionGuid,
+        "isbn" -> iPassLikeNight.isbn,
         "pageNumber" -> 45,
         "content" -> "I am Mike"
       )) }
 
       val dennisBaseRequest = baseRequest(_accessToken = Some(dennisAccessToken))
       await { dennisBaseRequest.post(Json.obj(
-        "editionGuid" -> editionGuid,
+        "isbn" -> iPassLikeNight.isbn,
         "pageNumber" -> 99,
         "content" -> "I am Dennis"
       )) }
@@ -258,23 +256,23 @@ class NoteSpec extends DefaultSpec {
       notes.length mustBe 2
     }
 
-    "return notes ordered by pageNumber, if specified" ignore {
-      val editionGuid = UUID.randomUUID
+    "return notes ordered by pageNumber, if specified" in {
+      appHelper.clearNotes()
 
       await { baseRequest().post(Json.obj(
-        "editionGuid" -> editionGuid,
+        "isbn" -> iPassLikeNight.isbn,
         "pageNumber" -> 123,
         "content" -> "123"
       )) }
 
       await { baseRequest().post(Json.obj(
-        "editionGuid" -> editionGuid,
+        "isbn" -> iPassLikeNight.isbn,
         "pageNumber" -> 45,
         "content" -> "45"
       )) }
 
       await { baseRequest().post(Json.obj(
-        "editionGuid" -> editionGuid,
+        "isbn" -> iPassLikeNight.isbn,
         "pageNumber" -> 92,
         "content" -> "92"
       )) }

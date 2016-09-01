@@ -35,8 +35,7 @@ class AppHelper(
   def editionClient = applicationComponents.editionClient
 
   def clearNotes() {
-    val query = Notes.filter { r => r.guid === r.guid }
-    db.run(query.result)
+    db.run(sqlu"delete from notes")
   }
 
   def addNote(isbn: String, pageNumber: Int, content: String)(implicit accessToken: AccessToken): UUID = await {
