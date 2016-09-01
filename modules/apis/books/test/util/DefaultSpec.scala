@@ -6,14 +6,14 @@ import org.scalatestplus.play._
 trait DefaultSpec
   extends PlaySpec
   with OneServerPerSuite
-  with DefaultUselessMock
+  with DefaultUselessCoreMock
 {
 
   lazy val applicationComponents = {
     new TestApplicationComponents(
       context = ApplicationLoader.createContext(Environment.simple()),
-      accountClient = mockAccountClient,
-      accessTokenClient = mockAccessTokenClient,
+      accountClient = accountClient,
+      accessTokenClient = accessTokenClient,
       editionClient = editionClient
     )
   }

@@ -6,27 +6,22 @@ import io.useless.account.{Account, User}
 import io.useless.client.accesstoken.{AccessTokenClient, MockAccessTokenClient}
 import io.useless.client.account.{AccountClient, MockAccountClient}
 
-trait UselessMock {
+trait UselessCoreMock {
 
   def accessTokens: Seq[AccessToken]
 
-  lazy val mockAccessTokenClient = new MockAccessTokenClient(accessTokens)
+  lazy val accessTokenClient = new MockAccessTokenClient(accessTokens)
 
-  lazy val mockAccountClient = {
+  lazy val accountClient = {
     val accounts = accessTokens.map(_.resourceOwner) ++
       accessTokens.map(_.client).filter(_.isDefined).map(_.get)
 
     new MockAccountClient(accounts)
   }
 
-  def setMocks() = {
-    AccessTokenClient.setMock(mockAccessTokenClient)
-    AccountClient.setMock(mockAccountClient)
-  }
-
 }
 
-trait DefaultUselessMock extends UselessMock {
+trait DefaultUselessCoreMock extends UselessCoreMock {
 
   val khyAccessToken = AccessToken(
     guid = UUID.fromString("00000000-0000-0000-0000-000000000000"),
@@ -64,7 +59,5 @@ trait DefaultUselessMock extends UselessMock {
   val accessTokens = Seq(khyAccessToken, mikeAccessToken, dennisAccessToken)
 
   implicit val accessToken = accessTokens.head
-
-  setMocks()
 
 }
