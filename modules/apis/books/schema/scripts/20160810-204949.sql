@@ -13,7 +13,7 @@ ALTER TABLE notes ALTER COLUMN isbn SET NOT NULL;
 
 DROP TABLE editions;
 DROP TABLE books;
-DROP TABLE authors;~
+DROP TABLE authors;
 DROP TABLE IF EXISTS play_evolutions;
 
 CREATE TABLE edition_cache (
