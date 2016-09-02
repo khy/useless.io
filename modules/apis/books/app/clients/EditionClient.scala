@@ -20,25 +20,32 @@ object GoogleEditionClient {
 
   def toEdition(jsons: JsObject): Seq[Edition] = {
     (jsons \ "items").as[Seq[JsObject]].map { json =>
-      val isbn = (json \ "volumeInfo" \ "industryIdentifiers").as[Seq[JsObject]].
-        filter { json => (json \ "type").as[String] == "ISBN_13" }.
-        map { json => (json \ "identifier").as[String] }.
-        head
+      val optIndustyIds = (json \ "volumeInfo" \ "industryIdentifiers").asOpt[Seq[JsObject]]
 
-      Edition(
-        isbn = isbn,
-        title = (json \ "volumeInfo" \ "title").as[String],
-        subtitle = (json \ "volumeInfo" \ "subtitle").asOpt[String],
-        authors = (json \ "volumeInfo" \ "authors").asOpt[Seq[String]].getOrElse(Seq.empty),
-        pageCount = (json \ "volumeInfo" \ "pageCount").asOpt[Int].getOrElse(100),
-        smallImageUrl = (json \ "volumeInfo" \ "imageLinks" \ "smallThumbnail").asOpt[String],
-        largeImageUrl = (json \ "volumeInfo" \ "imageLinks" \ "thumbnail").asOpt[String],
-        publisher = (json \ "volumeInfo" \ "publisher").asOpt[String],
-        publishedAt = (json \ "volumeInfo" \ "publishedDate").asOpt[String].map(LocalDate.parse),
-        provider = Provider.Google,
-        providerId = (json \ "id").asOpt[String]
-      )
-    }
+      def getIndustryId(key: String): Option[String] = optIndustyIds.flatMap { industryIdentifiers =>
+        industryIdentifiers.
+          find { json => (json \ "type").as[String] == key }.
+          map { json => (json \ "identifier").as[String] }
+      }
+
+      val optIsbn = getIndustryId("ISBN_13").orElse(getIndustryId("ISBN_10"))
+
+      optIsbn.map { isbn =>
+        Edition(
+          isbn = isbn,
+          title = (json \ "volumeInfo" \ "title").as[String],
+          subtitle = (json \ "volumeInfo" \ "subtitle").asOpt[String],
+          authors = (json \ "volumeInfo" \ "authors").asOpt[Seq[String]].getOrElse(Seq.empty),
+          pageCount = (json \ "volumeInfo" \ "pageCount").asOpt[Int].getOrElse(100),
+          smallImageUrl = (json \ "volumeInfo" \ "imageLinks" \ "smallThumbnail").asOpt[String],
+          largeImageUrl = (json \ "volumeInfo" \ "imageLinks" \ "thumbnail").asOpt[String],
+          publisher = (json \ "volumeInfo" \ "publisher").asOpt[String],
+          publishedAt = (json \ "volumeInfo" \ "publishedDate").asOpt[String].map(LocalDate.parse),
+          provider = Provider.Google,
+          providerId = (json \ "id").asOpt[String]
+        )
+      }
+    }.flatten
   }
 
 }
