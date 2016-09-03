@@ -43,7 +43,7 @@ trait BaseAuthenticated
 
   self: AccessTokenClientComponents =>
 
-  val authenticator: Authenticator = new CompositeAuthenticator(Seq(
+  lazy val authenticator: Authenticator = new CompositeAuthenticator(Seq(
     new HeaderAuthenticator(accessTokenClient, "Authorization"),
     new CookieAuthenticator(accessTokenClient, "auth"),
     new QueryParameterAuthenticator(accessTokenClient, "auth")

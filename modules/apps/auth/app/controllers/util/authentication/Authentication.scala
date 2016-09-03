@@ -17,13 +17,13 @@ object Authenticated
   with    AccessTokenClientComponents
 {
 
-  lazy val accessTokenClient = AccessTokenClient.instance(
+  val accessTokenClient = AccessTokenClient.instance(
     client = WS.client,
     baseUrl = Play.configuration.underlying.getString("useless.core.baseUrl"),
     authGuid = Play.configuration.underlying.getUuid("account.accessTokenGuid")
   )
 
-  override val authenticator = new SessionAuthenticator(accessTokenClient, "auth")
+  override lazy val authenticator = new SessionAuthenticator(accessTokenClient, "auth")
 
   override val rejector = new SignInRejector
 

@@ -16,7 +16,7 @@ object Auth
   with AccessTokenClientComponents
 {
 
-  lazy val accessTokenClient = new ServerAccessTokenClient
+  val accessTokenClient = new ServerAccessTokenClient
 
   def scope(scopes: Scope*) = new ScopeAuth(scopes:_*)
 
@@ -28,7 +28,7 @@ private [auth] class ScopeAuth(scopes: Scope*)
   with AccessTokenClientComponents
 {
 
-  lazy val accessTokenClient = new ServerAccessTokenClient
+  val accessTokenClient = new ServerAccessTokenClient
 
   override val authorizer = new ScopeAuthorizer(scopes)
 
