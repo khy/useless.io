@@ -13,7 +13,6 @@ import controllers.auth.routes.SessionController
 
 object Authenticated
   extends BaseAuthenticated
-  with    SessionAuthenticatorComponent
   with    SignInRejectorComponent
   with    AccessTokenClientComponents
 {
@@ -24,22 +23,18 @@ object Authenticated
     authGuid = Play.configuration.underlying.getUuid("account.accessTokenGuid")
   )
 
-  override val authenticator = new SessionAuthenticator("auth")
+  override val authenticator = new SessionAuthenticator(accessTokenClient, "auth")
 
   override val rejector = new SignInRejector
 
 }
 
-trait SessionAuthenticatorComponent
-  extends GuidAuthenticatorComponent
-  with AccessTokenClientComponents
-{
+class SessionAuthenticator(
+  accessTokenClient: AccessTokenClient,
+  key: String
+) extends GuidAuthenticator(accessTokenClient) {
 
-  class SessionAuthenticator(key: String) extends GuidAuthenticator {
-
-    def guid[A](request: Request[A]) = request.session.get(key)
-
-  }
+  def guid[A](request: Request[A]) = request.session.get(key)
 
 }
 

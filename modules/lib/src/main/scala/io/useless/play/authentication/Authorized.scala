@@ -20,7 +20,7 @@ trait AuthorizedComponents {
 
 class Authorized(accessTokenClient: AccessTokenClient, scopes: Seq[Scope])
   extends Authenticated(accessTokenClient)
-  with ScopeAuthorizerComponent
+  with AuthorizerComponent
 {
 
   override val authorizer = new ScopeAuthorizer(scopes)

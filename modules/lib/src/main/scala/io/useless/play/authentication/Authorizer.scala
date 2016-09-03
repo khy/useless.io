@@ -9,47 +9,35 @@ trait AuthorizerComponent {
 
   val authorizer: Authorizer
 
-  trait Authorizer {
+}
 
-    def authorize(accessToken: AccessToken): Future[Boolean]
+trait Authorizer {
 
+  def authorize(accessToken: AccessToken): Future[Boolean]
+
+}
+
+class CompositeAuthorizer(
+  authenticators: Seq[Authorizer]
+) extends Authorizer {
+
+  def authorize(accessToken: AccessToken) = {
+    val futures = authenticators.map(_.authorize(accessToken))
+    Future.reduce(futures)(_ && _)
   }
 
 }
 
-trait CompositeAuthorizerComponent extends AuthorizerComponent {
+class IdentityAuthorizer extends Authorizer {
 
-  class CompositeAuthorizer(
-    authenticators: Seq[Authorizer]
-  ) extends Authorizer {
-
-    def authorize(accessToken: AccessToken) = {
-      val futures = authenticators.map(_.authorize(accessToken))
-      Future.reduce(futures)(_ && _)
-    }
-
-  }
+  def authorize(accessToken: AccessToken) = Future.successful(true)
 
 }
 
-trait IdentityAuthorizerComponent extends AuthorizerComponent {
+class ScopeAuthorizer(scopes: Seq[Scope]) extends Authorizer {
 
-  class IdentityAuthorizer extends Authorizer {
-
-    def authorize(accessToken: AccessToken) = Future.successful(true)
-
-  }
-
-}
-
-trait ScopeAuthorizerComponent extends AuthorizerComponent {
-
-  class ScopeAuthorizer(scopes: Seq[Scope]) extends Authorizer {
-
-    def authorize(accessToken: AccessToken) = Future.successful {
-      !scopes.intersect(accessToken.scopes).isEmpty
-    }
-
+  def authorize(accessToken: AccessToken) = Future.successful {
+    !scopes.intersect(accessToken.scopes).isEmpty
   }
 
 }

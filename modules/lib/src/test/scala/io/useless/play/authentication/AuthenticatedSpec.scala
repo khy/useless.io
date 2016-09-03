@@ -16,7 +16,7 @@ import io.useless.client.UnauthorizedException
 import io.useless.client.accesstoken.{ AccessTokenClient, MockAccessTokenClient }
 import io.useless.test.ImplicitPlayApplication
 
-class AuthenticationSpec
+class AuthenticatedSpec
   extends FunSpec
   with    Matchers
   with    ImplicitPlayApplication

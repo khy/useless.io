@@ -30,31 +30,23 @@ class LegacyAuthenticated(guidConfigKey: String)(implicit app: Application)
 
 }
 
-class Authenticated(_accessTokenClient: AccessTokenClient)
+class Authenticated(val accessTokenClient: AccessTokenClient)
   extends BaseAuthenticated
   with AccessTokenClientComponents
-{
-
-  val accessTokenClient: AccessTokenClient = _accessTokenClient
-
-}
 
 trait BaseAuthenticated
   extends AuthenticatedBuilder
-  with    CompositeAuthenticatorComponent
-  with    HeaderAuthenticatorComponent
-  with    CookieAuthenticatorComponent
-  with    QueryParameterAuthenticatorComponent
-  with    IdentityAuthorizerComponent
-  with    ApiRejectorComponent
+  with    AuthenticatorComponent
+  with    AuthorizerComponent
+  with    RejectorComponent
 {
 
   self: AccessTokenClientComponents =>
 
   val authenticator: Authenticator = new CompositeAuthenticator(Seq(
-    new HeaderAuthenticator("Authorization"),
-    new CookieAuthenticator("auth"),
-    new QueryParameterAuthenticator("auth")
+    new HeaderAuthenticator(accessTokenClient, "Authorization"),
+    new CookieAuthenticator(accessTokenClient, "auth"),
+    new QueryParameterAuthenticator(accessTokenClient, "auth")
   ))
 
   val authorizer: Authorizer = new IdentityAuthorizer

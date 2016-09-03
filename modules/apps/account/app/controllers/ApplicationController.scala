@@ -7,7 +7,6 @@ import play.api.Play.current
 import io.useless.account.User
 
 import controllers.account.authentication.Auth
-import controllers.account.authentication.SessionAuthenticatorComponent
 
 object ApplicationController
   extends Controller

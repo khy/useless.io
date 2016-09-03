@@ -7,95 +7,76 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import play.api.mvc._
 
 import io.useless.accesstoken.AccessToken
-import io.useless.client.accesstoken.AccessTokenClientComponents
+import io.useless.client.accesstoken.{AccessTokenClient, AccessTokenClientComponents}
 import io.useless.util.{ Logger, Uuid }
 
 trait AuthenticatorComponent {
 
   val authenticator: Authenticator
 
-  trait Authenticator {
+}
 
-    def authenticate[A](request: Request[A]): Future[Option[AccessToken]]
+trait Authenticator {
 
-  }
+  def authenticate[A](request: Request[A]): Future[Option[AccessToken]]
 
 }
 
-trait CompositeAuthenticatorComponent extends AuthenticatorComponent {
+class CompositeAuthenticator(
+  authenticators: Seq[Authenticator]
+) extends Authenticator {
 
-  class CompositeAuthenticator(
-    authenticators: Seq[Authenticator]
-  ) extends Authenticator {
-
-    def authenticate[A](request: Request[A]): Future[Option[AccessToken]] = {
-      val futures = authenticators.map { authenticator =>
-        authenticator.authenticate(request)
-      }
-
-      Future.sequence(futures).map { results =>
-        results.find(_.isDefined).flatten
-      }
+  def authenticate[A](request: Request[A]): Future[Option[AccessToken]] = {
+    val futures = authenticators.map { authenticator =>
+      authenticator.authenticate(request)
     }
 
-  }
-
-}
-
-trait GuidAuthenticatorComponent extends AuthenticatorComponent with Logger {
-
-  self: AccessTokenClientComponents =>
-
-  trait GuidAuthenticator extends Authenticator {
-
-    def guid[A](request: Request[A]): Option[String]
-
-    def authenticate[A](request: Request[A]) = {
-      guid(request).map { rawGuid =>
-        logger.debug("Authenticating guid: %s".format(rawGuid))
-        Uuid.parseUuid(rawGuid) match {
-          case Success(guid: UUID) => accessTokenClient.getAccessToken(guid)
-          case _: Failure[UUID] => Future.successful(None)
-        }
-      }.getOrElse { Future.successful(None) }
+    Future.sequence(futures).map { results =>
+      results.find(_.isDefined).flatten
     }
-
   }
 
 }
 
-trait HeaderAuthenticatorComponent extends GuidAuthenticatorComponent {
+abstract class GuidAuthenticator(accessTokenClient: AccessTokenClient) extends Authenticator with Logger {
 
-  self: AccessTokenClientComponents =>
+  def guid[A](request: Request[A]): Option[String]
 
-  class HeaderAuthenticator(header: String) extends GuidAuthenticator {
-
-    def guid[A](request: Request[A]) = request.headers.get(header)
-
+  def authenticate[A](request: Request[A]) = {
+    guid(request).map { rawGuid =>
+      logger.debug("Authenticating guid: %s".format(rawGuid))
+      Uuid.parseUuid(rawGuid) match {
+        case Success(guid: UUID) => accessTokenClient.getAccessToken(guid)
+        case _: Failure[UUID] => Future.successful(None)
+      }
+    }.getOrElse { Future.successful(None) }
   }
 
 }
 
-trait QueryParameterAuthenticatorComponent extends GuidAuthenticatorComponent {
+class HeaderAuthenticator(
+  accessTokenClient: AccessTokenClient,
+  header: String
+) extends GuidAuthenticator(accessTokenClient) {
 
-  self: AccessTokenClientComponents =>
-
-  class QueryParameterAuthenticator(queryParameter: String) extends GuidAuthenticator {
-
-    def guid[A](request: Request[A]) = request.getQueryString(queryParameter)
-
-  }
+  def guid[A](request: Request[A]) = request.headers.get(header)
 
 }
 
-trait CookieAuthenticatorComponent extends GuidAuthenticatorComponent {
+class QueryParameterAuthenticator(
+  accessTokenClient: AccessTokenClient,
+  queryParameter: String
+) extends GuidAuthenticator(accessTokenClient) {
 
-  self: AccessTokenClientComponents =>
+  def guid[A](request: Request[A]) = request.getQueryString(queryParameter)
 
-  class CookieAuthenticator(cookie: String) extends GuidAuthenticator {
+}
 
-    def guid[A](request: Request[A]) = request.cookies.get(cookie).map(_.value)
+class CookieAuthenticator(
+  accessTokenClient: AccessTokenClient,
+  cookie: String
+) extends GuidAuthenticator(accessTokenClient) {
 
-  }
+  def guid[A](request: Request[A]) = request.cookies.get(cookie).map(_.value)
 
 }
