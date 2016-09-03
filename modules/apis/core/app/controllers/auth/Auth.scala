@@ -7,12 +7,13 @@ import play.api.Logger
 import play.api.libs.concurrent.Execution.Implicits._
 import io.useless.accesstoken.Scope
 import io.useless.play.authentication.{ BaseAuthenticated, ScopeAuthorizerComponent }
-import io.useless.client.accesstoken.AccessTokenClient
+import io.useless.client.accesstoken.{AccessTokenClient, AccessTokenClientComponents}
 
 import models.core.account.Account
 
 object Auth
   extends BaseAuthenticated
+  with AccessTokenClientComponents
 {
 
   val accessTokenClient = new ServerAccessTokenClient
@@ -23,7 +24,8 @@ object Auth
 
 private [auth] class ScopeAuth(scopes: Scope*)
   extends BaseAuthenticated
-  with    ScopeAuthorizerComponent
+  with ScopeAuthorizerComponent
+  with AccessTokenClientComponents
 {
 
   val accessTokenClient = new ServerAccessTokenClient

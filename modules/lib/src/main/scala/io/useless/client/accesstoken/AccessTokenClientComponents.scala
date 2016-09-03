@@ -16,11 +16,11 @@ trait DefaultAccessTokenClientComponents extends AccessTokenClientComponents {
 
   self: NingWSComponents with BuiltInComponents =>
 
-  val accessTokeClientBaseUrl = configuration.underlying.getString("useless.core.baseUrl")
+  def accessTokenClientBaseUrl: String
   def accessTokenClientAuthGuid: UUID
 
-  val accessTokenClient: AccessTokenClient = {
-    new PlayAccessTokenClient(wsClient, accessTokeClientBaseUrl, accessTokenClientAuthGuid)
+  lazy val accessTokenClient: AccessTokenClient = {
+    new PlayAccessTokenClient(wsClient, accessTokenClientBaseUrl, accessTokenClientAuthGuid)
   }
 
 }

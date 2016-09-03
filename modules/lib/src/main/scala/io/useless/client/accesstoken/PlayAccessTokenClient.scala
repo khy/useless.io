@@ -16,7 +16,9 @@ class PlayAccessTokenClient(
   authGuid: UUID
 ) extends AccessTokenClient with Configuration {
 
-  protected lazy val resourceClient = ResourceClient(client, baseUrl, authGuid.toString)
+  protected lazy val resourceClient = {
+    ResourceClient(client, baseUrl, authGuid.toString)
+  }
 
   def getAccessToken(guid: UUID) = {
     val path = "/access_tokens/%s".format(guid.toString)

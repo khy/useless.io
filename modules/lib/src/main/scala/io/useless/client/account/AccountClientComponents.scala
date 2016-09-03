@@ -16,10 +16,10 @@ trait DefaultAccountClientComponents extends AccountClientComponents {
 
   self: NingWSComponents with BuiltInComponents =>
 
-  val accountClientBaseUrl = configuration.underlying.getString("useless.core.baseUrl")
+  def accountClientBaseUrl: String
   def accountClientAuthGuid: UUID
 
-  val accountClient: AccountClient = {
+  lazy val accountClient: AccountClient = {
     new PlayAccountClient(wsClient, accountClientBaseUrl, accountClientAuthGuid)
   }
 

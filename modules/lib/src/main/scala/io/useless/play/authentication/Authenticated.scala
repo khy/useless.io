@@ -17,7 +17,10 @@ trait AuthenticatedComponents {
 
 }
 
-class LegacyAuthenticated(guidConfigKey: String)(implicit app: Application) extends BaseAuthenticated {
+class LegacyAuthenticated(guidConfigKey: String)(implicit app: Application)
+  extends BaseAuthenticated
+  with AccessTokenClientComponents
+{
 
   lazy val accessTokenClient = AccessTokenClient.instance(
     client = WS.client,
@@ -27,8 +30,14 @@ class LegacyAuthenticated(guidConfigKey: String)(implicit app: Application) exte
 
 }
 
-class Authenticated(protected val accessTokenClient: AccessTokenClient)
+class Authenticated(_accessTokenClient: AccessTokenClient)
   extends BaseAuthenticated
+  with AccessTokenClientComponents
+{
+
+  val accessTokenClient: AccessTokenClient = _accessTokenClient
+
+}
 
 trait BaseAuthenticated
   extends AuthenticatedBuilder
@@ -39,6 +48,8 @@ trait BaseAuthenticated
   with    IdentityAuthorizerComponent
   with    ApiRejectorComponent
 {
+
+  self: AccessTokenClientComponents =>
 
   val authenticator: Authenticator = new CompositeAuthenticator(Seq(
     new HeaderAuthenticator("Authorization"),

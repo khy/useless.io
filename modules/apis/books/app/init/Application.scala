@@ -26,8 +26,11 @@ object ApplicationComponents {
         with DefaultAccountClientComponents
         with DefaultAccessTokenClientComponents
       {
-        val accessTokenClientAuthGuid = configuration.underlying.getUuid("books.accessTokenGuid")
-        val accountClientAuthGuid = configuration.underlying.getUuid("books.accessTokenGuid")
+        lazy val accessTokenClientBaseUrl = configuration.underlying.getString("useless.core.baseUrl")
+        lazy val accessTokenClientAuthGuid = configuration.underlying.getUuid("books.accessTokenGuid")
+
+        lazy val accountClientBaseUrl = configuration.underlying.getString("useless.core.baseUrl")
+        lazy val accountClientAuthGuid = configuration.underlying.getUuid("books.accessTokenGuid")
       }
     }
 

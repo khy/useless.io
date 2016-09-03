@@ -7,7 +7,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import play.api.mvc._
 
 import io.useless.accesstoken.AccessToken
-import io.useless.client.accesstoken.AccessTokenClient
+import io.useless.client.accesstoken.AccessTokenClientComponents
 import io.useless.util.{ Logger, Uuid }
 
 trait AuthenticatorComponent {
@@ -44,14 +44,14 @@ trait CompositeAuthenticatorComponent extends AuthenticatorComponent {
 
 trait GuidAuthenticatorComponent extends AuthenticatorComponent with Logger {
 
-  protected def accessTokenClient: AccessTokenClient
+  self: AccessTokenClientComponents =>
 
   trait GuidAuthenticator extends Authenticator {
 
     def guid[A](request: Request[A]): Option[String]
 
     def authenticate[A](request: Request[A]) = {
-      guid(request).map{ rawGuid =>
+      guid(request).map { rawGuid =>
         logger.debug("Authenticating guid: %s".format(rawGuid))
         Uuid.parseUuid(rawGuid) match {
           case Success(guid: UUID) => accessTokenClient.getAccessToken(guid)
@@ -66,6 +66,8 @@ trait GuidAuthenticatorComponent extends AuthenticatorComponent with Logger {
 
 trait HeaderAuthenticatorComponent extends GuidAuthenticatorComponent {
 
+  self: AccessTokenClientComponents =>
+
   class HeaderAuthenticator(header: String) extends GuidAuthenticator {
 
     def guid[A](request: Request[A]) = request.headers.get(header)
@@ -76,6 +78,8 @@ trait HeaderAuthenticatorComponent extends GuidAuthenticatorComponent {
 
 trait QueryParameterAuthenticatorComponent extends GuidAuthenticatorComponent {
 
+  self: AccessTokenClientComponents =>
+
   class QueryParameterAuthenticator(queryParameter: String) extends GuidAuthenticator {
 
     def guid[A](request: Request[A]) = request.getQueryString(queryParameter)
@@ -85,6 +89,8 @@ trait QueryParameterAuthenticatorComponent extends GuidAuthenticatorComponent {
 }
 
 trait CookieAuthenticatorComponent extends GuidAuthenticatorComponent {
+
+  self: AccessTokenClientComponents =>
 
   class CookieAuthenticator(cookie: String) extends GuidAuthenticator {
 

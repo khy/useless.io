@@ -6,7 +6,7 @@ import play.api.Play
 import play.api.Play.current
 import play.api.libs.ws.WS
 import io.useless.play.authentication._
-import io.useless.client.accesstoken.AccessTokenClient
+import io.useless.client.accesstoken.{AccessTokenClient, AccessTokenClientComponents}
 import io.useless.util.configuration.RichConfiguration._
 
 import controllers.account.routes.ApplicationController
@@ -15,6 +15,7 @@ object Auth
   extends BaseAuthenticated
   with    SessionAuthenticatorComponent
   with    SignInRejectorComponent
+  with    AccessTokenClientComponents
 {
 
   lazy val accessTokenClient = AccessTokenClient.instance(
@@ -29,7 +30,10 @@ object Auth
 
 }
 
-trait SessionAuthenticatorComponent extends GuidAuthenticatorComponent {
+trait SessionAuthenticatorComponent
+  extends GuidAuthenticatorComponent
+  with AccessTokenClientComponents
+{
 
   class SessionAuthenticator(key: String) extends GuidAuthenticator {
 
