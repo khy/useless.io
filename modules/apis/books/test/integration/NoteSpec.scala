@@ -13,44 +13,7 @@ import io.useless.http.LinkHeader
 import models.books.{Edition, Provider}
 import test.util._
 
-class NoteSpec extends DefaultSpec {
-
-  def baseRequest(
-    url: Option[String] = None
-  )(implicit accessToken: AccessToken) = {
-    WS.url(url.getOrElse(s"http://localhost:$port/notes")).
-      withHeaders(("Authorization" -> accessToken.guid.toString))
-  }
-
-  val theMarriagePlot = Edition(
-    isbn = "1112333444445",
-    title = "The Marriage Plot",
-    subtitle = None,
-    authors = Seq("Jeffrey Eugenides"),
-    pageCount = 406,
-    smallImageUrl = None,
-    largeImageUrl = None,
-    publisher = None,
-    publishedAt = None,
-    provider = Provider.Google,
-    providerId = None
-  )
-
-  val iPassLikeNight = Edition(
-    isbn = "9781250014764",
-    title = "I Pass Like Night",
-    subtitle = None,
-    authors = Seq("Jonathan Ames"),
-    pageCount = 164,
-    smallImageUrl = None,
-    largeImageUrl = None,
-    publisher = None,
-    publishedAt = None,
-    provider = Provider.Google,
-    providerId = None
-  )
-
-  override val editionClient = new MockEditionClient(Seq(theMarriagePlot, iPassLikeNight))
+class NoteSpec extends IntegrationSpec {
 
   "POST /notes" must {
 
@@ -68,7 +31,7 @@ class NoteSpec extends DefaultSpec {
     }
 
     "respond with an error if the page number is less than 1" in {
-      val response1 = await { baseRequest().post(Json.obj(
+      val response1 = await { request("/notes").post(Json.obj(
         "isbn" -> "1112333444445",
         "pageNumber" -> 0,
         "content" -> "Where am I?"
@@ -82,7 +45,7 @@ class NoteSpec extends DefaultSpec {
       (message1 \ "details" \ "specified-page-number").as[String] mustBe "0"
       (message1 \ "details" \ "minimum-page-number").as[String] mustBe "1"
 
-      val response2 = await { baseRequest().post(Json.obj(
+      val response2 = await { request("/notes").post(Json.obj(
         "isbn" -> "1112333444445",
         "pageNumber" -> -1,
         "content" -> "Where am I?"
@@ -98,14 +61,14 @@ class NoteSpec extends DefaultSpec {
     }
 
     "respond with an error if the page number is greater than the edition page count" in {
-      val response1 = await { baseRequest().post(Json.obj(
+      val response1 = await { request("/notes").post(Json.obj(
         "isbn" -> "1112333444445",
         "pageNumber" -> 406,
         "content" -> "At the end!"
       )) }
       response1.status mustBe CREATED
 
-      val response2 = await { baseRequest().post(Json.obj(
+      val response2 = await { request("/notes").post(Json.obj(
         "isbn" -> "1112333444445",
         "pageNumber" -> 407,
         "content" -> "Beyond the end!"
@@ -121,7 +84,7 @@ class NoteSpec extends DefaultSpec {
     }
 
     "create a new note for the specified edition of the book, and authenticated user" in {
-      val postResponse = await { baseRequest().post(Json.obj(
+      val postResponse = await { request("/notes").post(Json.obj(
         "isbn" -> "1112333444445",
         "pageNumber" -> 50,
         "content" -> "I'm bored!"
@@ -167,8 +130,7 @@ class NoteSpec extends DefaultSpec {
       val noteGuid = appHelper.addNote(isbn, 56, "A note.")
 
       val response = await {
-        baseRequest(url = Some(s"http://localhost:$port/notes")).
-          withQueryString("guid" -> noteGuid.toString).get
+        request("/notes").withQueryString("guid" -> noteGuid.toString).get
       }
       response.status mustBe OK
 
@@ -179,7 +141,7 @@ class NoteSpec extends DefaultSpec {
 
     "return the first page of results ordered by time, if no 'page' or 'order' is specified" in {
       buildNotes()
-      val response = await { baseRequest().withQueryString("p.limit" -> "3").get() }
+      val response = await { request("/notes").withQueryString("p.limit" -> "3").get() }
       response.status mustBe OK
 
       val notes = Json.parse(response.body).as[Seq[JsValue]]
@@ -191,12 +153,12 @@ class NoteSpec extends DefaultSpec {
 
     "return a Link header with pagination information" in {
       buildNotes()
-      val response1 = await { baseRequest().withQueryString("p.limit" -> "3").get() }
+      val response1 = await { request("/notes").withQueryString("p.limit" -> "3").get() }
       response1.status mustBe OK
 
       val linkValues = response1.header("Link").map(LinkHeader.parse(_)).get
       val nextUrl = linkValues.find(_.relation == "next").get.url
-      val response2 = await { baseRequest(Some(nextUrl)).get() }
+      val response2 = await { request(nextUrl).get() }
 
       val notes = Json.parse(response2.body).as[Seq[JsValue]]
       notes.length mustBe 2
@@ -207,13 +169,13 @@ class NoteSpec extends DefaultSpec {
     "return a Link header with precendence-style pagination, if specified" in {
       buildNotes()
       val response1 = await {
-        baseRequest().withQueryString("p.limit" -> "3", "p.style" -> "precedence").get()
+        request("/notes").withQueryString("p.limit" -> "3", "p.style" -> "precedence").get()
       }
       response1.status mustBe OK
 
       val linkValues = response1.header("Link").map(LinkHeader.parse(_)).get
       val nextUrl = linkValues.find(_.relation == "next").get.url
-      val response2 = await { baseRequest(Some(nextUrl)).get() }
+      val response2 = await { request(nextUrl).get() }
 
       val notes = Json.parse(response2.body).as[Seq[JsValue]]
       notes.length mustBe 2
@@ -222,29 +184,29 @@ class NoteSpec extends DefaultSpec {
     }
 
     "return notes belonging to the specified accountGuids" in {
-      val khyBaseRequest = baseRequest()(khyAccessToken)
+      val khyBaseRequest = request("/notes")(khyAccessToken)
       await { khyBaseRequest.post(Json.obj(
-        "isbn" -> iPassLikeNight.isbn,
+        "isbn" -> MockEdition.iPassLikeNight1.isbn,
         "pageNumber" -> 96,
         "content" -> "I am khy"
       )) }
 
-      val mikeBaseRequest = baseRequest()(mikeAccessToken)
+      val mikeBaseRequest = request("/notes")(mikeAccessToken)
       await { mikeBaseRequest.post(Json.obj(
-        "isbn" -> iPassLikeNight.isbn,
+        "isbn" -> MockEdition.iPassLikeNight1.isbn,
         "pageNumber" -> 45,
         "content" -> "I am Mike"
       )) }
 
-      val dennisBaseRequest = baseRequest()(dennisAccessToken)
+      val dennisBaseRequest = request("/notes")(dennisAccessToken)
       await { dennisBaseRequest.post(Json.obj(
-        "isbn" -> iPassLikeNight.isbn,
+        "isbn" -> MockEdition.iPassLikeNight1.isbn,
         "pageNumber" -> 99,
         "content" -> "I am Dennis"
       )) }
 
       val response = await {
-        baseRequest().withQueryString(
+        request("/notes").withQueryString(
           "accountGuid" -> mikeAccessToken.resourceOwner.guid.toString,
           "accountGuid" -> dennisAccessToken.resourceOwner.guid.toString
         ).get()
@@ -258,26 +220,26 @@ class NoteSpec extends DefaultSpec {
     "return notes ordered by pageNumber, if specified" in {
       appHelper.clearNotes()
 
-      await { baseRequest().post(Json.obj(
-        "isbn" -> iPassLikeNight.isbn,
+      await { request("/notes").post(Json.obj(
+        "isbn" -> MockEdition.iPassLikeNight1.isbn,
         "pageNumber" -> 123,
         "content" -> "123"
       )) }
 
-      await { baseRequest().post(Json.obj(
-        "isbn" -> iPassLikeNight.isbn,
+      await { request("/notes").post(Json.obj(
+        "isbn" -> MockEdition.iPassLikeNight1.isbn,
         "pageNumber" -> 45,
         "content" -> "45"
       )) }
 
-      await { baseRequest().post(Json.obj(
-        "isbn" -> iPassLikeNight.isbn,
+      await { request("/notes").post(Json.obj(
+        "isbn" -> MockEdition.iPassLikeNight1.isbn,
         "pageNumber" -> 92,
         "content" -> "92"
       )) }
 
       val response = await {
-        baseRequest().withQueryString("p.order" -> "pageNumber").get()
+        request("/notes").withQueryString("p.order" -> "pageNumber").get()
       }
 
       response.status mustBe OK
