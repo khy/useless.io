@@ -4,10 +4,11 @@ import java.util.UUID
 import play.api.libs.json._
 
 case class Book(
-  guid: UUID,
   title: String,
-  author: Author,
-  editions: Seq[Edition]
+  subtitle: Option[String],
+  authors: Seq[String],
+  smallImageUrl: Option[String],
+  largeImageUrl: Option[String]
 )
 
 object Book {

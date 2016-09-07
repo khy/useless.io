@@ -21,6 +21,10 @@ class AppHelper(
     db.run(sqlu"delete from notes")
   }
 
+  def clearEditionCache() {
+    db.run(sqlu"delete from edition_cache")
+  }
+
   def addNote(isbn: String, pageNumber: Int, content: String)(implicit accessToken: AccessToken): UUID = await {
     noteService.addNote(isbn, pageNumber, content, accessToken).map(_.toSuccess.value.guid)
   }

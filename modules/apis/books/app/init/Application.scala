@@ -58,7 +58,7 @@ class AbstractApplicationComponents(context: Context)
 
   lazy val booksRouter = new Routes(
     httpErrorHandler,
-    new Books,
+    new Books(bookService),
     new Editions(editionClient),
     new Notes(authenticated, noteService)
   )
