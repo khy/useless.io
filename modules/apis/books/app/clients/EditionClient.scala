@@ -30,6 +30,12 @@ object GoogleEditionClient {
 
       val optIsbn = getIndustryId("ISBN_13").orElse(getIndustryId("ISBN_10"))
 
+      val optId = (json \ "id").asOpt[String]
+
+      def generateImageUrl(zoom: Int)  = optId.map { id =>
+        s"http://books.google.com/books/content?id=${id}&printsec=frontcover&img=1&zoom=${zoom}"
+      }
+
       optIsbn.map { isbn =>
         Edition(
           isbn = isbn,
@@ -37,12 +43,12 @@ object GoogleEditionClient {
           subtitle = (json \ "volumeInfo" \ "subtitle").asOpt[String],
           authors = (json \ "volumeInfo" \ "authors").asOpt[Seq[String]].getOrElse(Seq.empty),
           pageCount = (json \ "volumeInfo" \ "pageCount").asOpt[Int].getOrElse(100),
-          smallImageUrl = (json \ "volumeInfo" \ "imageLinks" \ "smallThumbnail").asOpt[String],
-          largeImageUrl = (json \ "volumeInfo" \ "imageLinks" \ "thumbnail").asOpt[String],
+          smallImageUrl = generateImageUrl(2),
+          largeImageUrl = generateImageUrl(4),
           publisher = (json \ "volumeInfo" \ "publisher").asOpt[String],
           publishedAt = (json \ "volumeInfo" \ "publishedDate").asOpt[String].map(LocalDate.parse),
           provider = Provider.Google,
-          providerId = (json \ "id").asOpt[String]
+          providerId = optId
         )
       }
     }.flatten
