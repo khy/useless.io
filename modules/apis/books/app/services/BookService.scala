@@ -16,7 +16,7 @@ import io.useless.validation._
 
 import services.books.db.Driver
 import models.books.Book
-import db.{Notes, EditionCache}
+import db.{Notes, EditionCache, EditionCacheTable, EditionCacheRecord}
 
 class BookService(
   dbConfig: DatabaseConfig[Driver]
@@ -35,17 +35,24 @@ class BookService(
   }
 
   def findBooks(
+    titles: Option[Seq[String]],
     rawPaginationParams: RawPaginationParams
   )(implicit ec: ExecutionContext): Future[Validation[PaginatedResult[Book]]] = {
     val valPaginationParams = PaginationParams.build(rawPaginationParams, paginationConfig)
 
     ValidationUtil.mapFuture(valPaginationParams) { paginationParams =>
-      val subQuery = EditionCache.groupBy(_.title).map { case (title, group) =>
+      var subQuery: Query[EditionCacheTable, EditionCacheRecord, Seq] = EditionCache
+
+      titles.foreach { titles =>
+        subQuery = subQuery.filter(_.title inSet titles)
+      }
+
+      val isbnsQuery = subQuery.groupBy(_.title).map { case (title, group) =>
         group.map(_.isbn).max
       }
 
       val query = EditionCache.filter { edition =>
-        edition.isbn in subQuery
+        edition.isbn in isbnsQuery
       }
 
       db.run(query.result).map { case editions =>

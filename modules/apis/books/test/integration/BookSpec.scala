@@ -25,12 +25,16 @@ class BookSpec extends IntegrationSpec {
       response.status mustBe OK
     }
 
-    "return books" in {
+    def setupNotes() {
       appHelper.clearEditionCache()
       appHelper.clearNotes()
       appHelper.addNote(MockEdition.theMarriagePlot1.isbn, 34, "This is good, guy.")
       appHelper.addNote(MockEdition.theMarriagePlot2.isbn, 55, "Amiright?")
       appHelper.addNote(MockEdition.iPassLikeNight1.isbn, 14, "I'm feeling a little dizzy.")
+    }
+
+    "return books" in {
+      setupNotes()
 
       val response = await { request("/books").get }
       response.status mustBe OK
@@ -48,6 +52,19 @@ class BookSpec extends IntegrationSpec {
       iPassLikeNight.authors mustBe Seq("Jonathan Ames")
       iPassLikeNight.smallImageUrl mustBe Some("example.com/passlikenight/sm")
       iPassLikeNight.largeImageUrl mustBe Some("example.com/passlikenight/lg")
+    }
+
+    "return books for the specified title" in {
+      setupNotes()
+
+      val response = await {
+        request("/books").withQueryString("title" -> "I Pass Like Night").get()
+      }
+      response.status mustBe OK
+
+      val books = response.json.as[Seq[Book]]
+      books.length mustBe 1
+      books.head.title mustBe "I Pass Like Night"
     }
 
   }

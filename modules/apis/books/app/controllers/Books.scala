@@ -20,6 +20,7 @@ class Books(
   def index = Action.async { implicit request =>
     withRawPaginationParams { rawPaginationParams =>
       bookService.findBooks(
+        titles = request.richQueryString.get[String]("title"),
         rawPaginationParams
       ).map { result =>
         result.fold(
