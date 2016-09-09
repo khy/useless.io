@@ -14,7 +14,7 @@ import io.useless.pagination._
 import io.useless.validation._
 
 import services.books.db.Driver
-import db.{Notes, NoteRecord}
+import db.{EditionCache, Notes, NoteRecord}
 import models.books.{Edition, Note}
 
 class NoteService(
@@ -64,6 +64,7 @@ class NoteService(
 
   def findNotes(
     guids: Option[Seq[UUID]],
+    bookTitles: Option[Seq[String]],
     accountGuids: Option[Seq[UUID]],
     rawPaginationParams: RawPaginationParams
   )(implicit ec: ExecutionContext): Future[Validation[PaginatedResult[NoteRecord]]] = {
@@ -81,6 +82,16 @@ class NoteService(
       guids.foreach { guids =>
         query = query.filter { note =>
           note.guid inSet guids
+        }
+      }
+
+      bookTitles.foreach { bookTitles =>
+        val isbnsSubQuery = EditionCache.filter { edition =>
+          edition.title inSet bookTitles
+        }.map(_.isbn)
+
+        query = query.filter { note =>
+          note.isbn in isbnsSubQuery
         }
       }
 

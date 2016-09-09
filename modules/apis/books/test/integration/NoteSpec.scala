@@ -10,7 +10,7 @@ import org.scalatestplus.play._
 import io.useless.accesstoken.AccessToken
 import io.useless.http.LinkHeader
 
-import models.books.{Edition, Provider}
+import models.books.{Edition, Note, Provider}
 import test.util._
 
 class NoteSpec extends IntegrationSpec {
@@ -137,6 +137,22 @@ class NoteSpec extends IntegrationSpec {
       val note = Json.parse(response.body).as[Seq[JsValue]].head
       (note \ "content").as[String] mustBe "A note."
       (note \ "pageNumber").as[Int] mustBe 56
+    }
+
+    "return notes by bookTitle" in {
+      appHelper.clearNotes()
+      appHelper.addNote(MockEdition.theMarriagePlot1.isbn, 56, "Note #1")
+      appHelper.addNote(MockEdition.iPassLikeNight1.isbn, 89, "Note #2")
+      appHelper.addNote(MockEdition.theMarriagePlot2.isbn, 78, "Note #3")
+
+      val response = await {
+        request("/notes").withQueryString("bookTitle" -> "The Marriage Plot").get
+      }
+      response.status mustBe OK
+
+      val notes = response.json.as[Seq[Note]]
+      notes.length mustBe 2
+      notes.map(_.content) must contain theSameElementsAs Seq("Note #1", "Note #3")
     }
 
     "return the first page of results ordered by time, if no 'page' or 'order' is specified" in {

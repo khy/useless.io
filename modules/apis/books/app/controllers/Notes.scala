@@ -24,6 +24,7 @@ class Notes(
     withRawPaginationParams { rawPaginationParams =>
       noteService.findNotes(
         guids = request.richQueryString.get[UUID]("guid"),
+        bookTitles = request.richQueryString.get[String]("bookTitle"),
         accountGuids = request.richQueryString.get[UUID]("accountGuid"),
         rawPaginationParams
       ).flatMap { result =>
