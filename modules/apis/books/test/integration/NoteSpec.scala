@@ -62,14 +62,14 @@ class NoteSpec extends IntegrationSpec {
 
     "respond with an error if the page number is greater than the edition page count" in {
       val response1 = await { request("/notes").post(Json.obj(
-        "isbn" -> "1112333444445",
+        "isbn" -> MockEdition.theMarriagePlot1.isbn,
         "pageNumber" -> 406,
         "content" -> "At the end!"
       )) }
       response1.status mustBe CREATED
 
       val response2 = await { request("/notes").post(Json.obj(
-        "isbn" -> "1112333444445",
+        "isbn" -> MockEdition.theMarriagePlot1.isbn,
         "pageNumber" -> 407,
         "content" -> "Beyond the end!"
       )) }
@@ -85,14 +85,14 @@ class NoteSpec extends IntegrationSpec {
 
     "create a new note for the specified edition of the book, and authenticated user" in {
       val postResponse = await { request("/notes").post(Json.obj(
-        "isbn" -> "1112333444445",
+        "isbn" -> MockEdition.theMarriagePlot1.isbn,
         "pageNumber" -> 50,
         "content" -> "I'm bored!"
       )) }
       postResponse.status mustBe CREATED
 
       val note = Json.parse(postResponse.body).as[JsValue]
-      (note \ "edition" \ "isbn").as[String] mustBe "1112333444445"
+      (note \ "edition" \ "isbn").as[String] mustBe MockEdition.theMarriagePlot1.isbn
       (note \ "edition" \ "pageCount").as[Int] mustBe 406
       (note \ "edition" \ "title").as[String] mustBe "The Marriage Plot"
       (note \ "edition" \ "authors").as[Seq[String]] mustBe Seq("Jeffrey Eugenides")
@@ -107,7 +107,7 @@ class NoteSpec extends IntegrationSpec {
   "GET /notes" must {
 
     def buildNotes() {
-      val isbn = "9781250014764"
+      val isbn = MockEdition.theMarriagePlot1.isbn
       appHelper.clearNotes()
       appHelper.addNote(isbn, 34, "This is good, guy.")
       appHelper.addNote(isbn, 57, "Amiright?")
@@ -126,7 +126,7 @@ class NoteSpec extends IntegrationSpec {
     }
 
     "return notes by guid" in {
-      val isbn = "9781250014764"
+      val isbn = MockEdition.theMarriagePlot1.isbn
       val noteGuid = appHelper.addNote(isbn, 56, "A note.")
 
       val response = await {
