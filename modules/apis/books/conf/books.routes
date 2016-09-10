@@ -2,5 +2,5 @@ GET     /books        controllers.books.Books.index
 
 GET     /editions     controllers.books.Editions.index
 
-GET     /notes        controllers.books.Notes.index
-POST    /notes        controllers.books.Notes.create
+GET     /dogEars      controllers.books.DogEars.index
+POST    /dogEars      controllers.books.DogEars.create

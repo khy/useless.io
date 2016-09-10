@@ -12,17 +12,17 @@ import io.useless.play.pagination.PaginationController
 import io.useless.play.json.validation.ErrorsJson._
 import io.useless.play.authentication.Authenticated
 
-import services.books.NoteService
-import models.books.Note.format
+import services.books.DogEarService
+import models.books.DogEar.format
 
-class Notes(
+class DogEars(
   authenticated: Authenticated,
-  noteService: NoteService
+  dogEarService: DogEarService
 ) extends Controller with PaginationController {
 
   def index = Action.async { implicit request =>
     withRawPaginationParams { rawPaginationParams =>
-      noteService.findNotes(
+      dogEarService.findDogEars(
         guids = request.richQueryString.get[UUID]("guid"),
         bookTitles = request.richQueryString.get[String]("bookTitle"),
         accountGuids = request.richQueryString.get[UUID]("accountGuid"),
@@ -30,31 +30,31 @@ class Notes(
       ).flatMap { result =>
         result.fold(
           error => Future.successful(Conflict(Json.toJson(error))),
-          result => noteService.db2api(result.items).map { notes =>
-            paginatedResult(routes.Notes.index(), result.copy(items = notes))
+          result => dogEarService.db2api(result.items).map { dogEars =>
+            paginatedResult(routes.DogEars.index(), result.copy(items = dogEars))
           }
         )
       }
     }
   }
 
-  case class NewNote(isbn: String, pageNumber: Int, content: String)
-  private implicit val newNoteReads = Json.reads[NewNote]
+  case class NewDogEar(isbn: String, pageNumber: Int, note: Option[String])
+  private implicit val newDogEarReads = Json.reads[NewDogEar]
 
   def create = authenticated.async(parse.json) { request =>
-    request.body.validate[NewNote].fold(
+    request.body.validate[NewDogEar].fold(
       error => Future.successful(Conflict),
-      newNote => {
-        noteService.addNote(
-          isbn = newNote.isbn,
-          pageNumber = newNote.pageNumber,
-          content = newNote.content,
+      newDogEar => {
+        dogEarService.addDogEar(
+          isbn = newDogEar.isbn,
+          pageNumber = newDogEar.pageNumber,
+          note = newDogEar.note,
           accessToken = request.accessToken
         ).flatMap { result =>
           result.fold(
             error => Future.successful(Conflict(Json.toJson(error))),
-            note => noteService.db2api(Seq(note)).map { notes =>
-              Created(Json.toJson(notes.head))
+            dogEar => dogEarService.db2api(Seq(dogEar)).map { dogEars =>
+              Created(Json.toJson(dogEars.head))
             }
           )
         }

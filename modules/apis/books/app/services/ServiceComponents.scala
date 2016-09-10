@@ -11,8 +11,8 @@ trait ServiceComponents {
 
   lazy val bookService: BookService = new BookService(dbConfig)
 
-  lazy val editionService: EditionService = new EditionService(dbConfig, editionClient)
+  lazy val dogEarService: DogEarService = new DogEarService(dbConfig, accountClient, editionService)
 
-  lazy val noteService: NoteService = new NoteService(dbConfig, accountClient, editionService)
+  lazy val editionService: EditionService = new EditionService(dbConfig, editionClient)
 
 }

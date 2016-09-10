@@ -14,10 +14,10 @@ import io.useless.pagination._
 import io.useless.validation._
 
 import services.books.db.Driver
-import db.{EditionCache, Notes, NoteRecord}
-import models.books.{Edition, Note}
+import db.{EditionCache, DogEars, DogEarRecord}
+import models.books.{Edition, DogEar}
 
-class NoteService(
+class DogEarService(
   dbConfig: DatabaseConfig[Driver],
   accountClient: AccountClient,
   editionService: EditionService
@@ -26,7 +26,7 @@ class NoteService(
   import dbConfig.db
   import dbConfig.driver.api._
 
-  def db2api(records: Seq[NoteRecord])(implicit ec: ExecutionContext): Future[Seq[Note]] = {
+  def db2api(records: Seq[DogEarRecord])(implicit ec: ExecutionContext): Future[Seq[DogEar]] = {
     val futAccounts = Future.sequence {
       records.map(_.createdByAccount).map(accountClient.getAccount(_))
     }.map { accounts =>
@@ -52,7 +52,7 @@ class NoteService(
           throw new ResourceUnexpectedlyNotFound("User", record.createdByAccount)
         }
 
-        Note(record.guid, record.pageNumber, record.content, edition, user, new DateTime(record.createdAt))
+        DogEar(record.guid, edition, record.pageNumber, record.note, user, new DateTime(record.createdAt))
       }
     }
   }
@@ -62,17 +62,17 @@ class NoteService(
     defaultOrder = "createdAt"
   )
 
-  def findNotes(
+  def findDogEars(
     guids: Option[Seq[UUID]],
     bookTitles: Option[Seq[String]],
     accountGuids: Option[Seq[UUID]],
     rawPaginationParams: RawPaginationParams
-  )(implicit ec: ExecutionContext): Future[Validation[PaginatedResult[NoteRecord]]] = {
+  )(implicit ec: ExecutionContext): Future[Validation[PaginatedResult[DogEarRecord]]] = {
     val valPaginationParams = PaginationParams.build(rawPaginationParams, paginationConfig)
 
     ValidationUtil.mapFuture(valPaginationParams) { paginationParams =>
       // It's unclear to me why, but sortBy needs to go first.
-      var query = Notes.sortBy { sort =>
+      var query = DogEars.sortBy { sort =>
         paginationParams.order match {
           case "pageNumber" => sort.pageNumber.desc
           case _ => sort.createdAt.desc
@@ -107,7 +107,7 @@ class NoteService(
         }
         case params: PrecedenceBasedPaginationParams[_] => {
           params.after.foreach { after =>
-            val maxCreatedAt = Notes.filter(_.guid === after).
+            val maxCreatedAt = DogEars.filter(_.guid === after).
               map(_.createdAt).min.asColumnOf[Timestamp]
 
             query = query.filter(_.createdAt < maxCreatedAt)
@@ -117,18 +117,18 @@ class NoteService(
 
       query = query.take(paginationParams.limit)
 
-      db.run(query.result).map { notes =>
-        PaginatedResult.build(notes, paginationParams)
+      db.run(query.result).map { dogEars =>
+        PaginatedResult.build(dogEars, paginationParams)
       }
     }
   }
 
-  def addNote(
+  def addDogEar(
     isbn: String,
     pageNumber: Int,
-    content: String,
+    note: Option[String],
     accessToken: AccessToken
-  )(implicit ec: ExecutionContext): Future[Validation[NoteRecord]] = {
+  )(implicit ec: ExecutionContext): Future[Validation[DogEarRecord]] = {
     if (pageNumber < 1) {
       Future.successful {
         Validation.failure("pageNumber", "invalid-page-number",
@@ -147,8 +147,8 @@ class NoteService(
               )
             }
           } else {
-            insertNote(isbn, pageNumber, content, accessToken).flatMap { newGuid =>
-              db.run(Notes.filter(_.guid === newGuid).result).map { records =>
+            insertDogEar(isbn, pageNumber, note, accessToken).flatMap { newGuid =>
+              db.run(DogEars.filter(_.guid === newGuid).result).map { records =>
                 val record = records.headOption.getOrElse {
                   throw new ResourceUnexpectedlyNotFound("Note", newGuid)
                 }
@@ -168,21 +168,21 @@ class NoteService(
     }
   }
 
-  private def insertNote(
+  private def insertDogEar(
     isbn: String,
     pageNumber: Int,
-    content: String,
+    note: Option[String],
     accessToken: AccessToken
   )(implicit ec: ExecutionContext): Future[UUID] = {
-    val projection = Notes.map { note =>
-      (note.guid, note.isbn, note.pageNumber, note.content,
-        note.createdByAccount, note.createdByAccessToken)
-    }.returning(Notes.map(_.guid))
+    val projection = DogEars.map { r =>
+      (r.guid, r.isbn, r.pageNumber, r.note,
+        r.createdByAccount, r.createdByAccessToken)
+    }.returning(DogEars.map(_.guid))
 
-    val noteInsert = projection += (UUID.randomUUID, isbn, pageNumber, content,
+    val dogEarInsert = projection += (UUID.randomUUID, isbn, pageNumber, note,
       accessToken.resourceOwner.guid, accessToken.guid)
 
-    db.run(noteInsert)
+    db.run(dogEarInsert)
   }
 
 }

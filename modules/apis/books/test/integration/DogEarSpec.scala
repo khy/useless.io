@@ -10,20 +10,20 @@ import org.scalatestplus.play._
 import io.useless.accesstoken.AccessToken
 import io.useless.http.LinkHeader
 
-import models.books.{Edition, Note, Provider}
+import models.books.{Edition, DogEar, Provider}
 import test.util._
 
-class NoteSpec extends IntegrationSpec {
+class DogEarSpec extends IntegrationSpec {
 
-  "POST /notes" must {
+  "POST /dogEars" must {
 
     "return an error if the request isn't authenticated" in {
       val response = await {
-        WS.url(s"http://localhost:$port/notes").
+        WS.url(s"http://localhost:$port/dogEars").
           post(Json.obj(
             "isbn" -> "1112333444445",
             "pageNumber" -> 50,
-            "content" -> "Some thoughts..."
+            "note" -> "Some thoughts..."
           ))
       }
 
@@ -31,10 +31,10 @@ class NoteSpec extends IntegrationSpec {
     }
 
     "respond with an error if the page number is less than 1" in {
-      val response1 = await { request("/notes").post(Json.obj(
+      val response1 = await { request("/dogEars").post(Json.obj(
         "isbn" -> "1112333444445",
         "pageNumber" -> 0,
-        "content" -> "Where am I?"
+        "note" -> "Where am I?"
       )) }
       response1.status mustBe CONFLICT
 
@@ -45,10 +45,10 @@ class NoteSpec extends IntegrationSpec {
       (message1 \ "details" \ "specified-page-number").as[String] mustBe "0"
       (message1 \ "details" \ "minimum-page-number").as[String] mustBe "1"
 
-      val response2 = await { request("/notes").post(Json.obj(
+      val response2 = await { request("/dogEars").post(Json.obj(
         "isbn" -> "1112333444445",
         "pageNumber" -> -1,
-        "content" -> "Where am I?"
+        "note" -> "Where am I?"
       )) }
       response2.status mustBe CONFLICT
 
@@ -61,17 +61,17 @@ class NoteSpec extends IntegrationSpec {
     }
 
     "respond with an error if the page number is greater than the edition page count" in {
-      val response1 = await { request("/notes").post(Json.obj(
+      val response1 = await { request("/dogEars").post(Json.obj(
         "isbn" -> MockEdition.theMarriagePlot1.isbn,
         "pageNumber" -> 406,
-        "content" -> "At the end!"
+        "note" -> "At the end!"
       )) }
       response1.status mustBe CREATED
 
-      val response2 = await { request("/notes").post(Json.obj(
+      val response2 = await { request("/dogEars").post(Json.obj(
         "isbn" -> MockEdition.theMarriagePlot1.isbn,
         "pageNumber" -> 407,
-        "content" -> "Beyond the end!"
+        "note" -> "Beyond the end!"
       )) }
       response2.status mustBe CONFLICT
 
@@ -83,11 +83,11 @@ class NoteSpec extends IntegrationSpec {
       (message2 \ "details" \ "maximum-page-number").as[String] mustBe "406"
     }
 
-    "create a new note for the specified edition of the book, and authenticated user" in {
-      val postResponse = await { request("/notes").post(Json.obj(
+    "create a new dog ear for the specified edition of the book, and authenticated user" in {
+      val postResponse = await { request("/dogEars").post(Json.obj(
         "isbn" -> MockEdition.theMarriagePlot1.isbn,
         "pageNumber" -> 50,
-        "content" -> "I'm bored!"
+        "note" -> "I'm bored!"
       )) }
       postResponse.status mustBe CREATED
 
@@ -97,95 +97,95 @@ class NoteSpec extends IntegrationSpec {
       (note \ "edition" \ "title").as[String] mustBe "The Marriage Plot"
       (note \ "edition" \ "authors").as[Seq[String]] mustBe Seq("Jeffrey Eugenides")
       (note \ "pageNumber").as[Int] mustBe 50
-      (note \ "content").as[String] mustBe "I'm bored!"
+      (note \ "note").as[String] mustBe "I'm bored!"
       (note \ "createdBy" \ "user" \ "handle").as[String] mustBe "khy"
       (note \ "createdAt").asOpt[String] mustBe ('defined)
     }
 
   }
 
-  "GET /notes" must {
+  "GET /dogEars" must {
 
     def buildNotes() {
       val isbn = MockEdition.theMarriagePlot1.isbn
-      appHelper.clearNotes()
-      appHelper.addNote(isbn, 34, "This is good, guy.")
-      appHelper.addNote(isbn, 57, "Amiright?")
-      appHelper.addNote(isbn, 68, "What do you think?")
-      appHelper.addNote(isbn, 103, "I'm feeling a little dizzy.")
-      appHelper.addNote(isbn, 140, "...")
+      appHelper.clearDogEars()
+      appHelper.addNote(isbn, 34, Some("This is good, guy."))
+      appHelper.addNote(isbn, 57, Some("Amiright?"))
+      appHelper.addNote(isbn, 68, Some("What do you think?"))
+      appHelper.addNote(isbn, 103, Some("I'm feeling a little dizzy."))
+      appHelper.addNote(isbn, 140, Some("..."))
     }
 
     "support unauthenticated requests" in {
       buildNotes()
       val response = await {
-        WS.url(s"http://localhost:$port/notes").withQueryString("p.limit" -> "3").get
+        WS.url(s"http://localhost:$port/dogEars").withQueryString("p.limit" -> "3").get
       }
 
       response.status mustBe OK
     }
 
-    "return notes by guid" in {
+    "return dog ears by guid" in {
       val isbn = MockEdition.theMarriagePlot1.isbn
-      val noteGuid = appHelper.addNote(isbn, 56, "A note.")
+      val noteGuid = appHelper.addNote(isbn, 56, Some("A note."))
 
       val response = await {
-        request("/notes").withQueryString("guid" -> noteGuid.toString).get
+        request("/dogEars").withQueryString("guid" -> noteGuid.toString).get
       }
       response.status mustBe OK
 
       val note = Json.parse(response.body).as[Seq[JsValue]].head
-      (note \ "content").as[String] mustBe "A note."
+      (note \ "note").as[String] mustBe "A note."
       (note \ "pageNumber").as[Int] mustBe 56
     }
 
-    "return notes by bookTitle" in {
-      appHelper.clearNotes()
-      appHelper.addNote(MockEdition.theMarriagePlot1.isbn, 56, "Note #1")
-      appHelper.addNote(MockEdition.iPassLikeNight1.isbn, 89, "Note #2")
-      appHelper.addNote(MockEdition.theMarriagePlot2.isbn, 78, "Note #3")
+    "return dog ears by bookTitle" in {
+      appHelper.clearDogEars()
+      appHelper.addNote(MockEdition.theMarriagePlot1.isbn, 56, Some("Note #1"))
+      appHelper.addNote(MockEdition.iPassLikeNight1.isbn, 89, Some("Note #2"))
+      appHelper.addNote(MockEdition.theMarriagePlot2.isbn, 78, Some("Note #3"))
 
       val response = await {
-        request("/notes").withQueryString("bookTitle" -> "The Marriage Plot").get
+        request("/dogEars").withQueryString("bookTitle" -> "The Marriage Plot").get
       }
       response.status mustBe OK
 
-      val notes = response.json.as[Seq[Note]]
-      notes.length mustBe 2
-      notes.map(_.content) must contain theSameElementsAs Seq("Note #1", "Note #3")
+      val dogEars = response.json.as[Seq[DogEar]]
+      dogEars.length mustBe 2
+      dogEars.map(_.note) must contain theSameElementsAs Seq(Some("Note #1"), Some("Note #3"))
     }
 
     "return the first page of results ordered by time, if no 'page' or 'order' is specified" in {
       buildNotes()
-      val response = await { request("/notes").withQueryString("p.limit" -> "3").get() }
+      val response = await { request("/dogEars").withQueryString("p.limit" -> "3").get() }
       response.status mustBe OK
 
-      val notes = Json.parse(response.body).as[Seq[JsValue]]
-      notes.length mustBe 3
-      (notes(0) \ "content").as[String] mustBe "..."
-      (notes(1) \ "content").as[String] mustBe "I'm feeling a little dizzy."
-      (notes(2) \ "content").as[String] mustBe "What do you think?"
+      val dogEars = Json.parse(response.body).as[Seq[JsValue]]
+      dogEars.length mustBe 3
+      (dogEars(0) \ "note").as[String] mustBe "..."
+      (dogEars(1) \ "note").as[String] mustBe "I'm feeling a little dizzy."
+      (dogEars(2) \ "note").as[String] mustBe "What do you think?"
     }
 
     "return a Link header with pagination information" in {
       buildNotes()
-      val response1 = await { request("/notes").withQueryString("p.limit" -> "3").get() }
+      val response1 = await { request("/dogEars").withQueryString("p.limit" -> "3").get() }
       response1.status mustBe OK
 
       val linkValues = response1.header("Link").map(LinkHeader.parse(_)).get
       val nextUrl = linkValues.find(_.relation == "next").get.url
       val response2 = await { request(nextUrl).get() }
 
-      val notes = Json.parse(response2.body).as[Seq[JsValue]]
-      notes.length mustBe 2
-      (notes(0) \ "content").as[String] mustBe "Amiright?"
-      (notes(1) \ "content").as[String] mustBe "This is good, guy."
+      val dogEars = Json.parse(response2.body).as[Seq[JsValue]]
+      dogEars.length mustBe 2
+      (dogEars(0) \ "note").as[String] mustBe "Amiright?"
+      (dogEars(1) \ "note").as[String] mustBe "This is good, guy."
     }
 
     "return a Link header with precendence-style pagination, if specified" in {
       buildNotes()
       val response1 = await {
-        request("/notes").withQueryString("p.limit" -> "3", "p.style" -> "precedence").get()
+        request("/dogEars").withQueryString("p.limit" -> "3", "p.style" -> "precedence").get()
       }
       response1.status mustBe OK
 
@@ -193,75 +193,75 @@ class NoteSpec extends IntegrationSpec {
       val nextUrl = linkValues.find(_.relation == "next").get.url
       val response2 = await { request(nextUrl).get() }
 
-      val notes = Json.parse(response2.body).as[Seq[JsValue]]
-      notes.length mustBe 2
-      (notes(0) \ "content").as[String] mustBe "Amiright?"
-      (notes(1) \ "content").as[String] mustBe "This is good, guy."
+      val dogEars = Json.parse(response2.body).as[Seq[JsValue]]
+      dogEars.length mustBe 2
+      (dogEars(0) \ "note").as[String] mustBe "Amiright?"
+      (dogEars(1) \ "note").as[String] mustBe "This is good, guy."
     }
 
-    "return notes belonging to the specified accountGuids" in {
-      val khyBaseRequest = request("/notes")(khyAccessToken)
+    "return dog ears belonging to the specified accountGuids" in {
+      val khyBaseRequest = request("/dogEars")(khyAccessToken)
       await { khyBaseRequest.post(Json.obj(
         "isbn" -> MockEdition.iPassLikeNight1.isbn,
         "pageNumber" -> 96,
-        "content" -> "I am khy"
+        "note" -> "I am khy"
       )) }
 
-      val mikeBaseRequest = request("/notes")(mikeAccessToken)
+      val mikeBaseRequest = request("/dogEars")(mikeAccessToken)
       await { mikeBaseRequest.post(Json.obj(
         "isbn" -> MockEdition.iPassLikeNight1.isbn,
         "pageNumber" -> 45,
-        "content" -> "I am Mike"
+        "note" -> "I am Mike"
       )) }
 
-      val dennisBaseRequest = request("/notes")(dennisAccessToken)
+      val dennisBaseRequest = request("/dogEars")(dennisAccessToken)
       await { dennisBaseRequest.post(Json.obj(
         "isbn" -> MockEdition.iPassLikeNight1.isbn,
         "pageNumber" -> 99,
-        "content" -> "I am Dennis"
+        "note" -> "I am Dennis"
       )) }
 
       val response = await {
-        request("/notes").withQueryString(
+        request("/dogEars").withQueryString(
           "accountGuid" -> mikeAccessToken.resourceOwner.guid.toString,
           "accountGuid" -> dennisAccessToken.resourceOwner.guid.toString
         ).get()
       }
 
       response.status mustBe OK
-      val notes = Json.parse(response.body).as[Seq[JsValue]]
-      notes.length mustBe 2
+      val dogEars = Json.parse(response.body).as[Seq[JsValue]]
+      dogEars.length mustBe 2
     }
 
-    "return notes ordered by pageNumber, if specified" in {
-      appHelper.clearNotes()
+    "return dog ears ordered by pageNumber, if specified" in {
+      appHelper.clearDogEars()
 
-      await { request("/notes").post(Json.obj(
+      await { request("/dogEars").post(Json.obj(
         "isbn" -> MockEdition.iPassLikeNight1.isbn,
         "pageNumber" -> 123,
-        "content" -> "123"
+        "note" -> "123"
       )) }
 
-      await { request("/notes").post(Json.obj(
+      await { request("/dogEars").post(Json.obj(
         "isbn" -> MockEdition.iPassLikeNight1.isbn,
         "pageNumber" -> 45,
-        "content" -> "45"
+        "note" -> "45"
       )) }
 
-      await { request("/notes").post(Json.obj(
+      await { request("/dogEars").post(Json.obj(
         "isbn" -> MockEdition.iPassLikeNight1.isbn,
         "pageNumber" -> 92,
-        "content" -> "92"
+        "note" -> "92"
       )) }
 
       val response = await {
-        request("/notes").withQueryString("p.order" -> "pageNumber").get()
+        request("/dogEars").withQueryString("p.order" -> "pageNumber").get()
       }
 
       response.status mustBe OK
-      val notes = Json.parse(response.body).as[Seq[JsValue]]
-      val contents = notes.map { note => (note \ "content").as[String] }
-      contents mustBe Seq("123", "92", "45")
+      val dogEars = Json.parse(response.body).as[Seq[JsValue]]
+      val notes = dogEars.map { note => (note \ "note").as[String] }
+      notes mustBe Seq("123", "92", "45")
     }
 
   }

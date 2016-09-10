@@ -8,20 +8,20 @@ import io.useless.account.Account
 import io.useless.play.json.account.AccountJson
 import io.useless.play.json.DateTimeJson._
 
-case class Note(
+case class DogEar(
   guid: UUID,
-  pageNumber: Int,
-  content: String,
   edition: Edition,
+  pageNumber: Int,
+  note: Option[String],
   createdBy: Account,
   createdAt: DateTime
 )
 
-object Note {
+object DogEar {
 
   implicit private val accountFormat =
     Format(AccountJson.accountReads, AccountJson.accountWrites)
 
-  implicit val format = Json.format[Note]
+  implicit val format = Json.format[DogEar]
 
 }

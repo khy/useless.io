@@ -17,16 +17,16 @@ class AppHelper(
   import dbConfig.db
   import dbConfig.driver.api._
 
-  def clearNotes() {
-    db.run(sqlu"delete from notes")
+  def clearDogEars() {
+    db.run(sqlu"delete from dog_ears")
   }
 
   def clearEditionCache() {
     db.run(sqlu"delete from edition_cache")
   }
 
-  def addNote(isbn: String, pageNumber: Int, content: String)(implicit accessToken: AccessToken): UUID = await {
-    noteService.addNote(isbn, pageNumber, content, accessToken).map(_.toSuccess.value.guid)
+  def addNote(isbn: String, pageNumber: Int, note: Option[String])(implicit accessToken: AccessToken): UUID = await {
+    dogEarService.addDogEar(isbn, pageNumber, note, accessToken).map(_.toSuccess.value.guid)
   }
 
 }

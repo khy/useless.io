@@ -60,7 +60,7 @@ class AbstractApplicationComponents(context: Context)
     httpErrorHandler,
     new Books(bookService),
     new Editions(editionClient),
-    new Notes(authenticated, noteService)
+    new DogEars(authenticated, dogEarService)
   )
 
   override lazy val injector: Injector = {

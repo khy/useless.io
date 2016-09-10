@@ -16,7 +16,7 @@ import io.useless.validation._
 
 import services.books.db.Driver
 import models.books.Book
-import db.{Notes, EditionCache, EditionCacheTable, EditionCacheRecord}
+import db.{DogEars, EditionCache, EditionCacheTable, EditionCacheRecord}
 
 class BookService(
   dbConfig: DatabaseConfig[Driver]

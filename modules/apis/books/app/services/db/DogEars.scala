@@ -5,11 +5,11 @@ import java.sql.Timestamp
 
 import Driver.api._
 
-case class NoteRecord(
+case class DogEarRecord(
   guid: UUID,
   isbn: String,
   pageNumber: Int,
-  content: String,
+  note: Option[String],
   createdAt: Timestamp,
   createdByAccount: UUID,
   createdByAccessToken: UUID,
@@ -18,18 +18,18 @@ case class NoteRecord(
   deletedByAccessToken: Option[UUID]
 )
 
-class NotesTable(tag: Tag)
-  extends Table[NoteRecord](tag, "notes")
-  with AuditData[NoteRecord]
+class DogEarTable(tag: Tag)
+  extends Table[DogEarRecord](tag, "dog_ears")
+  with AuditData[DogEarRecord]
 {
   def guid = column[UUID]("guid")
   def isbn = column[String]("isbn")
   def pageNumber = column[Int]("page_number")
-  def content = column[String]("content")
+  def note = column[Option[String]]("note")
 
-  def * = (guid, isbn, pageNumber, content, createdAt, createdByAccount,
+  def * = (guid, isbn, pageNumber, note, createdAt, createdByAccount,
     createdByAccessToken, deletedAt, deletedByAccount,
-    deletedByAccessToken) <> (NoteRecord.tupled, NoteRecord.unapply)
+    deletedByAccessToken) <> (DogEarRecord.tupled, DogEarRecord.unapply)
 }
 
-object Notes extends TableQuery(new NotesTable(_))
+object DogEars extends TableQuery(new DogEarTable(_))

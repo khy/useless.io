@@ -27,10 +27,10 @@ class BookSpec extends IntegrationSpec {
 
     def setupNotes() {
       appHelper.clearEditionCache()
-      appHelper.clearNotes()
-      appHelper.addNote(MockEdition.theMarriagePlot1.isbn, 34, "This is good, guy.")
-      appHelper.addNote(MockEdition.theMarriagePlot2.isbn, 55, "Amiright?")
-      appHelper.addNote(MockEdition.iPassLikeNight1.isbn, 14, "I'm feeling a little dizzy.")
+      appHelper.clearDogEars()
+      appHelper.addNote(MockEdition.theMarriagePlot1.isbn, 34, Some("This is good, guy."))
+      appHelper.addNote(MockEdition.theMarriagePlot2.isbn, 55, Some("Amiright?"))
+      appHelper.addNote(MockEdition.iPassLikeNight1.isbn, 14, Some("I'm feeling a little dizzy."))
     }
 
     "return books" in {
