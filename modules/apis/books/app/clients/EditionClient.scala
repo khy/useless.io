@@ -71,8 +71,11 @@ class GoogleEditionClient(
   }
 
   def findByIsbn(isbns: Seq[String])(implicit ec: ExecutionContext): Future[Seq[Edition]] = {
-    val _query = isbns.map { isbn => "isbn:" + isbn }.mkString("&")
-    query(_query)
+    val editionFutures = isbns.map { isbn =>
+      query("isbn:" + isbn)
+    }
+
+    Future.sequence(editionFutures).map(_.flatten)
   }
 
 }
