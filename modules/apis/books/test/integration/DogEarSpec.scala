@@ -102,6 +102,17 @@ class DogEarSpec extends IntegrationSpec {
       (note \ "createdAt").asOpt[String] mustBe ('defined)
     }
 
+    "support dog ears without notes" in {
+      val postResponse = await { request("/dogEars").post(Json.obj(
+        "isbn" -> MockEdition.theMarriagePlot1.isbn,
+        "pageNumber" -> 50
+      )) }
+      postResponse.status mustBe CREATED
+
+      val dogEar = Json.parse(postResponse.body).as[DogEar]
+      dogEar.note mustBe None
+    }
+
   }
 
   "GET /dogEars" must {
