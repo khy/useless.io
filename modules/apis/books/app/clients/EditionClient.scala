@@ -57,12 +57,13 @@ object GoogleEditionClient {
 }
 
 class GoogleEditionClient(
-  ws: WSClient
+  ws: WSClient,
+  apiKey: String
 ) extends EditionClient {
 
   def query(query: String)(implicit ec: ExecutionContext): Future[Seq[Edition]] = {
     val encodedQuery = URLEncoder.encode(query, "utf-8")
-    val url = "https://www.googleapis.com/books/v1/volumes?q=" + encodedQuery
+    val url = s"https://www.googleapis.com/books/v1/volumes?q=${encodedQuery}&key=${apiKey}"
     ws.url(url).get().map { response =>
       response.json.asOpt[JsObject].map {
         GoogleEditionClient.toEdition

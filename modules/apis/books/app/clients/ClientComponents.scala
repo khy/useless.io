@@ -15,7 +15,8 @@ trait ProdClientComponents extends ClientComponents {
   self: BuiltInComponents with NingWSComponents =>
 
   val accessTokenGuid = configuration.underlying.getUuid("books.accessTokenGuid")
+  val googleApiKey = configuration.underlying.getString("books.googleApiKey")
 
-  lazy val editionClient: EditionClient = new GoogleEditionClient(wsClient)
+  lazy val editionClient: EditionClient = new GoogleEditionClient(wsClient, googleApiKey)
 
 }
