@@ -20,21 +20,25 @@ class EditionService(
   import dbConfig.db
   import dbConfig.driver.api._
 
-  def getEditions(isbns: Seq[String])(implicit ec: ExecutionContext): Future[Seq[Edition]] = {
+  def getCachedEditions(isbns: Seq[String])(implicit ec: ExecutionContext): Future[Seq[Edition]] = {
     val query = EditionCache.filter { record =>
       record.isbn inSet isbns
     }
 
-    db.run(query.result).flatMap { records =>
-      val cachedEditions = db2api(records)
-      val missingIsbns = isbns.diff(records.map(_.isbn))
+    db.run(query.result).map(db2api)
+  }
 
-      if (missingIsbns.isEmpty) {
-        Future.successful(cachedEditions)
-      } else {
-        editionClient.findByIsbn(missingIsbns).map { newEditions =>
-          newEditions.foreach(cacheEdition)
-          newEditions ++ cachedEditions
+  def getEdition(isbn: String)(implicit ec: ExecutionContext): Future[Option[Edition]] = {
+    getCachedEditions(Seq(isbn)).flatMap { cachedEditions =>
+      cachedEditions.headOption.map { cachedEdition =>
+        Future.successful(Some(cachedEdition))
+      }.getOrElse {
+        editionClient.getByIsbn(isbn).flatMap { optNewEdition =>
+          optNewEdition.map { newEdition =>
+            cacheEdition(newEdition).map { _ => Some(newEdition) }
+          }.getOrElse {
+            Future.successful(None)
+          }
         }
       }
     }

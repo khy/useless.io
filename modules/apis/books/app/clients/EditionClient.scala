@@ -12,7 +12,7 @@ trait EditionClient {
 
   def query(query: String)(implicit ec: ExecutionContext): Future[Seq[Edition]]
 
-  def findByIsbn(isbns: Seq[String])(implicit ec: ExecutionContext): Future[Seq[Edition]]
+  def getByIsbn(isbn: String)(implicit ec: ExecutionContext): Future[Option[Edition]]
 
 }
 
@@ -71,12 +71,8 @@ class GoogleEditionClient(
     }
   }
 
-  def findByIsbn(isbns: Seq[String])(implicit ec: ExecutionContext): Future[Seq[Edition]] = {
-    val editionFutures = isbns.map { isbn =>
-      query("isbn:" + isbn)
-    }
-
-    Future.sequence(editionFutures).map(_.flatten)
+  def getByIsbn(isbn: String)(implicit ec: ExecutionContext): Future[Option[Edition]] = {
+    query("isbn:" + isbn).map(_.headOption)
   }
 
 }

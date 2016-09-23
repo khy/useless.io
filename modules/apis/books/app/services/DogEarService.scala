@@ -33,7 +33,7 @@ class DogEarService(
       accounts.filter(_.isDefined).map(_.get)
     }
 
-    val futEditions = editionService.getEditions(records.map(_.isbn))
+    val futEditions = editionService.getCachedEditions(records.map(_.isbn))
 
     for {
       accounts <- futAccounts
@@ -137,8 +137,8 @@ class DogEarService(
         )
       }
     } else {
-      editionService.getEditions(Seq(isbn)).flatMap { editions =>
-        editions.headOption.map { edition =>
+      editionService.getEdition(isbn).flatMap { optEdition =>
+        optEdition.map { edition =>
           if (pageNumber > edition.pageCount) {
             Future.successful {
               Validation.failure("pageNumber", "invalid-page-number",

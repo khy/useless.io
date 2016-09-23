@@ -21,12 +21,12 @@ class MockEditionClient(editions: Seq[Edition]) extends EditionClient {
     Future.successful(editions)
   }
 
-  def findByIsbn(isbns: Seq[String])(implicit ec: ExecutionContext) = {
-    val edition = editions.filter { edition =>
-      isbns.contains(edition.isbn)
+  def getByIsbn(isbn: String)(implicit ec: ExecutionContext) = {
+    val _editions = editions.filter { edition =>
+      edition.isbn == isbn
     }
 
-    Future.successful(edition)
+    Future.successful(_editions.headOption)
   }
 
 }
