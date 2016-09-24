@@ -67,8 +67,8 @@ class GoogleEditionClientSpec extends WordSpec with MustMatchers {
       edition.subtitle mustBe Some("A Novel")
       edition.authors mustBe Seq("Jeffrey Eugenides")
       edition.pageCount mustBe 416
-      edition.smallImageUrl mustBe Some("http://books.google.com/books/content?id=YPOixQM7VN0C&printsec=frontcover&img=1&zoom=2")
-      edition.largeImageUrl mustBe Some("http://books.google.com/books/content?id=YPOixQM7VN0C&printsec=frontcover&img=1&zoom=4")
+      edition.smallImageUrl mustBe Some("//books.google.com/books/content?id=YPOixQM7VN0C&printsec=frontcover&img=1&zoom=2")
+      edition.largeImageUrl mustBe Some("//books.google.com/books/content?id=YPOixQM7VN0C&printsec=frontcover&img=1&zoom=4")
       edition.publisher mustBe Some("Macmillan")
       edition.publishedAt mustBe Some(LocalDate.parse("2011-10-11"))
       edition.provider mustBe Provider.Google

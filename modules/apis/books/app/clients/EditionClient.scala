@@ -33,7 +33,7 @@ object GoogleEditionClient {
       val optId = (json \ "id").asOpt[String]
 
       def generateImageUrl(zoom: Int)  = optId.map { id =>
-        s"http://books.google.com/books/content?id=${id}&printsec=frontcover&img=1&zoom=${zoom}"
+        s"//books.google.com/books/content?id=${id}&printsec=frontcover&img=1&zoom=${zoom}"
       }
 
       optIsbn.map { isbn =>
