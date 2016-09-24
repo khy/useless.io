@@ -59,7 +59,7 @@ class AbstractApplicationComponents(context: Context)
   lazy val booksRouter = new Routes(
     httpErrorHandler,
     new Books(bookService),
-    new Editions(editionClient),
+    new Editions(editionClient, editionService),
     new DogEars(authenticated, dogEarService)
   )
 
