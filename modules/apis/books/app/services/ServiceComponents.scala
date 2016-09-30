@@ -15,4 +15,6 @@ trait ServiceComponents {
 
   lazy val editionService: EditionService = new EditionService(dbConfig, editionClient)
 
+  lazy val userEditionService: UserEditionService = new UserEditionService(dbConfig, editionService)
+
 }

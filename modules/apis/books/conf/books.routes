@@ -5,3 +5,5 @@ GET     /editions/:isbn   controllers.books.Editions.get(isbn: String)
 
 GET     /dogEars      controllers.books.DogEars.index
 POST    /dogEars      controllers.books.DogEars.create
+
+GET     /userEditions  controllers.books.UserEditions.index

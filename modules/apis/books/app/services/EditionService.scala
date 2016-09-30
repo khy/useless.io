@@ -44,7 +44,7 @@ class EditionService(
     }
   }
 
-  private def db2api(records: Seq[EditionCacheRecord]): Seq[Edition] = {
+  def db2api(records: Seq[EditionCacheRecord]): Seq[Edition] = {
     records.map { record =>
       Edition(
         isbn = record.isbn,

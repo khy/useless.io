@@ -120,11 +120,11 @@ class DogEarSpec extends IntegrationSpec {
     def buildNotes() {
       val isbn = MockEdition.theMarriagePlot1.isbn
       appHelper.clearDogEars()
-      appHelper.addNote(isbn, 34, Some("This is good, guy."))
-      appHelper.addNote(isbn, 57, Some("Amiright?"))
-      appHelper.addNote(isbn, 68, Some("What do you think?"))
-      appHelper.addNote(isbn, 103, Some("I'm feeling a little dizzy."))
-      appHelper.addNote(isbn, 140, Some("..."))
+      appHelper.addDogEar(isbn, 34, Some("This is good, guy."))
+      appHelper.addDogEar(isbn, 57, Some("Amiright?"))
+      appHelper.addDogEar(isbn, 68, Some("What do you think?"))
+      appHelper.addDogEar(isbn, 103, Some("I'm feeling a little dizzy."))
+      appHelper.addDogEar(isbn, 140, Some("..."))
     }
 
     "support unauthenticated requests" in {
@@ -138,7 +138,7 @@ class DogEarSpec extends IntegrationSpec {
 
     "return dog ears by guid" in {
       val isbn = MockEdition.theMarriagePlot1.isbn
-      val noteGuid = appHelper.addNote(isbn, 56, Some("A note."))
+      val noteGuid = appHelper.addDogEar(isbn, 56, Some("A note."))
 
       val response = await {
         request("/dogEars").withQueryString("guid" -> noteGuid.toString).get
@@ -152,9 +152,9 @@ class DogEarSpec extends IntegrationSpec {
 
     "return dog ears by bookTitle" in {
       appHelper.clearDogEars()
-      appHelper.addNote(MockEdition.theMarriagePlot1.isbn, 56, Some("Note #1"))
-      appHelper.addNote(MockEdition.iPassLikeNight1.isbn, 89, Some("Note #2"))
-      appHelper.addNote(MockEdition.theMarriagePlot2.isbn, 78, Some("Note #3"))
+      appHelper.addDogEar(MockEdition.theMarriagePlot1.isbn, 56, Some("Note #1"))
+      appHelper.addDogEar(MockEdition.iPassLikeNight1.isbn, 89, Some("Note #2"))
+      appHelper.addDogEar(MockEdition.theMarriagePlot2.isbn, 78, Some("Note #3"))
 
       val response = await {
         request("/dogEars").withQueryString("bookTitle" -> "The Marriage Plot").get

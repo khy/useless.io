@@ -25,7 +25,7 @@ class AppHelper(
     db.run(sqlu"delete from edition_cache")
   }
 
-  def addNote(isbn: String, pageNumber: Int, note: Option[String])(implicit accessToken: AccessToken): UUID = await {
+  def addDogEar(isbn: String, pageNumber: Int, note: Option[String])(implicit accessToken: AccessToken): UUID = await {
     dogEarService.addDogEar(isbn, pageNumber, note, accessToken).map(_.toSuccess.value.guid)
   }
 
