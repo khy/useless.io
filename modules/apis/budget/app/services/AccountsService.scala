@@ -6,13 +6,14 @@ import play.api.Application
 import slick.driver.PostgresDriver.api._
 import org.joda.time.DateTime
 import io.useless.accesstoken.AccessToken
+import io.useless.exception.service._
 import io.useless.pagination._
 import io.useless.validation._
 
 import models.budget.{Account, AccountType}
 import db.budget._
 import db.budget.util.DatabaseAccessor
-import services.budget.util.{UsersHelper, ResourceUnexpectedlyNotFound}
+import services.budget.util.UsersHelper
 
 object AccountsService {
 
@@ -56,7 +57,7 @@ class AccountsService(
           getOrElse(0.0)
 
         val contextGuid = contexts.find(_.id == record.contextId).map(_.guid).getOrElse {
-          throw new ResourceUnexpectedlyNotFound("Context", record.contextId)
+          throw new ResourceNotFound("Context", record.contextId)
         }
 
         Account(
@@ -161,7 +162,7 @@ class AccountsService(
             findAccounts(ids = Some(Seq(id))).map { result =>
               result.map(_.items.headOption) match {
                 case Validation.Success(Some(account)) => account
-                case _ => throw new ResourceUnexpectedlyNotFound("Account", id)
+                case _ => throw new ResourceNotFound("Account", id)
               }
             }
           }

@@ -7,6 +7,7 @@ import play.api.Application
 import slick.driver.PostgresDriver.api._
 import org.joda.time.{LocalDate, DateTime}
 import io.useless.accesstoken.AccessToken
+import io.useless.exception.service._
 import io.useless.pagination._
 import io.useless.validation._
 
@@ -54,22 +55,22 @@ class TransactionsService(
         Transaction(
           guid = record.guid,
           transactionTypeGuid = transactionTypes.find(_.id == record.transactionTypeId).map(_.guid).getOrElse {
-            throw new ResourceUnexpectedlyNotFound("TransactionType", record.transactionTypeId)
+            throw new ResourceNotFound("TransactionType", record.transactionTypeId)
           },
           accountGuid = accounts.find(_.id == record.accountId).map(_.guid).getOrElse {
-            throw new ResourceUnexpectedlyNotFound("Account", record.accountId)
+            throw new ResourceNotFound("Account", record.accountId)
           },
           amount = record.amount,
           date = new LocalDate(record.date),
           name = record.name,
           plannedTransactionGuid = record.plannedTransactionId.map { plannedTransactionId =>
             plannedTransactions.find(_.id == plannedTransactionId).map(_.guid).getOrElse {
-              throw new ResourceUnexpectedlyNotFound("PlannedTransaction", plannedTransactionId)
+              throw new ResourceNotFound("PlannedTransaction", plannedTransactionId)
             }
           },
           adjustedTransactionGuid = record.adjustedTransactionId.map { adjustedTransactionId =>
             transactions.find(_.id == adjustedTransactionId).map(_.guid).getOrElse {
-              throw new ResourceUnexpectedlyNotFound("Transaction", adjustedTransactionId)
+              throw new ResourceNotFound("Transaction", adjustedTransactionId)
             }
           },
           createdBy = users.find(_.guid == record.createdByAccount).getOrElse(UsersHelper.AnonUser),
@@ -287,7 +288,7 @@ class TransactionsService(
       findTransactions(ids = Some(Seq(id))).map { result =>
         result.map(_.items.headOption) match {
           case Validation.Success(Some(transaction)) => transaction
-          case _ => throw new ResourceUnexpectedlyNotFound("Transaction", id)
+          case _ => throw new ResourceNotFound("Transaction", id)
         }
       }
     }
@@ -328,7 +329,7 @@ class TransactionsService(
         case Validation.Success(None) => Future.successful {
           Validation.failure("transactionGuid", "useless.error.unknownGuid", "specified" -> transactionGuid.toString)
         }
-        case f: Validation.Failure[_] => throw new UnexpectedValidationFailure(f)
+        case f: Validation.Failure[_] => throw new InvalidState(s"A validation failed [${f}]")
       }
     }
   }

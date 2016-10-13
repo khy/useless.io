@@ -7,6 +7,7 @@ import play.api.Application
 import slick.driver.PostgresDriver.api._
 import org.joda.time.{LocalDate, DateTime}
 import io.useless.accesstoken.AccessToken
+import io.useless.exception.service._
 import io.useless.pagination._
 import io.useless.validation._
 
@@ -143,7 +144,7 @@ class ContextsService(
         findContexts(ids = Some(Seq(contextId))).map { result =>
           result.map(_.items.headOption) match {
             case Validation.Success(Some(context)) => Validation.success(context)
-            case _ => throw new ResourceUnexpectedlyNotFound("Context", contextId)
+            case _ => throw new ResourceNotFound("Context", contextId)
           }
         }
       }
@@ -182,7 +183,7 @@ class ContextsService(
           findContexts(ids = Some(Seq(contextId))).map { result =>
             result.map(_.items.headOption) match {
               case Validation.Success(Some(context)) => Validation.success(context)
-              case _ => throw new ResourceUnexpectedlyNotFound("Context", contextId)
+              case _ => throw new ResourceNotFound("Context", contextId)
             }
           }
         }

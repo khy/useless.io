@@ -6,6 +6,7 @@ import play.api.Application
 import slick.driver.PostgresDriver.api._
 import org.joda.time.DateTime
 import io.useless.accesstoken.AccessToken
+import io.useless.exception.service._
 import io.useless.pagination._
 import io.useless.validation._
 
@@ -13,7 +14,7 @@ import models.budget.{TransactionType, TransactionTypeOwnership}
 import db.budget._
 import db.budget.util.DatabaseAccessor
 import db.budget.util.SqlUtil
-import services.budget.util.{UsersHelper, ResourceUnexpectedlyNotFound}
+import services.budget.util.UsersHelper
 
 object TransactionTypesService {
 
@@ -204,7 +205,7 @@ class TransactionTypesService(
               findTransactionTypes(ids = Some(Seq(id))).map { result =>
                 result.map(_.items.headOption) match {
                   case Validation.Success(Some(transactionType)) => transactionType
-                  case _ => throw new ResourceUnexpectedlyNotFound("TransactionGroup", id)
+                  case _ => throw new ResourceNotFound("TransactionGroup", id)
                 }
               }
             }
@@ -284,7 +285,7 @@ class TransactionTypesService(
             findTransactionTypes(ids = Some(Seq(transactionType.id))).map { result =>
               result.map(_.items.headOption) match {
                 case Validation.Success(Some(transactionType)) => transactionType
-                case _ => throw new ResourceUnexpectedlyNotFound("TransactionType", transactionType.id)
+                case _ => throw new ResourceNotFound("TransactionType", transactionType.id)
               }
             }
           }

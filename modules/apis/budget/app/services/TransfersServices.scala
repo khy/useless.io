@@ -7,6 +7,7 @@ import play.api.Application
 import slick.driver.PostgresDriver.api._
 import org.joda.time.{LocalDate, DateTime}
 import io.useless.accesstoken.AccessToken
+import io.useless.exception.service._
 import io.useless.pagination._
 import io.useless.validation._
 
@@ -54,10 +55,10 @@ class TransfersService(
         Transfer(
           guid = record.guid,
           fromTransaction = transactionMap.get(record.fromTransactionId).getOrElse {
-            throw new ResourceUnexpectedlyNotFound("Transaction", record.fromTransactionId)
+            throw new ResourceNotFound("Transaction", record.fromTransactionId)
           },
           toTransaction = transactionMap.get(record.toTransactionId).getOrElse {
-            throw new ResourceUnexpectedlyNotFound("Transaction", record.toTransactionId)
+            throw new ResourceNotFound("Transaction", record.toTransactionId)
           },
           createdBy = users.find(_.guid == record.createdByAccount).getOrElse(UsersHelper.AnonUser),
           createdAt = new DateTime(record.createdAt)
@@ -95,7 +96,7 @@ class TransfersService(
     val transactionTypeQuery = TransactionTypes.filter(_.name === "Transfer").map(_.guid)
     val futTransferGuid = database.run(transactionTypeQuery.result).map { results =>
       results.headOption.getOrElse {
-        throw new ResourceUnexpectedlyNotFound("TransactionType", "Transfer")
+        throw new ResourceNotFound("TransactionType", "Transfer")
       }
     }
 
@@ -169,7 +170,7 @@ class TransfersService(
               findTransfers(ids = Some(Seq(id))).map { result =>
                 result.map(_.items.headOption) match {
                   case Validation.Success(Some(transfer)) => transfer
-                  case _ => throw new ResourceUnexpectedlyNotFound("Transfer", id)
+                  case _ => throw new ResourceNotFound("Transfer", id)
                 }
               }
             }

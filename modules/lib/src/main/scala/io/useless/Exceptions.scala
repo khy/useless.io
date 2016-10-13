@@ -14,6 +14,10 @@ package io.useless.exception.service {
       this(resourceType, guid.toString, "GUID")
     }
 
+    def this(resourceType: String, id: Long) = {
+      this(resourceType, id.toString)
+    }
+
   }
 
 }

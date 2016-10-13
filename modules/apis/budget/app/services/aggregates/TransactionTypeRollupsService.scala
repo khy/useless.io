@@ -7,12 +7,12 @@ import play.api.Application
 import slick.driver.PostgresDriver.api._
 import org.joda.time.LocalDate
 import io.useless.accesstoken.AccessToken
+import io.useless.exception.service._
 import io.useless.validation._
 
 import db.budget._
 import db.budget.util.DatabaseAccessor
 import services.budget.TransactionTypesService
-import services.budget.util.ResourceUnexpectedlyNotFound
 import models.budget.aggregates.TransactionTypeRollup
 
 object TransactionTypeRollupsService {
@@ -74,7 +74,7 @@ class TransactionTypeRollupsService(
           val transactionType = transactionTypeRecords.find(_.id == transactionTypeId).flatMap { record =>
             transactionTypeModels.find(_.guid == record.guid)
           }.getOrElse {
-            throw new ResourceUnexpectedlyNotFound("TransactionType", transactionTypeId)
+            throw new ResourceNotFound("TransactionType", transactionTypeId)
           }
 
           TransactionTypeRollup(transactionType, fromDate, toDate, optAmountSum.getOrElse(0.0))

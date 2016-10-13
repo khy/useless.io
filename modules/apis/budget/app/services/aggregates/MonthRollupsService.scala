@@ -6,13 +6,13 @@ import play.api.Application
 import slick.driver.PostgresDriver.api._
 import org.joda.time.LocalDate
 import io.useless.accesstoken.AccessToken
+import io.useless.exception.service._
 import io.useless.pagination._
 import io.useless.validation._
 
 import db.budget._
 import db.budget.util.DatabaseAccessor
 import services.budget.TransactionTypesService
-import services.budget.util.ResourceUnexpectedlyNotFound
 import models.budget.aggregates.MonthRollup
 
 object MonthRollupsService {

@@ -7,6 +7,7 @@ import play.api.Application
 import slick.driver.PostgresDriver.api._
 import org.joda.time.{LocalDate, DateTime}
 import io.useless.accesstoken.AccessToken
+import io.useless.exception.service._
 import io.useless.pagination._
 import io.useless.validation._
 
@@ -48,7 +49,7 @@ class PlannedTransactionsService(
       transactionService.records2models(records).map { models =>
         models.map { model =>
           val record = records.find(_.guid == model.guid).getOrElse {
-            throw new ResourceUnexpectedlyNotFound("Transaction", model.guid)
+            throw new ResourceNotFound("Transaction", model.guid)
           }
 
           (record.plannedTransactionId, model)
@@ -66,10 +67,10 @@ class PlannedTransactionsService(
         PlannedTransaction(
           guid = record.guid,
           transactionTypeGuid = transactionTypes.find(_.id == record.transactionTypeId).map(_.guid).getOrElse {
-            throw new ResourceUnexpectedlyNotFound("TransactionType", record.transactionTypeId)
+            throw new ResourceNotFound("TransactionType", record.transactionTypeId)
           },
           accountGuid = accounts.find(_.id == record.accountId).map(_.guid).getOrElse {
-            throw new ResourceUnexpectedlyNotFound("Account", record.accountId)
+            throw new ResourceNotFound("Account", record.accountId)
           },
           minAmount = record.minAmount,
           maxAmount = record.maxAmount,
@@ -282,7 +283,7 @@ class PlannedTransactionsService(
             findPlannedTransactions(ids = Some(Seq(id))).map { result =>
               result.map(_.items.headOption) match {
                 case Validation.Success(Some(plannedTransaction)) => plannedTransaction
-                case _ => throw new ResourceUnexpectedlyNotFound("PlannedTransaction", id)
+                case _ => throw new ResourceNotFound("PlannedTransaction", id)
               }
             }
           }
