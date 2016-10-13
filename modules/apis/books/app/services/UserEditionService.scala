@@ -4,7 +4,9 @@ import java.util.UUID
 import java.sql.Date
 import scala.concurrent.{ExecutionContext, Future}
 import slick.backend.DatabaseConfig
+import org.joda.time.DateTime
 import io.useless.typeclass.Identify
+import io.useless.exception.service._
 import io.useless.pagination._
 import io.useless.validation._
 
@@ -47,8 +49,8 @@ class UserEditionService(
         }
       }
 
-      val pagedDogEarsQuery = dogEarsQuery.sortBy { case (_, _, lastCreatedAt) =>
-        lastCreatedAt
+      val pagedDogEarsQuery = dogEarsQuery.sortBy { case (_, _, lastDogEaredAt) =>
+        lastDogEaredAt.desc
       }.take(paginationParams.limit)
 
       db.run(pagedDogEarsQuery.result).flatMap { results =>
@@ -56,9 +58,19 @@ class UserEditionService(
         val editionQuery = EditionCache.filter(_.isbn inSet isbns)
 
         db.run(editionQuery.result).map { editionRecords =>
-          val userEditions = editionService.db2api(editionRecords).map { edition =>
-            UserEdition(edition)
+          val editions = editionService.db2api(editionRecords)
+
+          val userEditions = results.map { case (isbn, _, optLastDogEaredAt) =>
+            UserEdition(
+              lastDogEaredAt = optLastDogEaredAt.
+                map { lastDogEaredAt => new DateTime(lastDogEaredAt) }.
+                getOrElse { throw new InvalidState("No lastDogEaredAt aggregation available")},
+              edition = editions.
+                find { edition => edition.isbn == isbn }.
+                getOrElse { throw new ResourceNotFound("Edition", isbn, "isbn")}
+            )
           }
+
           PaginatedResult.build(userEditions, paginationParams)
         }
       }

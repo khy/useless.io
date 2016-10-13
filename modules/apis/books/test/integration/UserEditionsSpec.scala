@@ -31,8 +31,10 @@ class UserEditionsSpec extends IntegrationSpec {
 
       val response = await { request(s"/userEditions?userGuid=${khyAccessToken.resourceOwner.guid}").get }
       response.status mustBe OK
-      val books = response.json.as[Seq[UserEdition]]
-      books.length mustBe 2
+
+      val userEditions = response.json.as[Seq[UserEdition]]
+      userEditions.length mustBe 2
+      userEditions.head.edition.isbn mustBe MockEdition.theMarriagePlot2.isbn
     }
 
   }

@@ -10,6 +10,7 @@ import io.useless.Message
 import io.useless.account.Account
 import io.useless.accesstoken.AccessToken
 import io.useless.client.account.AccountClient
+import io.useless.exception.service._
 import io.useless.pagination._
 import io.useless.validation._
 
@@ -49,7 +50,7 @@ class DogEarService(
         val user = accounts.find { account =>
           account.guid == record.createdByAccount
         }.getOrElse {
-          throw new ResourceUnexpectedlyNotFound("User", record.createdByAccount)
+          throw new ResourceNotFound("User", record.createdByAccount)
         }
 
         DogEar(record.guid, edition, record.pageNumber, record.note, user, new DateTime(record.createdAt))
@@ -150,7 +151,7 @@ class DogEarService(
             insertDogEar(isbn, pageNumber, note, accessToken).flatMap { newGuid =>
               db.run(DogEars.filter(_.guid === newGuid).result).map { records =>
                 val record = records.headOption.getOrElse {
-                  throw new ResourceUnexpectedlyNotFound("Note", newGuid)
+                  throw new ResourceNotFound("Note", newGuid)
                 }
 
                 Validation.success(record)
