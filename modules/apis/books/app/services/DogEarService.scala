@@ -75,7 +75,7 @@ class DogEarService(
       // It's unclear to me why, but sortBy needs to go first.
       var query = DogEars.sortBy { sort =>
         paginationParams.order match {
-          case "pageNumber" => sort.pageNumber.desc
+          case "pageNumber" => sort.pageNumber.asc
           case _ => sort.createdAt.desc
         }
       }
