@@ -272,7 +272,7 @@ class DogEarSpec extends IntegrationSpec {
       response.status mustBe OK
       val dogEars = Json.parse(response.body).as[Seq[JsValue]]
       val notes = dogEars.map { note => (note \ "note").as[String] }
-      notes mustBe Seq("123", "92", "45")
+      notes mustBe Seq("45", "92", "123")
     }
 
   }
