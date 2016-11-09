@@ -12,8 +12,8 @@ import io.useless.util.configuration.RichConfiguration._
 
 import workouts.Routes
 import controllers.workouts._
-// import services.books.db.DbConfigComponents
-// import services.books.ServiceComponents
+import db.workouts.DbConfigComponents
+import services.workouts.ServiceComponents
 
 object ApplicationComponents {
 
@@ -41,8 +41,8 @@ class AbstractApplicationComponents(context: Context)
   with AuthenticatedComponents
   with NingWSComponents
   with SlickComponents
-  // with DbConfigComponents
-  // with ServiceComponents
+  with DbConfigComponents
+  with ServiceComponents
 {
 
   self: AccountClientComponents with AccessTokenClientComponents =>
@@ -53,7 +53,7 @@ class AbstractApplicationComponents(context: Context)
 
   lazy val workoutsRouter = new Routes(
     httpErrorHandler,
-    new MovementsController(authenticated)
+    new MovementsController(authenticated, movementsService)
   )
 
 }

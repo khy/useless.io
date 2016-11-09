@@ -10,8 +10,13 @@ import io.useless.play.json.validation.ErrorsJson._
 import io.useless.play.pagination.PaginationController
 import io.useless.play.authentication.Authenticated
 
+import models.workouts._
+import models.workouts.JsonImplicits._
+import services.workouts.MovementsService
+
 class MovementsController(
-  authenticated: Authenticated
+  authenticated: Authenticated,
+  movementsService: MovementsService
 ) extends Controller with PaginationController {
 
   def index = Action.async { implicit request =>
@@ -19,14 +24,26 @@ class MovementsController(
   }
 
   case class CreateData(
-    name: String
+    name: String,
+    variables: Option[Seq[Variable]]
   )
   private implicit val cdr = Json.reads[CreateData]
 
   def create = authenticated.async(parse.json) { request =>
     request.body.validate[CreateData].fold(
       error => Future.successful(BadRequest(error.toString)),
-      data => Future.successful(Ok)
+      data => movementsService.addMovement(
+        name = data.name,
+        variables = data.variables,
+        accessToken = request.accessToken
+      ).flatMap { result =>
+        result.fold(
+          error => Future.successful(Conflict(Json.toJson(error))),
+          movement => movementsService.db2api(Seq(movement)).map { movements =>
+            Created(Json.toJson(movements.head))
+          }
+        )
+      }
     )
   }
 
