@@ -6,3 +6,5 @@ libraryDependencies ++= Default.DependencyGroup.postgres ++  Seq(
 )
 
 routesGenerator := InjectedRoutesGenerator
+
+// testOptions in Test += Tests.Argument("-oF")

@@ -12,11 +12,11 @@ import io.useless.play.authentication.Authenticated
 
 import models.workouts._
 import models.workouts.JsonImplicits._
-import services.workouts.MovementsService
+import services.workouts.WorkoutsService
 
-class MovementsController(
+class WorkoutsController(
   authenticated: Authenticated,
-  movementsService: MovementsService
+  workoutsService: WorkoutsService
 ) extends Controller with PaginationController {
 
   def index = Action.async { implicit request =>
@@ -24,16 +24,16 @@ class MovementsController(
   }
 
   def create = authenticated.async(parse.json) { request =>
-    request.body.validate[core.Movement].fold(
+    request.body.validate[core.Workout].fold(
       error => Future.successful(BadRequest(error.toString)),
-      movement => movementsService.addMovement(
-        movement = movement,
+      workout => workoutsService.addWorkout(
+        workout = workout,
         accessToken = request.accessToken
       ).flatMap { result =>
         result.fold(
           error => Future.successful(Conflict(Json.toJson(error))),
-          movement => movementsService.db2api(Seq(movement)).map { movements =>
-            Created(Json.toJson(movements.head))
+          workout => workoutsService.db2api(Seq(workout)).map { workouts =>
+            Created(Json.toJson(workouts.head))
           }
         )
       }

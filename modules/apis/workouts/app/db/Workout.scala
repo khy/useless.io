@@ -6,7 +6,7 @@ import play.api.libs.json.JsValue
 
 import Driver.api._
 
-case class MovementRecord(
+case class WorkoutRecord(
   guid: UUID,
   schemaVersionMajor: Int,
   schemaVersionMinor: Int,
@@ -19,17 +19,17 @@ case class MovementRecord(
   deletedByAccessToken: Option[UUID]
 )
 
-class MovementTable(tag: Tag)
-  extends Table[MovementRecord](tag, "movements")
-  with SchemaData[MovementRecord]
-  with AuditData[MovementRecord]
+class WorkoutTable(tag: Tag)
+  extends Table[WorkoutRecord](tag, "workouts")
+  with SchemaData[WorkoutRecord]
+  with AuditData[WorkoutRecord]
 {
   def guid = column[UUID]("guid")
   def json = column[JsValue]("json")
 
   def * = (guid, schemaVersionMajor, schemaVersionMinor, json, createdAt,
     createdByAccount, createdByAccessToken, deletedAt, deletedByAccount,
-    deletedByAccessToken) <> (MovementRecord.tupled, MovementRecord.unapply)
+    deletedByAccessToken) <> (WorkoutRecord.tupled, WorkoutRecord.unapply)
 }
 
-object Movements extends TableQuery(new MovementTable(_))
+object Workouts extends TableQuery(new WorkoutTable(_))

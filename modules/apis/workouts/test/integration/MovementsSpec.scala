@@ -3,12 +3,7 @@ package test.workouts.integration
 import java.util.UUID
 import play.api.test._
 import play.api.test.Helpers._
-import play.api.libs.ws.WS
 import play.api.libs.json._
-import org.scalatest._
-import org.scalatestplus.play._
-import io.useless.accesstoken.AccessToken
-import io.useless.http.LinkHeader
 
 import models.workouts._
 import models.workouts.JsonImplicits._

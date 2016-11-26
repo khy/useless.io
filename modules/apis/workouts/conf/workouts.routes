@@ -1,1 +1,3 @@
+POST /workouts    controllers.workouts.WorkoutsController.create
+
 POST /movements   controllers.workouts.MovementsController.create

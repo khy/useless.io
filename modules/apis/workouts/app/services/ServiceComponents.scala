@@ -8,4 +8,6 @@ trait ServiceComponents {
 
   val movementsService = new MovementsService(dbConfig)
 
+  val workoutsService = new WorkoutsService(dbConfig)
+
 }
