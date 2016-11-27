@@ -43,6 +43,17 @@ class MovementsService(
     movement: core.Movement,
     accessToken: AccessToken
   )(implicit ec: ExecutionContext): Future[Validation[MovementRecord]] = {
+    movement.variables.foreach { variables =>
+      val dupNames = variables.groupBy(_.name).
+        filter { case (_, variables) => variables.length > 1 }.
+        map { case (name, _ ) => name }
+
+      if (dupNames.size > 0) {
+        return Future.successful(Validation.failure("variables", "duplicateNames",
+          dupNames.zipWithIndex.map { case (name, index) => ("name" + (index + 1)) -> name }.toSeq:_*))
+      }
+    }
+
     val projection = Movements.map { r =>
       (r.guid, r.schemaVersionMajor, r.schemaVersionMinor, r.json,
        r.createdByAccount, r.createdByAccessToken)
