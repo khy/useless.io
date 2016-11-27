@@ -19,6 +19,7 @@ object UnitOfMeasure {
   val Pound = weight("lbs")
   val Kilogram = weight("kg")
   val Pood = weight("pood")
+  val values = Seq(Pound, Kilogram, Pood)
 }
 
 case class Measurement(

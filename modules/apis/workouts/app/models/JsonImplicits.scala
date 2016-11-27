@@ -25,7 +25,20 @@ object JsonImplicits {
     }
   }
 
-  implicit val unitOfMeasureFormat = Json.format[UnitOfMeasure]
+  implicit object UnitOfMeasureFormat extends Format[UnitOfMeasure] {
+    def reads(json: JsValue): JsResult[UnitOfMeasure] = json match {
+      case JsString(raw) => UnitOfMeasure.values.find { unitOfMeasure =>
+        unitOfMeasure.symbol == raw
+      }.map { unitOfMeasure =>
+        JsSuccess(unitOfMeasure)
+      }.getOrElse {
+        JsError(Seq(JsPath() -> Seq(ValidationError("validate.error.expected.unitOfMeasure.format"))))
+      }
+      case _ => JsError(Seq(JsPath() -> Seq(ValidationError("validate.error.expected.string"))))
+    }
+    def writes(unitOfMeasure: UnitOfMeasure): JsValue = JsString(unitOfMeasure.symbol)
+  }
+
   implicit val measurementFormat = Json.format[Measurement]
   implicit val variableFormat = Json.format[Variable]
   implicit val movementFormat = Json.format[Movement]

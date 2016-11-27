@@ -65,7 +65,7 @@ class WorkoutsSpec extends IntegrationSpec {
                 "variables": [
                   {
                     "name": "Barbell Weight",
-                    "measurment": {
+                    "measurement": {
                       "unitOfMeasure": "lbs",
                       "value": 95
                     }
@@ -78,6 +78,24 @@ class WorkoutsSpec extends IntegrationSpec {
       """)) }
 
       response.status mustBe CREATED
+
+      val workout = response.json.as[Workout]
+      workout.name mustBe Some("Barbell Half Angie")
+      workout.reps mustBe Some(1)
+      workout.score mustBe Some("time")
+
+      val pullUpTask = workout.tasks.get(0)
+      pullUpTask.reps mustBe Some(100)
+      pullUpTask.movement.get.guid mustBe pullUp.guid
+
+      val pushJerkTask = workout.tasks.get(1)
+      pushJerkTask.reps mustBe Some(100)
+      pushJerkTask.movement.get.guid mustBe pushJerk.guid
+
+      val barbellWeightVar = pushJerkTask.movement.get.variables.get(0)
+      barbellWeightVar.name mustBe "Barbell Weight"
+      barbellWeightVar.measurement.get.unitOfMeasure mustBe UnitOfMeasure.Pound
+      barbellWeightVar.measurement.get.value mustBe 95
     }
 
   }
