@@ -121,11 +121,10 @@ class MovementsSpec extends IntegrationSpec {
       }
 
       response.status mustBe BAD_REQUEST
-      val variableErrors = response.json.as[Seq[Errors]].head
-      variableErrors.key mustBe Some("variables")
-      val message = variableErrors.messages.head
-      message.key mustBe "duplicateNames"
-      message.details("name1") mustBe "Ball Weight"
+      val scalarErrors = response.json.as[Seq[Errors]].head
+      val message = scalarErrors.messages.head
+      message.key mustBe "duplicateVariableName"
+      message.details("name") mustBe "Ball Weight"
     }
 
   }

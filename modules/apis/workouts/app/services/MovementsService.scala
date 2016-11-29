@@ -49,8 +49,14 @@ class MovementsService(
         map { case (name, _ ) => name }
 
       if (dupNames.size > 0) {
-        return Future.successful(Validation.failure("variables", "duplicateNames",
-          dupNames.zipWithIndex.map { case (name, index) => ("name" + (index + 1)) -> name }.toSeq:_*))
+        val errors = Errors.scalar(dupNames.map { dupName =>
+          Message(
+            key = "duplicateVariableName",
+            details = "name" -> dupName
+          )
+        }.toSeq)
+
+        return Future.successful(Validation.failure(Seq(errors)))
       }
     }
 
