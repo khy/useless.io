@@ -31,7 +31,7 @@ class WorkoutsController(
         accessToken = request.accessToken
       ).flatMap { result =>
         result.fold(
-          error => Future.successful(Conflict(Json.toJson(error))),
+          error => Future.successful(BadRequest(Json.toJson(error))),
           workout => workoutsService.db2api(Seq(workout)).map { workouts =>
             Created(Json.toJson(workouts.head))
           }

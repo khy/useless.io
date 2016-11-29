@@ -15,11 +15,13 @@ package core {
     name: Option[String],
     reps: Option[Int],
     score: Option[String],
-    tasks: Option[Seq[SubTask]]
+    tasks: Option[Seq[SubTask]],
+    movement: Option[TaskMovement]
   )
 
   case class SubTask(
     reps: Option[Int], // must change
+    //tasks: Option[Seq[SubTask]],
     movement: Option[TaskMovement]
   )
 

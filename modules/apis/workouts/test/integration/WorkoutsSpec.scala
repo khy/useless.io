@@ -4,6 +4,8 @@ import java.util.UUID
 import play.api.test._
 import play.api.test.Helpers._
 import play.api.libs.json._
+import io.useless.validation.Errors
+import io.useless.play.json.validation.ErrorsJson._
 
 import models.workouts._
 import models.workouts.JsonImplicits._
@@ -21,7 +23,37 @@ class WorkoutsSpec extends IntegrationSpec {
       response.status mustBe UNAUTHORIZED
     }
 
-    "create a movement that has variables" in {
+    "reject a workout that references a non-existant movement" in {
+      val badMovementGuid = UUID.randomUUID
+      val response = await { request("/workouts").post(Json.parse(s"""
+        {
+          "name": "1 Rep Max",
+          "reps": 1,
+          "movement": {
+            "guid": "${badMovementGuid}",
+            "score": "Barbell Weight",
+            "variables": [
+              {
+                "name": "Barbell Weight",
+                "measurement": {
+                  "unitOfMeasure": "lbs",
+                  "value": 95
+                }
+              }
+            ]
+          }
+        }
+      """)) }
+
+      response.status mustBe BAD_REQUEST
+
+      val scalarErrors = response.json.as[Seq[Errors]].head
+      val message = scalarErrors.messages.head
+      message.key mustBe "unknownWorkoutGuid"
+      message.details("guid") mustBe badMovementGuid.toString
+    }
+
+    "create a workout with subtasks" in {
       val pullUpResponse = await {
         request("/movements").post(Json.parse("""
           {
