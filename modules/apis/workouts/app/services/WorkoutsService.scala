@@ -50,16 +50,20 @@ class WorkoutsService(
     //   subTasks.flatMap(_.movement.map(_.guid)) ++ getMovementGuids(subTasks.flatMap(_.tasks.getOrElse(Nil)))
     // }
 
-    val movementGuids = workout.movement.map(_.guid).toSeq ++ workout.tasks.getOrElse(Nil).flatMap(_.movement.map(_.guid))
+    val movementGuids = workout.movement.map(_.guid).toSeq ++
+      workout.tasks.getOrElse(Nil).flatMap(_.movement.map(_.guid))
     //getMovementGuids(workout.tasks.getOrElse(Nil))
 
     val movementsQuery = Movements.filter(_.guid.inSet(movementGuids))
-    val futOptUnknownGuidErrors = db.run(movementsQuery.result).map { movements =>
+
+    db.run(movementsQuery.result).flatMap { movements =>
+
+      // Validation 1: Find unknown workout guids
       val badGuids = movementGuids.filterNot { movementGuid =>
         movements.map(_.guid).contains(movementGuid)
       }
 
-      if (badGuids.size > 0) {
+      val optUnknownGuidErrors = if (badGuids.size > 0) {
         Some(Errors.scalar(badGuids.map { badGuid =>
           Message(
             key = "unknownWorkoutGuid",
@@ -69,35 +73,43 @@ class WorkoutsService(
       } else {
         None
       }
-    }
 
-    for {
-      optUnknownGuidErrors <- futOptUnknownGuidErrors
-      result <- {
-        optUnknownGuidErrors.map { unknownGuidErrors =>
-          Future.successful(Validation.failure(Seq(unknownGuidErrors)))
-        }.getOrElse {
-          val projection = Workouts.map { r =>
-            (r.guid, r.schemaVersionMajor, r.schemaVersionMinor, r.json,
-             r.createdByAccount, r.createdByAccessToken)
-          }.returning(Workouts.map(_.guid))
+      // Validation 2: Ensure that there's exactly one score
+      val scores = workout.score.toSeq ++
+        workout.movement.flatMap(_.score).toSeq ++
+        workout.tasks.map(_.flatMap(_.movement.flatMap(_.score))).getOrElse(Nil)
 
-          val insert = projection += ((UUID.randomUUID, 1, 0, Json.toJson(workout),
-            accessToken.resourceOwner.guid, accessToken.guid))
+      val optScoreErrors = if (scores.size == 0) {
+        Some(Errors.scalar(Seq(Message(key = "noScoreSpecified"))))
+      } else {
+        None
+      }
 
-          db.run(insert).flatMap { guid =>
-            val query = Workouts.filter(_.guid === guid)
-            db.run(query.result).map { workouts =>
-              workouts.headOption.map { workout =>
-                Validation.success(workout)
-              }.getOrElse {
-                throw new ResourceNotFound("workout", guid)
-              }
+      val errors = optUnknownGuidErrors.toSeq ++ optScoreErrors.toSeq
+
+      if (!errors.isEmpty) {
+        Future.successful(Validation.failure(errors))
+      } else {
+        val projection = Workouts.map { r =>
+          (r.guid, r.schemaVersionMajor, r.schemaVersionMinor, r.json,
+           r.createdByAccount, r.createdByAccessToken)
+        }.returning(Workouts.map(_.guid))
+
+        val insert = projection += ((UUID.randomUUID, 1, 0, Json.toJson(workout),
+          accessToken.resourceOwner.guid, accessToken.guid))
+
+        db.run(insert).flatMap { guid =>
+          val query = Workouts.filter(_.guid === guid)
+          db.run(query.result).map { workouts =>
+            workouts.headOption.map { workout =>
+              Validation.success(workout)
+            }.getOrElse {
+              throw new ResourceNotFound("workout", guid)
             }
           }
         }
       }
-    } yield result
+    }
   }
 
 }

@@ -53,30 +53,44 @@ class WorkoutsSpec extends IntegrationSpec {
       message.details("guid") mustBe badMovementGuid.toString
     }
 
-    "create a workout with subtasks" in {
-      val pullUpResponse = await {
-        request("/movements").post(Json.parse("""
-          {
-            "name": "Pull Up"
-          }
-        """))
-      }
-      val pullUp = pullUpResponse.json.as[Movement]
-
-      val pushJerkResponse = await {
-        request("/movements").post(Json.parse("""
-          {
-            "name": "Push Jerk",
+    "reject a workout that has no score" in {
+      val movement = testHelper.createMovement()
+      val response = await { request("/workouts").post(Json.parse(s"""
+        {
+          "name": "1 Rep",
+          "reps": 1,
+          "movement": {
+            "guid": "${movement.guid}",
             "variables": [
               {
                 "name": "Barbell Weight",
-                "dimension": "weight"
+                "measurement": {
+                  "unitOfMeasure": "lbs",
+                  "value": 95
+                }
               }
             ]
           }
-        """))
-      }
-      val pushJerk = pushJerkResponse.json.as[Movement]
+        }
+      """)) }
+
+      response.status mustBe BAD_REQUEST
+      val scalarErrors = response.json.as[Seq[Errors]].head
+      val message = scalarErrors.messages.head
+      message.key mustBe "noScoreSpecified"
+    }
+
+    "create a workout with subtasks" in {
+      val pullUp = testHelper.createMovement("Pull Up")
+
+      val pushJerk = testHelper.createMovement(
+        name = "Push Jerk",
+        variables = Some(Seq(Variable(
+          name = "Barbell Weight",
+          dimension = Some(Dimension.Weight),
+          measurement = None
+        )))
+      )
 
       val response = await { request("/workouts").post(Json.parse(s"""
         {
