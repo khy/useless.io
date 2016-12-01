@@ -11,7 +11,7 @@ import models.workouts._
 import models.workouts.JsonImplicits._
 import test.workouts._
 
-class WorkoutScoreSpec extends IntegrationSpec {
+class ScoreSpec extends IntegrationSpec {
 
   val movement = testHelper.createMovement()
 
