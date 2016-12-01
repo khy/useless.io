@@ -46,13 +46,17 @@ class WorkoutsService(
     workout: core.Workout,
     accessToken: AccessToken
   )(implicit ec: ExecutionContext): Future[Validation[WorkoutRecord]] = {
-    // def getMovementGuids(subTasks: Seq[core.SubTask]): Seq[UUID] = {
-    //   subTasks.flatMap(_.movement.map(_.guid)) ++ getMovementGuids(subTasks.flatMap(_.tasks.getOrElse(Nil)))
-    // }
+    def getMovementGuids(subTasks: Seq[core.SubTask]): Seq[UUID] = {
+      if (!subTasks.isEmpty) {
+        subTasks.flatMap(_.movement.map(_.guid)) ++
+        getMovementGuids(subTasks.flatMap(_.tasks.getOrElse(Nil)))
+      } else {
+        Nil
+      }
+    }
 
     val movementGuids = workout.movement.map(_.guid).toSeq ++
-      workout.tasks.getOrElse(Nil).flatMap(_.movement.map(_.guid))
-    //getMovementGuids(workout.tasks.getOrElse(Nil))
+      getMovementGuids(workout.tasks.getOrElse(Nil))
 
     val movementsQuery = Movements.filter(_.guid.inSet(movementGuids))
 
