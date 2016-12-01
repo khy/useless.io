@@ -1,6 +1,7 @@
 package models.workouts
 
 import play.api.libs.json._
+import play.api.libs.functional.syntax._
 import play.api.data.validation.ValidationError
 
 object JsonImplicits {
@@ -39,13 +40,21 @@ object JsonImplicits {
     def writes(unitOfMeasure: UnitOfMeasure): JsValue = JsString(unitOfMeasure.symbol)
   }
 
+
+
   implicit val measurementFormat = Json.format[Measurement]
   implicit val variableFormat = Json.format[Variable]
   implicit val movementFormat = Json.format[Movement]
 
   implicit val coreMovementFormat = Json.format[core.Movement]
   implicit val coreTaskMovementFormat = Json.format[core.TaskMovement]
-  implicit val coreSubTaskFormat = Json.format[core.SubTask]
+
+  implicit val coreSubTaskFormat: Format[core.SubTask] = (
+    (__ \ "reps").formatNullable[Int] and
+    (__ \ "tasks").lazyFormatNullable(implicitly[Format[Seq[core.SubTask]]]) and
+    (__ \ "movement").formatNullable[core.TaskMovement]
+  )(core.SubTask.apply, unlift(core.SubTask.unapply))
+
   implicit val coreWorkoutFormat = Json.format[core.Workout]
 
   implicit val taskMovementFormat = Json.format[TaskMovement]
