@@ -11,7 +11,7 @@ import models.workouts._
 import models.workouts.JsonImplicits._
 import test.workouts._
 
-class WorkoutsSpec extends IntegrationSpec {
+class BasicSpec extends IntegrationSpec {
 
   "POST /workouts" must {
 
