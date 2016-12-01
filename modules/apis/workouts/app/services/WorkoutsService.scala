@@ -57,35 +57,41 @@ class WorkoutsService(
     val movementsQuery = Movements.filter(_.guid.inSet(movementGuids))
 
     db.run(movementsQuery.result).flatMap { movements =>
+      var errors = Seq.empty[Errors]
 
-      // Validation 1: Find unknown workout guids
+      // Validate that all workout GUIDs are known
       val badGuids = movementGuids.filterNot { movementGuid =>
         movements.map(_.guid).contains(movementGuid)
       }
 
-      val optUnknownGuidErrors = if (badGuids.size > 0) {
-        Some(Errors.scalar(badGuids.map { badGuid =>
+      if (badGuids.size > 0) {
+        errors = errors :+ Errors.scalar(badGuids.map { badGuid =>
           Message(
             key = "unknownWorkoutGuid",
             details = "guid" -> badGuid.toString
           )
-        }))
-      } else {
-        None
+        })
       }
 
-      // Validation 2: Ensure that there's exactly one score
       val scores = workout.score.toSeq ++
         workout.movement.flatMap(_.score).toSeq ++
         workout.tasks.map(_.flatMap(_.movement.flatMap(_.score))).getOrElse(Nil)
 
-      val optScoreErrors = if (scores.size == 0) {
-        Some(Errors.scalar(Seq(Message(key = "noScoreSpecified"))))
-      } else {
-        None
+      // Validate that there's exactly one score
+      if (scores.size == 0) {
+        errors = errors :+ Errors.scalar(Seq(Message(key = "noScoreSpecified")))
       }
 
-      val errors = optUnknownGuidErrors.toSeq ++ optScoreErrors.toSeq
+      if (scores.size > 1) {
+        errors = errors :+ Errors.scalar(Seq(Message(key = "multipleScoresSpecified")))
+      }
+
+      // Validate that, if there's a top-level score, that it's either 'time' or 'reps'
+      workout.score.foreach { topLevelScore =>
+        if (topLevelScore != "time" && topLevelScore != "reps") {
+          errors = errors :+ Errors.scalar(Seq(Message(key = "invalidTopLevelScore", "score" -> topLevelScore)))
+        }
+      }
 
       if (!errors.isEmpty) {
         Future.successful(Validation.failure(errors))
