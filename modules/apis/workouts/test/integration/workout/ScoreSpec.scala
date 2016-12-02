@@ -17,7 +17,7 @@ class ScoreSpec extends IntegrationSpec {
 
   "POST /workouts" must {
 
-    "reject a workout that has no score" in {
+    "reject a workout that has no score, and no parent" in {
       val response = await { request("/workouts").post(Json.parse(s"""
         {
           "name": "1 Rep",
@@ -97,6 +97,79 @@ class ScoreSpec extends IntegrationSpec {
       val message = scalarErrors.messages.head
       message.key mustBe "invalidTopLevelScore"
       message.details("score") mustBe "Barbell Weight"
+    }
+
+    "accept a workout that has no score, but has a parent" in {
+      val parentResponse = await { request("/workouts").post(Json.parse(s"""
+        {
+          "name": "100 Reps",
+          "score": "time",
+          "reps": 100,
+          "movement": {
+            "guid": "${movement.guid}"
+          }
+        }
+      """)) }
+      val parent = parentResponse.json.as[Workout]
+
+      val childResponse = await { request("/workouts").post(Json.parse(s"""
+        {
+          "parentGuid": "${parent.guid}",
+          "movement": {
+            "guid": "${movement.guid}",
+            "variables": [
+              {
+                "name": "Barbell Weight",
+                "measurement": {
+                  "unitOfMeasure": "lbs",
+                  "value": 95
+                }
+              }
+            ]
+          }
+        }
+      """)) }
+
+      childResponse.status mustBe CREATED
+    }
+
+    "reject a workout that has a score and a parent" in {
+      val parentResponse = await { request("/workouts").post(Json.parse(s"""
+        {
+          "name": "100 Reps",
+          "score": "time",
+          "reps": 100,
+          "movement": {
+            "guid": "${movement.guid}"
+          }
+        }
+      """)) }
+
+      val parent = parentResponse.json.as[Workout]
+
+      val childResponse = await { request("/workouts").post(Json.parse(s"""
+        {
+          "parentGuid": "${parent.guid}",
+          "score": "time",
+          "movement": {
+            "guid": "${movement.guid}",
+            "variables": [
+              {
+                "name": "Barbell Weight",
+                "measurement": {
+                  "unitOfMeasure": "lbs",
+                  "value": 95
+                }
+              }
+            ]
+          }
+        }
+      """)) }
+
+      childResponse.status mustBe BAD_REQUEST
+      val scalarErrors = childResponse.json.as[Seq[Errors]].head
+      val message = scalarErrors.messages.head
+      message.key mustBe "scoreSpecifiedByChild"
     }
 
   }

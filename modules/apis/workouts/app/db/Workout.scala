@@ -19,7 +19,7 @@ case class WorkoutRecord(
   deletedByAccessToken: Option[UUID]
 )
 
-class WorkoutTable(tag: Tag)
+class WorkoutsTable(tag: Tag)
   extends Table[WorkoutRecord](tag, "workouts")
   with SchemaData[WorkoutRecord]
   with AuditData[WorkoutRecord]
@@ -32,4 +32,4 @@ class WorkoutTable(tag: Tag)
     deletedByAccessToken) <> (WorkoutRecord.tupled, WorkoutRecord.unapply)
 }
 
-object Workouts extends TableQuery(new WorkoutTable(_))
+object Workouts extends TableQuery(new WorkoutsTable(_))
