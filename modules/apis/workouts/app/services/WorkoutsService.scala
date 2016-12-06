@@ -59,7 +59,7 @@ class WorkoutsService(
     workout: core.Workout,
     accessToken: AccessToken
   )(implicit ec: ExecutionContext): Future[Validation[WorkoutRecord]] = {
-    // Find all movements referenced in the workout
+    // Recursively find all task movements within the workout
     def getTaskMovements(subTasks: Seq[core.SubTask]): Seq[core.TaskMovement] = {
       if (!subTasks.isEmpty) {
         subTasks.flatMap(_.movement) ++
@@ -71,6 +71,7 @@ class WorkoutsService(
 
     val taskMovements = workout.movement.toSeq ++ getTaskMovements(workout.tasks.getOrElse(Nil))
 
+    // Fetch the actual movements referenced by the task movements
     val futReferencedMovements = movementsService.
       findMovements(guids = Some(taskMovements.map(_.guid))).
       flatMap(movementsService.db2api)
@@ -91,28 +92,27 @@ class WorkoutsService(
       result <- {
         var errors = Seq.empty[Errors]
 
-        val scores = workout.score ++
-          workout.movement.flatMap(_.score).toSeq
-          workout.tasks.map(_.flatMap(_.movement.flatMap(_.score))).getOrElse(Nil)
+        // A workout with a parent _cannot_ have a score. A workout without
+        // a parent _must_ have a score.
+        val scores = workout.score.toSeq ++ taskMovements.flatMap(_.score)
 
-        // If the workout does not have a parent,
         if (ancestry.length == 0) {
-          // it must have exactly one score,
           if (scores.size == 0) {
             errors = errors :+ Errors.scalar(Seq(Message(key = "noScoreSpecified")))
           } else if (scores.size > 1) {
             errors = errors :+ Errors.scalar(Seq(Message(key = "multipleScoresSpecified")))
           }
         } else {
-          // If the workout does have a parent, it cannot have a score.
           if (scores.size > 0) {
             errors = errors :+ Errors.scalar(Seq(Message(key = "scoreSpecifiedByChild")))
           }
         }
 
         def taskMovementErrors(taskMovement: core.TaskMovement): Option[Errors] = {
-          taskMovement.score.flatMap { score =>
-            referencedMovements.find(_.guid == taskMovement.guid).map { referencedMovement =>
+          referencedMovements.find(_.guid == taskMovement.guid).map { referencedMovement =>
+            // If a task movement has a score, it must reference a free variable
+            // either in the task movement itself, or in the referenced movement.
+            taskMovement.score.flatMap { score =>
               val freeVariableNames = (taskMovement.variables ++ referencedMovement.variables).flatten.filter { variable =>
                 variable.dimension.isDefined
               }.map(_.name).toSeq
@@ -125,17 +125,19 @@ class WorkoutsService(
                     "score" -> score
                 ))))
               } else None
-            }.getOrElse {
-              Some(Errors.scalar(Seq(Message(
-                key = "unknownMovementGuid",
-                details = "guid" -> taskMovement.guid.toString
-              ))))
             }
+          }.getOrElse {
+            // The task movement's GUID must reference an actual movement.
+            Some(Errors.scalar(Seq(Message(
+              key = "unknownMovementGuid",
+              details = "guid" -> taskMovement.guid.toString
+            ))))
           }
         }
 
         errors = errors ++ taskMovements.flatMap(taskMovementErrors)
 
+        // If there's a top-level score, it must be either 'time' or 'reps'.
         workout.score.foreach { topLevelScore =>
           if (topLevelScore != "time" && topLevelScore != "reps") {
             errors = errors :+ Errors.scalar(Seq(Message(key = "invalidTopLevelScore", "score" -> topLevelScore)))
