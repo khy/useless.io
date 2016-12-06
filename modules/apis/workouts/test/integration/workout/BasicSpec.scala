@@ -49,7 +49,7 @@ class BasicSpec extends IntegrationSpec {
 
       val scalarErrors = response.json.as[Seq[Errors]].head
       val message = scalarErrors.messages.head
-      message.key mustBe "unknownWorkoutGuid"
+      message.key mustBe "unknownMovementGuid"
       message.details("guid") mustBe badMovementGuid.toString
     }
 

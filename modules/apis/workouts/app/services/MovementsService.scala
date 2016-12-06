@@ -39,6 +39,18 @@ class MovementsService(
     )
   }
 
+  def findMovements(
+    guids: Option[Seq[UUID]] = None
+  ): Future[Seq[MovementRecord]] = {
+    var query: Query[MovementsTable, MovementRecord, Seq] = Movements
+
+    guids.foreach { guids =>
+      query = query.filter(_.guid inSet guids)
+    }
+
+    db.run(query.result)
+  }
+
   def addMovement(
     movement: core.Movement,
     accessToken: AccessToken

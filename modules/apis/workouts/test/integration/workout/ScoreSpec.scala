@@ -172,6 +172,26 @@ class ScoreSpec extends IntegrationSpec {
       message.key mustBe "scoreSpecifiedByChild"
     }
 
+    "reject a workout that has a movement score that doesn't reference a free " +
+    "variable in either the referenced movement or is inline in the workout" in {
+      val response = await { request("/workouts").post(Json.parse(s"""
+        {
+          "name": "1 Rep",
+          "reps": 1,
+          "movement": {
+            "guid": "${movement.guid}",
+            "score": "Target Height"
+          }
+        }
+      """)) }
+
+      response.status mustBe BAD_REQUEST
+      val scalarErrors = response.json.as[Seq[Errors]].head
+      val message = scalarErrors.messages.head
+      message.key mustBe "unknownMovementScore"
+      message.details("score") mustBe "Target Height"
+    }
+
   }
 
 }

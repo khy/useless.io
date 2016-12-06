@@ -14,7 +14,8 @@ import models.workouts._
 import models.workouts.JsonImplicits._
 
 class WorkoutsService(
-  dbConfig: DatabaseConfig[Driver]
+  dbConfig: DatabaseConfig[Driver],
+  movementsService: MovementsService
 ) {
 
   import dbConfig.db
@@ -59,20 +60,20 @@ class WorkoutsService(
     accessToken: AccessToken
   )(implicit ec: ExecutionContext): Future[Validation[WorkoutRecord]] = {
     // Find all movements referenced in the workout
-    def getMovementGuids(subTasks: Seq[core.SubTask]): Seq[UUID] = {
+    def getTaskMovements(subTasks: Seq[core.SubTask]): Seq[core.TaskMovement] = {
       if (!subTasks.isEmpty) {
-        subTasks.flatMap(_.movement.map(_.guid)) ++
-        getMovementGuids(subTasks.flatMap(_.tasks.getOrElse(Nil)))
+        subTasks.flatMap(_.movement) ++
+        getTaskMovements(subTasks.flatMap(_.tasks.getOrElse(Nil)))
       } else {
         Nil
       }
     }
 
-    val movementGuids = workout.movement.map(_.guid).toSeq ++
-      getMovementGuids(workout.tasks.getOrElse(Nil))
+    val taskMovements = workout.movement.toSeq ++ getTaskMovements(workout.tasks.getOrElse(Nil))
 
-    val movementsQuery = Movements.filter(_.guid.inSet(movementGuids))
-    val futMovements = db.run(movementsQuery.result)
+    val futReferencedMovements = movementsService.
+      findMovements(guids = Some(taskMovements.map(_.guid))).
+      flatMap(movementsService.db2api)
 
     // Find the "ancestry" of the workout (limited to 2 for now)
     val futAncestry = for {
@@ -85,28 +86,13 @@ class WorkoutsService(
     } yield Seq(optParent, optGrandParent).flatten
 
     for {
-      movements <- futMovements
+      referencedMovements <- futReferencedMovements
       ancestry <- futAncestry
       result <- {
         var errors = Seq.empty[Errors]
 
-        // Validate that all workout GUIDs are known
-        val badGuids = movementGuids.filterNot { movementGuid =>
-          movements.map(_.guid).contains(movementGuid)
-        }
-
-        if (badGuids.size > 0) {
-          errors = errors :+ Errors.scalar(badGuids.map { badGuid =>
-            Message(
-              key = "unknownWorkoutGuid",
-              details = "guid" -> badGuid.toString
-            )
-          })
-        }
-
-
-        val scores = workout.score.toSeq ++
-          workout.movement.flatMap(_.score).toSeq ++
+        val scores = workout.score ++
+          workout.movement.flatMap(_.score).toSeq
           workout.tasks.map(_.flatMap(_.movement.flatMap(_.score))).getOrElse(Nil)
 
         // If the workout does not have a parent,
@@ -117,17 +103,42 @@ class WorkoutsService(
           } else if (scores.size > 1) {
             errors = errors :+ Errors.scalar(Seq(Message(key = "multipleScoresSpecified")))
           }
-
-          // and the top-level score, if it exists, must be either 'time' or 'reps'.
-          workout.score.foreach { topLevelScore =>
-            if (topLevelScore != "time" && topLevelScore != "reps") {
-              errors = errors :+ Errors.scalar(Seq(Message(key = "invalidTopLevelScore", "score" -> topLevelScore)))
-            }
-          }
         } else {
           // If the workout does have a parent, it cannot have a score.
           if (scores.size > 0) {
             errors = errors :+ Errors.scalar(Seq(Message(key = "scoreSpecifiedByChild")))
+          }
+        }
+
+        def taskMovementErrors(taskMovement: core.TaskMovement): Option[Errors] = {
+          taskMovement.score.flatMap { score =>
+            referencedMovements.find(_.guid == taskMovement.guid).map { referencedMovement =>
+              val freeVariableNames = (taskMovement.variables ++ referencedMovement.variables).flatten.filter { variable =>
+                variable.dimension.isDefined
+              }.map(_.name).toSeq
+
+              if (!freeVariableNames.contains(score)) {
+                Some(Errors.scalar(Seq(Message(
+                  key = "unknownMovementScore",
+                  details =
+                    "guid" -> taskMovement.guid.toString,
+                    "score" -> score
+                ))))
+              } else None
+            }.getOrElse {
+              Some(Errors.scalar(Seq(Message(
+                key = "unknownMovementGuid",
+                details = "guid" -> taskMovement.guid.toString
+              ))))
+            }
+          }
+        }
+
+        errors = errors ++ taskMovements.flatMap(taskMovementErrors)
+
+        workout.score.foreach { topLevelScore =>
+          if (topLevelScore != "time" && topLevelScore != "reps") {
+            errors = errors :+ Errors.scalar(Seq(Message(key = "invalidTopLevelScore", "score" -> topLevelScore)))
           }
         }
 

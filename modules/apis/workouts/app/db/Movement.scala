@@ -19,7 +19,7 @@ case class MovementRecord(
   deletedByAccessToken: Option[UUID]
 )
 
-class MovementTable(tag: Tag)
+class MovementsTable(tag: Tag)
   extends Table[MovementRecord](tag, "movements")
   with SchemaData[MovementRecord]
   with AuditData[MovementRecord]
@@ -32,4 +32,4 @@ class MovementTable(tag: Tag)
     deletedByAccessToken) <> (MovementRecord.tupled, MovementRecord.unapply)
 }
 
-object Movements extends TableQuery(new MovementTable(_))
+object Movements extends TableQuery(new MovementsTable(_))

@@ -6,8 +6,8 @@ trait ServiceComponents {
 
   self: DbConfigComponents =>
 
-  val movementsService = new MovementsService(dbConfig)
+  lazy val movementsService = new MovementsService(dbConfig)
 
-  val workoutsService = new WorkoutsService(dbConfig)
+  lazy val workoutsService = new WorkoutsService(dbConfig, movementsService)
 
 }
