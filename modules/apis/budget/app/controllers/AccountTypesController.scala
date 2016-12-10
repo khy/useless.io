@@ -4,10 +4,10 @@ import scala.concurrent.Future
 import play.api._
 import play.api.mvc._
 import play.api.libs.json.Json
+import io.useless.play.json.NamedEnumJson
 
 import controllers.budget.auth.Auth
 import models.budget.AccountType
-import models.budget.util.NamedEnumJson
 
 object AccountTypesController extends Controller {
 

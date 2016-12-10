@@ -1,6 +1,6 @@
 package models.budget
 
-import models.budget.util._
+import io.useless.{NamedEnum, NamedEnumCompanion}
 
 sealed class TransactionTypeOwnership(
   val key: String,

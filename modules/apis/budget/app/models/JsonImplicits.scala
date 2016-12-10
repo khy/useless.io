@@ -5,8 +5,8 @@ import play.api.libs.json._
 import play.api.libs.functional.syntax._
 import io.useless.account.User
 import io.useless.play.json.DateTimeJson._
+import io.useless.play.json.NamedEnumJson
 
-import models.budget.util.NamedEnumJson
 import models.budget.aggregates._
 
 object JsonImplicits {
