@@ -24,10 +24,10 @@ object ApplicationComponents {
         with DefaultAccessTokenClientComponents
       {
         lazy val accessTokenClientBaseUrl = configuration.underlying.getString("useless.core.baseUrl")
-        lazy val accessTokenClientAuthGuid = configuration.underlying.getUuid("workout.accessTokenGuid")
+        lazy val accessTokenClientAuthGuid = configuration.underlying.getUuid("workouts.accessTokenGuid")
 
         lazy val accountClientBaseUrl = configuration.underlying.getString("useless.core.baseUrl")
-        lazy val accountClientAuthGuid = configuration.underlying.getUuid("workout.accessTokenGuid")
+        lazy val accountClientAuthGuid = configuration.underlying.getUuid("workouts.accessTokenGuid")
       }
     }
 

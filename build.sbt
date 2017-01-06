@@ -22,8 +22,8 @@ lazy val account = (project in file("modules/apps/account")).enablePlugins(Base,
 
 lazy val root = (project in file(".")).
   enablePlugins(PlayScala, DockerPlugin, Release).
-  dependsOn(core, books, haiku, budget, auth, account).
-  aggregate(lib, core, books, haiku, budget, auth, account).
+  dependsOn(core, books, budget, haiku, workouts, auth, account).
+  aggregate(lib, core, books, budget, haiku, workouts, auth, account).
   settings(
     aggregate in stage := false,
     aggregate in publishLocal := false,

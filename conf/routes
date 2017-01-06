@@ -1,5 +1,6 @@
 ->  /core     core.Routes
 
 ->  /books    books.Routes
-->  /haiku    haiku.Routes
 ->  /budget   budget.Routes
+->  /haiku    haiku.Routes
+->  /workouts workouts.Routes

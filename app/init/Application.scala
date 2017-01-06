@@ -42,8 +42,9 @@ class ApplicationComponents(context: Context)
     httpErrorHandler,
     core.Routes,
     init.books.ApplicationComponents.router(context),
+    budget.Routes,
     haiku.Routes,
-    budget.Routes
+    init.workouts.ApplicationComponents.router(context)
   )
 
   override lazy val injector: Injector = {
