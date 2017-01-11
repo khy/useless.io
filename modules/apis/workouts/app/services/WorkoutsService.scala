@@ -73,7 +73,7 @@ class WorkoutsService(
 
     // Fetch the actual movements referenced by the task movements
     val futReferencedMovements = movementsService.
-      findMovements(guids = Some(taskMovements.map(_.guid))).
+      getMovementsByGuid(taskMovements.map(_.guid)).
       flatMap(movementsService.db2api)
 
     // Find the "ancestry" of the workout (limited to 2 for now)

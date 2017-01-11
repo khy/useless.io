@@ -6,6 +6,7 @@ import play.api.libs.json.Json
 import slick.backend.DatabaseConfig
 import io.useless.Message
 import io.useless.accesstoken.AccessToken
+import io.useless.pagination._
 import io.useless.validation._
 import io.useless.exception.service._
 
@@ -40,14 +41,24 @@ class MovementsService(
   }
 
   def findMovements(
-    guids: Option[Seq[UUID]] = None
-  ): Future[Seq[MovementRecord]] = {
-    var query: Query[MovementsTable, MovementRecord, Seq] = Movements
+    names: Option[Seq[String]],
+    rawPaginationParams: RawPaginationParams
+  )(implicit ec: ExecutionContext): Future[Validation[PaginatedResult[Movement]]] = {
+    val valPaginationParams = PaginationParams.build(rawPaginationParams)
 
-    guids.foreach { guids =>
-      query = query.filter(_.guid inSet guids)
+    ValidationUtil.mapFuture(valPaginationParams) { paginationParams =>
+      var query: Query[MovementsTable, MovementRecord, Seq] = Movements
+
+      db.run(query.result).flatMap { case movementRecords =>
+        db2api(movementRecords).map { movements =>
+          PaginatedResult.build(movements, paginationParams)
+        }
+      }
     }
+  }
 
+  private [workouts] def getMovementsByGuid(guids: Seq[UUID]): Future[Seq[MovementRecord]] = {
+    val query = Movements.filter(_.guid inSet guids)
     db.run(query.result)
   }
 

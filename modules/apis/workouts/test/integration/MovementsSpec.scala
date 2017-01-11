@@ -129,4 +129,31 @@ class MovementsSpec extends IntegrationSpec {
 
   }
 
+  "GET /movements" must {
+
+    "accept unauthenticated requests" in {
+      val response = await {
+        unauthenticatedRequest("/movements").get()
+      }
+
+      response.status mustBe OK
+    }
+
+    "return a paginated list of movements" in {
+      testHelper.deleteMovements()
+      val movement1 = testHelper.createMovement()
+      val movement2 = testHelper.createMovement()
+      val movement3 = testHelper.createMovement()
+
+      val response = await {
+        unauthenticatedRequest("/movements").get()
+      }
+
+      response.status mustBe OK
+      val movements = response.json.as[Seq[Movement]]
+      movements.length mustBe 3
+    }
+
+  }
+
 }

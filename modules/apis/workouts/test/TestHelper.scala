@@ -13,11 +13,20 @@ class TestHelper(
   applicationComponents: AbstractApplicationComponents
 ) {
 
+  import applicationComponents._
+
+  import dbConfig.db
+  import dbConfig.driver.api._
+
   def createMovement(
     name: String = s"movement-${UUID.randomUUID}",
     variables: Option[Seq[Variable]] = None
   )(implicit accessToken: AccessToken): MovementRecord = await {
-    applicationComponents.movementsService.addMovement(core.Movement(name, variables), accessToken)
+    movementsService.addMovement(core.Movement(name, variables), accessToken)
   }.toSuccess.value
+
+  def deleteMovements() {
+    db.run(sqlu"delete from movements")
+  }
 
 }
