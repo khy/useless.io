@@ -21,6 +21,9 @@ class MovementsService(
   import dbConfig.db
   import dbConfig.driver.api._
 
+
+  import dbConfig.driver.api.playJsonColumnExtensionMethods
+
   def db2api(records: Seq[MovementRecord]): Future[Seq[Movement]] = {
     Future.successful(
       records.map { record =>
@@ -40,16 +43,35 @@ class MovementsService(
     )
   }
 
+  private val paginationConfig = PaginationParams.defaultPaginationConfig.copy(
+    validOrders = Seq("createdAt", "name"),
+    defaultOrder = "name"
+  )
+
   def findMovements(
     names: Option[Seq[String]],
     rawPaginationParams: RawPaginationParams
   )(implicit ec: ExecutionContext): Future[Validation[PaginatedResult[Movement]]] = {
-    val valPaginationParams = PaginationParams.build(rawPaginationParams)
+    val valPaginationParams = PaginationParams.build(rawPaginationParams, paginationConfig)
 
     ValidationUtil.mapFuture(valPaginationParams) { paginationParams =>
       var query: Query[MovementsTable, MovementRecord, Seq] = Movements
 
-      db.run(query.result).flatMap { case movementRecords =>
+      names.foreach { names =>
+        names.map { name =>
+          query = query.filter { movement =>
+            movement.json.+>>("name").toLowerCase like s"%${name.toLowerCase}%"
+          }
+        }
+      }
+
+      val pagedQuery = query.sortBy { movement =>
+        paginationParams.order match {
+          case "name" => movement.json.+>>("name").asc
+        }
+      }.take(paginationParams.limit)
+
+      db.run(pagedQuery.result).flatMap { case movementRecords =>
         db2api(movementRecords).map { movements =>
           PaginatedResult.build(movements, paginationParams)
         }

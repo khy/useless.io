@@ -6,6 +6,7 @@ trait Driver
   extends ExPostgresDriver
   with PgDate2Support
   with PgPlayJsonSupport
+  with array.PgArrayJdbcTypes
 {
 
   def pgjson = "jsonb"
@@ -14,6 +15,9 @@ trait Driver
     extends API
     with DateTimeImplicits
     with JsonImplicits
+  {
+    implicit val strListTypeMapper = new SimpleArrayJdbcType[String]("text").to(_.toList)
+  }
 
   override val api = Api
 

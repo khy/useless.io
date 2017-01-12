@@ -154,6 +154,26 @@ class MovementsSpec extends IntegrationSpec {
       movements.length mustBe 3
     }
 
+    "return movements filtered by name" in {
+      testHelper.deleteMovements()
+      val movement1 = testHelper.createMovement(name = "Alice")
+      val movement2 = testHelper.createMovement(name = "Albert")
+      val movement3 = testHelper.createMovement(name = "Anthony")
+      val movement4 = testHelper.createMovement(name = "Alfred")
+
+      val response = await {
+        unauthenticatedRequest("/movements").withQueryString(
+          "name" -> "Al",
+          "p.order" -> "name"
+        ).get()
+      }
+
+      response.status mustBe OK
+      val movements = response.json.as[Seq[Movement]]
+      movements.length mustBe 3
+      movements.map(_.name) mustBe Seq("Albert", "Alfred", "Alice")
+    }
+
   }
 
 }
