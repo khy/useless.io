@@ -50,7 +50,7 @@ object JsonImplicits {
   implicit val coreTaskMovementFormat = Json.format[core.TaskMovement]
 
   implicit val coreSubTaskFormat: Format[core.SubTask] = (
-    (__ \ "reps").formatNullable[Int] and
+    (__ \ "reps").formatNullable[Formula] and
     (__ \ "time").formatNullable[Measurement] and
     (__ \ "tasks").lazyFormatNullable(implicitly[Format[Seq[core.SubTask]]]) and
     (__ \ "movement").formatNullable[core.TaskMovement]

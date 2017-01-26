@@ -17,7 +17,7 @@ class SubTaskSpec extends IntegrationSpec {
 
   "POST /workouts" must {
 
-    "create a workoutwith subtasks" in {
+    "create a workout with subtasks" in {
       val pullUp = testHelper.createMovement("Pull Up")
       val pushUp = testHelper.createMovement("Push Up")
       val sitUp = testHelper.createMovement("Sit Up")
@@ -59,22 +59,22 @@ class SubTaskSpec extends IntegrationSpec {
 
       val workout = response.json.as[Workout]
       workout.name mustBe Some("Sub")
-      workout.reps mustBe Some(1)
+      workout.reps mustBe Some(Formula.Constant(1))
       workout.score mustBe Some("time")
 
       val pullUpTask = workout.tasks.get(0)
-      pullUpTask.reps mustBe Some(100)
+      pullUpTask.reps mustBe Some(Formula.Constant(100))
       pullUpTask.movement.get.guid mustBe pullUp.guid
 
       val compositeTask = workout.tasks.get(1)
-      compositeTask.reps mustBe Some(2)
+      compositeTask.reps mustBe Some(Formula.Constant(2))
 
       val pushUpTask = compositeTask.tasks.get(0)
-      pushUpTask.reps mustBe Some(25)
+      pushUpTask.reps mustBe Some(Formula.Constant(25))
       pushUpTask.movement.get.guid mustBe pushUp.guid
 
       val sitUpTask = compositeTask.tasks.get(1)
-      sitUpTask.reps mustBe Some(25)
+      sitUpTask.reps mustBe Some(Formula.Constant(25))
       sitUpTask.movement.get.guid mustBe sitUp.guid
     }
 

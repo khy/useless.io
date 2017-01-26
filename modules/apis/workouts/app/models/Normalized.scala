@@ -13,7 +13,7 @@ package core {
   case class Workout(
     parentGuid: Option[UUID],
     name: Option[String],
-    reps: Option[Int],
+    reps: Option[Formula],
     time: Option[Measurement],
     score: Option[String],
     tasks: Option[Seq[SubTask]],
@@ -21,7 +21,7 @@ package core {
   )
 
   case class SubTask(
-    reps: Option[Int], // must change
+    reps: Option[Formula],
     time: Option[Measurement],
     tasks: Option[Seq[SubTask]],
     movement: Option[TaskMovement]
@@ -49,7 +49,7 @@ case class Workout(
   guid: UUID,
   parentGuid: Option[UUID],
   name: Option[String],
-  reps: Option[Int],
+  reps: Option[Formula],
   score: Option[String],
   tasks: Option[Seq[core.SubTask]],
   createdAt: ZonedDateTime,
@@ -59,7 +59,7 @@ case class Workout(
 )
 
 case class SubTask(
-  reps: Option[Int],
+  reps: Option[Formula],
   movement: Option[TaskMovement]
 )
 
