@@ -14,6 +14,7 @@ package core {
     parentGuid: Option[UUID],
     name: Option[String],
     reps: Option[Int],
+    time: Option[Measurement],
     score: Option[String],
     tasks: Option[Seq[SubTask]],
     movement: Option[TaskMovement]
@@ -21,13 +22,14 @@ package core {
 
   case class SubTask(
     reps: Option[Int], // must change
+    time: Option[Measurement],
     tasks: Option[Seq[SubTask]],
     movement: Option[TaskMovement]
   )
 
   case class TaskMovement(
     guid: UUID,
-    score: Option[String],
+    score: Option[String], // why is score an attribute of movement?
     variables: Option[Seq[Variable]]
   )
 
