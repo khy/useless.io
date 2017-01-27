@@ -7,6 +7,7 @@ import slick.backend.DatabaseConfig
 import io.useless.Message
 import io.useless.accesstoken.AccessToken
 import io.useless.validation._
+import io.useless.pagination._
 import io.useless.exception.service._
 
 import db.workouts._
@@ -44,15 +45,27 @@ class WorkoutsService(
   }
 
   def findWorkouts(
-    guids: Option[Seq[UUID]] = None
-  ): Future[Seq[WorkoutRecord]] = {
-    var query: Query[WorkoutsTable, WorkoutRecord, Seq] = Workouts
+    guids: Option[Seq[UUID]] = None,
+    rawPaginationParams: RawPaginationParams
+  )(implicit ec: ExecutionContext): Future[Validation[PaginatedResult[WorkoutRecord]]] = {
+    val valPaginationParams = PaginationParams.build(rawPaginationParams)
 
-    guids.foreach { guids =>
-      query = query.filter(_.guid inSet guids)
+    ValidationUtil.mapFuture(valPaginationParams) { paginationParams =>
+      var query: Query[WorkoutsTable, WorkoutRecord, Seq] = Workouts
+
+      guids.foreach { guids =>
+        query = query.filter(_.guid inSet guids)
+      }
+
+      db.run(query.result).map { case workoutRecords =>
+        PaginatedResult.build(workoutRecords, paginationParams)
+      }
     }
+  }
 
-    db.run(query.result)
+  private def findWorkout(guid: UUID)(implicit ec: ExecutionContext): Future[Option[Workout]] = {
+    val query = Workouts.filter(_.guid === guid)
+    db.run(query.result).flatMap(db2api).map(_.headOption)
   }
 
   def addWorkout(
@@ -79,10 +92,10 @@ class WorkoutsService(
     // Find the "ancestry" of the workout (limited to 2 for now)
     val futAncestry = for {
       optParent <- workout.parentGuid.map { parentGuid =>
-        findWorkouts(guids = Some(Seq(parentGuid))).flatMap(db2api).map(_.headOption)
+        findWorkout(parentGuid)
       }.getOrElse(Future.successful(None))
       optGrandParent <- optParent.flatMap(_.parentGuid).map { grandParentGuid =>
-        findWorkouts(guids = Some(Seq(grandParentGuid))).flatMap(db2api).map(_.headOption)
+        findWorkout(grandParentGuid)
       }.getOrElse(Future.successful(None))
     } yield Seq(optParent, optGrandParent).flatten
 
