@@ -29,19 +29,20 @@ class TestHelper(
     db.run(sqlu"delete from movements")
   }
 
-  val minimalWorkout = core.Workout(
-    parentGuid = None,
-    name = None,
-    reps = None,
-    time = None,
-    score = Some("time"),
-    tasks = None,
-    movement = None
-  )
-
   def createWorkout(
-    workout: core.Workout = minimalWorkout
+    parentGuid: Option[UUID] = None,
+    score: Option[String] = Some("time")
   )(implicit accessToken: AccessToken): WorkoutRecord = await {
+    val workout = core.Workout(
+      parentGuid = parentGuid,
+      name = None,
+      reps = None,
+      time = None,
+      score = score,
+      tasks = None,
+      movement = None
+    )
+
     workoutsService.addWorkout(workout, accessToken)
   }.toSuccess.value
 

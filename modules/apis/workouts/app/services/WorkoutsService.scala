@@ -46,6 +46,7 @@ class WorkoutsService(
 
   def findWorkouts(
     guids: Option[Seq[UUID]] = None,
+    isChild: Option[Boolean] = None,
     rawPaginationParams: RawPaginationParams
   )(implicit ec: ExecutionContext): Future[Validation[PaginatedResult[WorkoutRecord]]] = {
     val valPaginationParams = PaginationParams.build(rawPaginationParams)
@@ -55,6 +56,14 @@ class WorkoutsService(
 
       guids.foreach { guids =>
         query = query.filter(_.guid inSet guids)
+      }
+
+      isChild.foreach { isChild =>
+        if (isChild) {
+          query = query.filter { _.json.+>("parentGuid").?.isDefined }
+        } else {
+          query = query.filter { _.json.+>("parentGuid").?.isEmpty }
+        }
       }
 
       db.run(query.result).map { case workoutRecords =>

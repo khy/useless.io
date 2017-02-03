@@ -38,7 +38,7 @@ class ReadSpec extends IntegrationSpec {
       workouts.length mustBe 3
     }
 
-    "return movements filtered by guid" in {
+    "return workouts filtered by guid" in {
       testHelper.deleteWorkouts()
       val workout1 = testHelper.createWorkout()
       val workout2 = testHelper.createWorkout()
@@ -53,6 +53,35 @@ class ReadSpec extends IntegrationSpec {
       val movements = response.json.as[Seq[Workout]]
       movements.length mustBe 1
       movements.head.guid mustBe workout1.guid
+    }
+
+    "return workouts without parents" in {
+      testHelper.deleteWorkouts()
+      val workout1 = testHelper.createWorkout()
+      val workout2 = testHelper.createWorkout(
+        parentGuid = Some(workout1.guid),
+        score = None
+      )
+
+      val response1 = await {
+        unauthenticatedRequest("/workouts").withQueryString(
+          "child" -> "false"
+        ).get()
+      }
+
+      val movements1 = response1.json.as[Seq[Workout]]
+      movements1.length mustBe 1
+      movements1.head.guid mustBe workout1.guid
+
+      val response2 = await {
+        unauthenticatedRequest("/workouts").withQueryString(
+          "child" -> "true"
+        ).get()
+      }
+
+      val movements2 = response2.json.as[Seq[Workout]]
+      movements2.length mustBe 1
+      movements2.head.guid mustBe workout2.guid
     }
 
   }

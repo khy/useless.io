@@ -15,11 +15,17 @@ case class UnitOfMeasure(
 )
 
 object UnitOfMeasure {
-  def weight(symbol: String) = UnitOfMeasure(Dimension.Weight, symbol)
+
+  private def time(symbol: String) = UnitOfMeasure(Dimension.Time, symbol)
+  val Seconds = time("s")
+
+  private def weight(symbol: String) = UnitOfMeasure(Dimension.Weight, symbol)
   val Pound = weight("lbs")
   val Kilogram = weight("kg")
   val Pood = weight("pood")
-  val values = Seq(Pound, Kilogram, Pood)
+
+  val values = Seq(Seconds, Pound, Kilogram, Pood)
+
 }
 
 case class Measurement(
