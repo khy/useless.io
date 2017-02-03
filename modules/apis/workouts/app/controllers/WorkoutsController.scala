@@ -24,6 +24,7 @@ class WorkoutsController(
     withRawPaginationParams { rawPaginationParams =>
       workoutsService.findWorkouts(
         guids = request.richQueryString.get[UUID]("guid"),
+        parentGuids = request.richQueryString.get[UUID]("parentGuid"),
         isChild = request.richQueryString.get[Boolean]("child").flatMap(_.headOption),
         rawPaginationParams
       ).flatMap { result =>

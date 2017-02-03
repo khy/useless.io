@@ -84,6 +84,25 @@ class ReadSpec extends IntegrationSpec {
       movements2.head.guid mustBe workout2.guid
     }
 
+    "return child workouts for the specified parent" in {
+      testHelper.deleteWorkouts()
+      val workout1 = testHelper.createWorkout()
+      val workout2 = testHelper.createWorkout(
+        parentGuid = Some(workout1.guid),
+        score = None
+      )
+
+      val response = await {
+        unauthenticatedRequest("/workouts").withQueryString(
+          "parentGuid" -> workout1.guid.toString
+        ).get()
+      }
+
+      val movements = response.json.as[Seq[Workout]]
+      movements.length mustBe 1
+      movements.head.guid mustBe workout2.guid
+    }
+
   }
 
 }
