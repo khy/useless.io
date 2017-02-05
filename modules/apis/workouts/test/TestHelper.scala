@@ -31,13 +31,14 @@ class TestHelper(
 
   def createWorkout(
     parentGuid: Option[UUID] = None,
+    time: Option[Measurement] = None,
     score: Option[String] = Some("time")
   )(implicit accessToken: AccessToken): WorkoutRecord = await {
     val workout = core.Workout(
       parentGuid = parentGuid,
       name = None,
       reps = None,
-      time = None,
+      time = time,
       score = score,
       tasks = None,
       movement = None

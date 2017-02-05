@@ -32,6 +32,7 @@ class WorkoutsService(
             parentGuid = workout.parentGuid,
             name = workout.name,
             reps = workout.reps,
+            time = workout.time,
             score = workout.score,
             tasks = workout.tasks,
             createdAt = record.createdAt,

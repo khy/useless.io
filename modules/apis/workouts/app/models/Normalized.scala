@@ -50,6 +50,7 @@ case class Workout(
   parentGuid: Option[UUID],
   name: Option[String],
   reps: Option[Formula],
+  time: Option[Measurement],
   score: Option[String],
   tasks: Option[Seq[core.SubTask]],
   createdAt: ZonedDateTime,

@@ -23,6 +23,24 @@ class ReadSpec extends IntegrationSpec {
       response.status mustBe OK
     }
 
+    "return all attributes of the workout" in {
+      testHelper.deleteWorkouts()
+      val workout = testHelper.createWorkout(
+        score = Some("time"),
+        time = Some(Measurement(UnitOfMeasure.Seconds, 50))
+      )
+
+      val response = await {
+        unauthenticatedRequest("/workouts").withQueryString(
+          "guid" -> workout.guid.toString
+        ).get()
+      }
+
+      val _workout = response.json.as[Seq[Workout]].head
+      _workout.score mustBe Some("time")
+      _workout.time mustBe Some(Measurement(UnitOfMeasure.Seconds, 50))
+    }
+
     "return a paginated list of workouts" in {
       testHelper.deleteWorkouts()
       val workout1 = testHelper.createWorkout()
