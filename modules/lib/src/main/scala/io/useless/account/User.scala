@@ -58,4 +58,10 @@ object User {
     new AuthorizedUser(guid, email, handle, name)
   }
 
+  val Anon: User = new PublicUser(
+    guid = UUID.fromString("00000000-0000-0000-0000-000000000000"),
+    handle = "anon",
+    name = Some("Anon E. Muss")
+  )
+
 }

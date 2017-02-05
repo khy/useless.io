@@ -65,6 +65,15 @@ object Account {
     findOne(BSONDocument("_id" -> guid))
   }
 
+  def forGuids(guids: Seq[UUID]): Future[Seq[Account]] = {
+    val documents = collection.
+      find(BSONDocument("_id" -> BSONDocument("$in" -> guids))).
+      cursor[AccountDocument].
+      collect[List]()
+
+    documents.map { documents => documents.map { new Account(_) } }
+  }
+
   def forAccessToken(guid: UUID): Future[Option[Account]] = {
     findOne(BSONDocument("access_tokens.guid" -> guid))
   }

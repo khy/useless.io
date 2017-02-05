@@ -1,8 +1,8 @@
 package io.useless.client.account
 
-import org.scalatest.FunSpec
-import org.scalatest.Matchers
 import java.util.UUID
+import scala.concurrent.ExecutionContext.Implicits.global
+import org.scalatest.{FunSpec, Matchers}
 
 import io.useless.account.User
 import io.useless.test.Await

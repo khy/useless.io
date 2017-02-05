@@ -1,7 +1,7 @@
 package io.useless.client.account
 
 import java.util.UUID
-import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.ExecutionContext
 import play.api.Application
 import play.api.libs.json.Json
 import play.api.libs.ws.WSClient
@@ -21,16 +21,21 @@ class PlayAccountClient(
     ResourceClient(client, baseUrl, authGuid.toString)
   }
 
-  def getAccount(guid: UUID) = {
-    val path = "/accounts/%s".format(guid.toString)
-    resourceClient.get(path)
+  def getAccount(guid: UUID)(implicit ec: ExecutionContext) = {
+    resourceClient.get(s"/accounts/${guid}")
   }
 
-  def getAccountForEmail(email: String) = {
+  def findAccounts(guids: Seq[UUID])(implicit ec: ExecutionContext) = {
+    resourceClient.find("/accounts", guids.map { guid =>
+      "guid" -> guid.toString
+    }:_*).map(_.items)
+  }
+
+  def getAccountForEmail(email: String)(implicit ec: ExecutionContext) = {
     resourceClient.find("/accounts", "email" -> email).map(_.items.headOption)
   }
 
-  def getAccountForHandle(handle: String) = {
+  def getAccountForHandle(handle: String)(implicit ec: ExecutionContext) = {
     resourceClient.find("/accounts", "handle" -> handle).map(_.items.headOption)
   }
 

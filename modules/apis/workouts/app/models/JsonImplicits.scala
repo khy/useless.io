@@ -3,6 +3,7 @@ package models.workouts
 import play.api.libs.json._
 import play.api.libs.functional.syntax._
 import play.api.data.validation.ValidationError
+import io.useless.play.json.account.UserJson._
 
 object JsonImplicits {
 

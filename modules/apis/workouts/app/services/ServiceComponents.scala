@@ -1,13 +1,15 @@
 package services.workouts
 
+import io.useless.client.account.AccountClientComponents
+
 import db.workouts.DbConfigComponents
 
 trait ServiceComponents {
 
-  self: DbConfigComponents =>
+  self: DbConfigComponents with AccountClientComponents =>
 
   lazy val movementsService = new MovementsService(dbConfig)
 
-  lazy val workoutsService = new WorkoutsService(dbConfig, movementsService)
+  lazy val workoutsService = new WorkoutsService(dbConfig, movementsService, accountClient)
 
 }

@@ -5,6 +5,7 @@ import scala.concurrent.Future
 import play.api.mvc._
 import play.api.libs.json.Json
 import play.api.libs.concurrent.Execution.Implicits._
+import io.useless.play.http.QueryStringUtil._
 import io.useless.play.json.account.AccountJson._
 
 import controllers.core.auth.Auth
@@ -31,21 +32,23 @@ object AccountController extends Controller {
   }
 
   def find = Auth.async { request =>
+    val optGuids = request.richQueryString.get[UUID]("guid")
     val optEmail = request.queryString.get("email").flatMap(_.headOption)
     val optHandle = request.queryString.get("handle").flatMap(_.headOption)
 
-    def accountResponse(optAccount: Option[Account]) = {
-      val accounts = optAccount.map(_.toPublic).toSeq
-      Ok(Json.toJson(accounts))
+    def accountResponse(accounts: Seq[Account]) = {
+      Ok(Json.toJson(accounts.map(_.toPublic)))
     }
 
-    if (optEmail.isDefined) {
-      Account.forEmail(optEmail.get).map(accountResponse(_))
+    if (optGuids.isDefined) {
+      Account.forGuids(optGuids.get).map(accountResponse)
+    } else if (optEmail.isDefined) {
+      Account.forEmail(optEmail.get).map { optAccount => accountResponse(optAccount.toSeq) }
     } else if (optHandle.isDefined) {
-      Account.forHandle(optHandle.get).map(accountResponse(_))
+      Account.forHandle(optHandle.get).map { optAccount => accountResponse(optAccount.toSeq) }
     } else {
       Future.successful {
-        UnprocessableEntity("email or handle must be specified.")
+        UnprocessableEntity("guid, email or handle must be specified.")
       }
     }
   }

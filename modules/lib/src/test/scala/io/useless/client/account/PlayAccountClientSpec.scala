@@ -1,8 +1,9 @@
 package io.useless.client.account
 
+import java.util.UUID
+import scala.concurrent.ExecutionContext.Implicits.global
 import org.scalatest.FunSpec
 import org.scalatest.Matchers
-import java.util.UUID
 import play.api.libs.ws.{WS, WSResponse}
 import play.api.libs.json._
 import org.scalatestplus.play.OneAppPerSuite

@@ -5,7 +5,9 @@ import scala.concurrent.{ExecutionContext, Future}
 import play.api.libs.json.Json
 import slick.backend.DatabaseConfig
 import io.useless.Message
+import io.useless.account.User
 import io.useless.accesstoken.AccessToken
+import io.useless.client.account.AccountClient
 import io.useless.validation._
 import io.useless.pagination._
 import io.useless.exception.service._
@@ -16,14 +18,26 @@ import models.workouts.JsonImplicits._
 
 class WorkoutsService(
   dbConfig: DatabaseConfig[Driver],
-  movementsService: MovementsService
+  movementsService: MovementsService,
+  accountClient: AccountClient
 ) {
 
   import dbConfig.db
   import dbConfig.driver.api._
 
-  def db2api(records: Seq[WorkoutRecord]): Future[Seq[Workout]] = {
-    Future.successful(
+  def db2api(records: Seq[WorkoutRecord])(implicit ec: ExecutionContext): Future[Seq[Workout]] = {
+    val userGuids = records.flatMap { record =>
+      Seq(record.createdByAccount) ++ record.deletedByAccount.toSeq
+    }
+
+    val futUsers = accountClient.findAccounts(guids = userGuids).map { accounts =>
+      accounts.flatMap {
+        case user: User => Some(user)
+        case _ => None
+      }
+    }
+
+    futUsers.map { users =>
       records.map { record =>
         Json.fromJson[core.Workout](record.json).fold(
           error => throw new InvalidState(s"Invalid workout JSON from DB [$error]"),
@@ -36,13 +50,13 @@ class WorkoutsService(
             score = workout.score,
             tasks = workout.tasks,
             createdAt = record.createdAt,
-            createdByAccount = record.createdByAccount,
+            createdBy = users.find(_.guid == record.createdByAccount).getOrElse(User.Anon),
             deletedAt = record.deletedAt,
-            deletedByAccount = record.deletedByAccount
+            deletedBy = users.find(_.guid == record.deletedByAccount)
           )
         )
       }
-    )
+    }
   }
 
   def findWorkouts(

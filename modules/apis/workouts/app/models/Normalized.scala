@@ -2,6 +2,7 @@ package models.workouts
 
 import java.util.UUID
 import java.time.ZonedDateTime
+import io.useless.account.User
 
 package core {
 
@@ -54,9 +55,9 @@ case class Workout(
   score: Option[String],
   tasks: Option[Seq[core.SubTask]],
   createdAt: ZonedDateTime,
-  createdByAccount: UUID,
+  createdBy: User,
   deletedAt: Option[ZonedDateTime],
-  deletedByAccount: Option[UUID]
+  deletedBy: Option[User]
 )
 
 case class SubTask(

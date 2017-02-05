@@ -1,7 +1,7 @@
 package io.useless.client.account
 
 import java.util.UUID
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 import play.api.Application
 import play.api.libs.ws.WSClient
 
@@ -22,10 +22,12 @@ object AccountClient extends Mockable[AccountClient] {
 
 trait AccountClient {
 
-  def getAccount(guid: UUID): Future[Option[Account]]
+  def getAccount(guid: UUID)(implicit ec: ExecutionContext): Future[Option[Account]]
 
-  def getAccountForEmail(email: String): Future[Option[Account]]
+  def findAccounts(guids: Seq[UUID])(implicit ec: ExecutionContext): Future[Seq[Account]]
 
-  def getAccountForHandle(handle: String): Future[Option[Account]]
+  def getAccountForEmail(email: String)(implicit ec: ExecutionContext): Future[Option[Account]]
+
+  def getAccountForHandle(handle: String)(implicit ec: ExecutionContext): Future[Option[Account]]
 
 }
