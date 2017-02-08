@@ -156,17 +156,20 @@ class WorkoutsService(
           }
         }
 
-        // A workout and all subtasks must have either a movement or at least one task
-        if (workout.movement.isEmpty && workout.tasks.map(_.isEmpty).getOrElse(true)) {
-          errors = errors :+ Errors.scalar(Seq(Message(key = "noTaskMovementOrSubTask")))
-        }
+        // A top-level workout and all of its subtasks must have either a
+        // movement or at least one task
+        if (ancestry.length == 0) {
+          if (workout.movement.isEmpty && workout.tasks.map(_.isEmpty).getOrElse(true)) {
+            errors = errors :+ Errors.scalar(Seq(Message(key = "noTaskMovementOrSubTask")))
+          }
 
-        val emptySubTasks = subTasks.filter { subTask =>
-          subTask.movement.isEmpty && subTask.tasks.map(_.isEmpty).getOrElse(true)
-        }
+          val emptySubTasks = subTasks.filter { subTask =>
+            subTask.movement.isEmpty && subTask.tasks.map(_.isEmpty).getOrElse(true)
+          }
 
-        if (!emptySubTasks.isEmpty) {
-          errors = errors :+ Errors.scalar(Seq(Message(key = "noTaskMovementOrSubTask")))
+          if (!emptySubTasks.isEmpty) {
+            errors = errors :+ Errors.scalar(Seq(Message(key = "noTaskMovementOrSubTask")))
+          }
         }
 
         def taskMovementErrors(taskMovement: core.TaskMovement): Option[Errors] = {

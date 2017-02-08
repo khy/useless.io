@@ -13,8 +13,6 @@ import test.workouts._
 
 class SubTaskSpec extends IntegrationSpec {
 
-  val movement = testHelper.createMovement()
-
   "POST /workouts" must {
 
     "create a workout with subtasks" in {
