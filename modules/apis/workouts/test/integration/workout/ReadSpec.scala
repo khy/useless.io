@@ -1,4 +1,4 @@
-package test.workouts.integration
+package test.workouts.integration.workout
 
 import java.util.UUID
 import play.api.test._

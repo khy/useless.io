@@ -80,4 +80,25 @@ class SubTaskSpec extends IntegrationSpec {
 
   }
 
+  "reject a workout with subtasks that do not have either a movement or tasks" in {
+    val response = await { request("/workouts").post(Json.parse(s"""
+      {
+        "name": "Sub",
+        "reps": 1,
+        "score": "time",
+        "tasks": [
+          {
+            "reps": 100
+          }
+        ]
+      }
+    """)) }
+
+    response.status mustBe BAD_REQUEST
+
+    val scalarErrors = response.json.as[Seq[Errors]].head
+    val message = scalarErrors.messages.head
+    message.key mustBe "noTaskMovementOrSubTask"
+  }
+
 }

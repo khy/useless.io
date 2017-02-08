@@ -32,7 +32,8 @@ class TestHelper(
   def createWorkout(
     parentGuid: Option[UUID] = None,
     time: Option[Measurement] = None,
-    score: Option[String] = Some("time")
+    score: Option[String] = Some("time"),
+    movement: Option[MovementRecord] = None
   )(implicit accessToken: AccessToken): WorkoutRecord = await {
     val workout = core.Workout(
       parentGuid = parentGuid,
@@ -41,7 +42,13 @@ class TestHelper(
       time = time,
       score = score,
       tasks = None,
-      movement = None
+      movement = movement.orElse { Some(createMovement()) }.map { movement =>
+        core.TaskMovement(
+          guid = movement.guid,
+          score = None,
+          variables = None
+        )
+      }
     )
 
     workoutsService.addWorkout(workout, accessToken)

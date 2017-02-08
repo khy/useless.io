@@ -103,17 +103,17 @@ class WorkoutsService(
     workout: core.Workout,
     accessToken: AccessToken
   )(implicit ec: ExecutionContext): Future[Validation[WorkoutRecord]] = {
-    // Recursively find all task movements within the workout
-    def getTaskMovements(subTasks: Seq[core.SubTask]): Seq[core.TaskMovement] = {
+    // Recursively find all subtasks within the workout
+    def getSubTasks(subTasks: Seq[core.SubTask]): Seq[core.SubTask] = {
       if (!subTasks.isEmpty) {
-        subTasks.flatMap(_.movement) ++
-        getTaskMovements(subTasks.flatMap(_.tasks.getOrElse(Nil)))
+        subTasks ++ getSubTasks(subTasks.flatMap(_.tasks.getOrElse(Nil)))
       } else {
         Nil
       }
     }
 
-    val taskMovements = workout.movement.toSeq ++ getTaskMovements(workout.tasks.getOrElse(Nil))
+    val subTasks = getSubTasks(workout.tasks.getOrElse(Nil))
+    val taskMovements = workout.movement.toSeq ++ subTasks.flatMap(_.movement)
 
     // Fetch the actual movements referenced by the task movements
     val futReferencedMovements = movementsService.
@@ -150,6 +150,19 @@ class WorkoutsService(
           if (scores.size > 0) {
             errors = errors :+ Errors.scalar(Seq(Message(key = "scoreSpecifiedByChild")))
           }
+        }
+
+        // A workout and all subtasks must have either a movement or at least one task
+        if (workout.movement.isEmpty && workout.tasks.map(_.isEmpty).getOrElse(true)) {
+          errors = errors :+ Errors.scalar(Seq(Message(key = "noTaskMovementOrSubTask")))
+        }
+
+        val emptySubTasks = subTasks.filter { subTask =>
+          subTask.movement.isEmpty && subTask.tasks.map(_.isEmpty).getOrElse(true)
+        }
+
+        if (!emptySubTasks.isEmpty) {
+          errors = errors :+ Errors.scalar(Seq(Message(key = "noTaskMovementOrSubTask")))
         }
 
         def taskMovementErrors(taskMovement: core.TaskMovement): Option[Errors] = {

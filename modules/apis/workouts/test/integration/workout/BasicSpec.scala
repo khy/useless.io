@@ -53,6 +53,22 @@ class BasicSpec extends IntegrationSpec {
       message.details("guid") mustBe badMovementGuid.toString
     }
 
+    "reject a workout that does not have either a movement or tasks" in {
+      val response = await { request("/workouts").post(Json.parse(s"""
+        {
+          "name": "20 Reps",
+          "reps": 20,
+          "score": "time"
+        }
+      """)) }
+
+      response.status mustBe BAD_REQUEST
+
+      val scalarErrors = response.json.as[Seq[Errors]].head
+      val message = scalarErrors.messages.head
+      message.key mustBe "noTaskMovementOrSubTask"
+    }
+
   }
 
 }
