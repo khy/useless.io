@@ -30,10 +30,14 @@ class WorkoutsService(
       Seq(record.createdByAccount) ++ record.deletedByAccount.toSeq
     }
 
-    val futUsers = accountClient.findAccounts(guids = userGuids).map { accounts =>
-      accounts.flatMap {
-        case user: User => Some(user)
-        case _ => None
+    val futUsers = if (userGuids.isEmpty) {
+      Future.successful(Nil)
+    } else {
+      accountClient.findAccounts(guids = userGuids).map { accounts =>
+        accounts.flatMap {
+          case user: User => Some(user)
+          case _ => None
+        }
       }
     }
 
