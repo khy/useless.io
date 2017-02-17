@@ -37,7 +37,7 @@ class ChildSpec extends IntegrationSpec {
       val response = await { request("/workouts").post(Json.parse(s"""
         {
           "parentGuid": "${parent.guid}",
-          "time": {"value": 90, "unitOfMeasure": "s"}
+          "time": {"value": 90, "unitOfMeasure": "sec"}
         }
       """)) }
 

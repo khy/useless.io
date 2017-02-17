@@ -27,7 +27,7 @@ class ReadSpec extends IntegrationSpec {
       testHelper.deleteWorkouts()
       val workout = testHelper.createWorkout(
         score = Some("time"),
-        time = Some(Measurement(UnitOfMeasure.Seconds, 50))
+        time = Some(Measurement(UnitOfMeasure.Second, 50))
       )
 
       val response = await {
@@ -38,7 +38,7 @@ class ReadSpec extends IntegrationSpec {
 
       val _workout = response.json.as[Seq[Workout]].head
       _workout.score mustBe Some("time")
-      _workout.time mustBe Some(Measurement(UnitOfMeasure.Seconds, 50))
+      _workout.time mustBe Some(Measurement(UnitOfMeasure.Second, 50))
     }
 
     "return a paginated list of workouts" in {

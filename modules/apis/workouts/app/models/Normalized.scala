@@ -30,7 +30,7 @@ package core {
 
   case class TaskMovement(
     guid: UUID,
-    score: Option[String], // why is score an attribute of movement?
+    score: Option[String],
     variables: Option[Seq[Variable]]
   )
 
