@@ -13,6 +13,7 @@ import io.useless.pagination._
 import io.useless.exception.service._
 
 import db.workouts._
+import dsl.workouts.WorkoutDsl
 import models.workouts._
 import models.workouts.JsonImplicits._
 
@@ -107,16 +108,7 @@ class WorkoutsService(
     workout: core.Workout,
     accessToken: AccessToken
   )(implicit ec: ExecutionContext): Future[Validation[WorkoutRecord]] = {
-    // Recursively find all subtasks within the workout
-    def getSubTasks(subTasks: Seq[core.SubTask]): Seq[core.SubTask] = {
-      if (!subTasks.isEmpty) {
-        subTasks ++ getSubTasks(subTasks.flatMap(_.tasks.getOrElse(Nil)))
-      } else {
-        Nil
-      }
-    }
-
-    val subTasks = getSubTasks(workout.tasks.getOrElse(Nil))
+    val subTasks = WorkoutDsl.getSubTasks(workout)
     val taskMovements = workout.movement.toSeq ++ subTasks.flatMap(_.movement)
 
     // Fetch the actual movements referenced by the task movements
@@ -138,94 +130,35 @@ class WorkoutsService(
       referencedMovements <- futReferencedMovements
       ancestry <- futAncestry
       result <- {
-        var errors = Seq.empty[Errors]
+        val effectiveWorkout = WorkoutDsl.mergeWorkouts(workout, ancestry)
+        val validationErrors = WorkoutDsl.validateWorkout(effectiveWorkout, referencedMovements)
 
-        // A workout with a parent _cannot_ have a score. A workout without
-        // a parent _must_ have a score.
-        val scores = workout.score.toSeq ++ taskMovements.flatMap(_.score)
-
-        if (ancestry.length == 0) {
-          if (scores.size == 0) {
-            errors = errors :+ Errors.scalar(Seq(Message(key = "noScoreSpecified")))
-          } else if (scores.size > 1) {
-            errors = errors :+ Errors.scalar(Seq(Message(key = "multipleScoresSpecified")))
-          }
+        if (validationErrors.length > 0) {
+          Future.successful(Validation.failure(validationErrors))
         } else {
-          if (scores.size > 0) {
-            errors = errors :+ Errors.scalar(Seq(Message(key = "scoreSpecifiedByChild")))
-          }
-        }
+          val ancestryErrors = ancestry.headOption.map { parent =>
+            WorkoutDsl.validateAncestry(workout, parent)
+          }.getOrElse(Nil)
 
-        // A top-level workout and all of its subtasks must have either a
-        // movement or at least one task
-        if (ancestry.length == 0) {
-          if (workout.movement.isEmpty && workout.tasks.map(_.isEmpty).getOrElse(true)) {
-            errors = errors :+ Errors.scalar(Seq(Message(key = "noTaskMovementOrSubTask")))
-          }
+          if (ancestryErrors.length > 0) {
+            Future.successful(Validation.failure(ancestryErrors))
+          } else {
+            val projection = Workouts.map { r =>
+              (r.guid, r.schemaVersionMajor, r.schemaVersionMinor, r.json,
+               r.createdByAccount, r.createdByAccessToken)
+            }.returning(Workouts.map(_.guid))
 
-          val emptySubTasks = subTasks.filter { subTask =>
-            subTask.movement.isEmpty && subTask.tasks.map(_.isEmpty).getOrElse(true)
-          }
+            val insert = projection += ((UUID.randomUUID, 1, 0, Json.toJson(workout),
+              accessToken.resourceOwner.guid, accessToken.guid))
 
-          if (!emptySubTasks.isEmpty) {
-            errors = errors :+ Errors.scalar(Seq(Message(key = "noTaskMovementOrSubTask")))
-          }
-        }
-
-        def taskMovementErrors(taskMovement: core.TaskMovement): Option[Errors] = {
-          referencedMovements.find(_.guid == taskMovement.guid).map { referencedMovement =>
-            // If a task movement has a score, it must reference a free variable
-            // either in the task movement itself, or in the referenced movement.
-            taskMovement.score.flatMap { score =>
-              val freeVariableNames = (taskMovement.variables ++ referencedMovement.variables).flatten.filter { variable =>
-                variable.dimension.isDefined
-              }.map(_.name).toSeq
-
-              if (!freeVariableNames.contains(score)) {
-                Some(Errors.scalar(Seq(Message(
-                  key = "unknownMovementScore",
-                  details =
-                    "guid" -> taskMovement.guid.toString,
-                    "score" -> score
-                ))))
-              } else None
-            }
-          }.getOrElse {
-            // The task movement's GUID must reference an actual movement.
-            Some(Errors.scalar(Seq(Message(
-              key = "unknownMovementGuid",
-              details = "guid" -> taskMovement.guid.toString
-            ))))
-          }
-        }
-
-        errors = errors ++ taskMovements.flatMap(taskMovementErrors)
-
-        // If there's a top-level score, it must be either 'time' or 'reps'.
-        workout.score.foreach { topLevelScore =>
-          if (topLevelScore != "time" && topLevelScore != "reps") {
-            errors = errors :+ Errors.scalar(Seq(Message(key = "invalidTopLevelScore", "score" -> topLevelScore)))
-          }
-        }
-
-        if (!errors.isEmpty) {
-          Future.successful(Validation.failure(errors))
-        } else {
-          val projection = Workouts.map { r =>
-            (r.guid, r.schemaVersionMajor, r.schemaVersionMinor, r.json,
-             r.createdByAccount, r.createdByAccessToken)
-          }.returning(Workouts.map(_.guid))
-
-          val insert = projection += ((UUID.randomUUID, 1, 0, Json.toJson(workout),
-            accessToken.resourceOwner.guid, accessToken.guid))
-
-          db.run(insert).flatMap { guid =>
-            val query = Workouts.filter(_.guid === guid)
-            db.run(query.result).map { workouts =>
-              workouts.headOption.map { workout =>
-                Validation.success(workout)
-              }.getOrElse {
-                throw new ResourceNotFound("workout", guid)
+            db.run(insert).flatMap { guid =>
+              val query = Workouts.filter(_.guid === guid)
+              db.run(query.result).map { workouts =>
+                workouts.headOption.map { workout =>
+                  Validation.success(workout)
+                }.getOrElse {
+                  throw new ResourceNotFound("workout", guid)
+                }
               }
             }
           }

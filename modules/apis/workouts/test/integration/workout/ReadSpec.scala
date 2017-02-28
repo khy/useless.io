@@ -77,8 +77,7 @@ class ReadSpec extends IntegrationSpec {
       testHelper.deleteWorkouts()
       val workout1 = testHelper.createWorkout()
       val workout2 = testHelper.createWorkout(
-        parentGuid = Some(workout1.guid),
-        score = None
+        parentGuid = Some(workout1.guid)
       )
 
       val response1 = await {
@@ -106,8 +105,7 @@ class ReadSpec extends IntegrationSpec {
       testHelper.deleteWorkouts()
       val workout1 = testHelper.createWorkout()
       val workout2 = testHelper.createWorkout(
-        parentGuid = Some(workout1.guid),
-        score = None
+        parentGuid = Some(workout1.guid)
       )
 
       val response = await {
