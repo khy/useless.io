@@ -18,12 +18,11 @@ class ChildSpec extends IntegrationSpec {
     "create a workout with subtasks" in {
       val pullUp = testHelper.createMovement("Pull Up")
 
-      val response = await { request("/workouts").post(Json.parse(s"""
+      val parent = testHelper.createWorkout(s"""
         {
           "name": "Parent",
           "reps": 1,
           "score": "time",
-          "time": {"value": 90, "unitOfMeasure": "sec"},
           "tasks": [
             {
               "reps": 100,
@@ -32,6 +31,13 @@ class ChildSpec extends IntegrationSpec {
               }
             }
           ]
+        }
+      """)
+
+      val response = await { request("/workouts").post(Json.parse(s"""
+        {
+          "parentGuid": "${parent.guid}",
+          "time": {"value": 90, "unitOfMeasure": "sec"}
         }
       """)) }
 

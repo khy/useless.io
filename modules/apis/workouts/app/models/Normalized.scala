@@ -54,6 +54,7 @@ case class Workout(
   time: Option[Measurement],
   score: Option[String],
   tasks: Option[Seq[core.SubTask]],
+  movement: Option[core.TaskMovement],
   createdAt: ZonedDateTime,
   createdBy: User,
   deletedAt: Option[ZonedDateTime],

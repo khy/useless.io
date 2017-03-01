@@ -54,6 +54,7 @@ class WorkoutsService(
             time = workout.time,
             score = workout.score,
             tasks = workout.tasks,
+            movement = workout.movement,
             createdAt = record.createdAt,
             createdBy = users.find(_.guid == record.createdByAccount).getOrElse(User.Anon),
             deletedAt = record.deletedAt,
@@ -108,14 +109,6 @@ class WorkoutsService(
     workout: core.Workout,
     accessToken: AccessToken
   )(implicit ec: ExecutionContext): Future[Validation[WorkoutRecord]] = {
-    val subTasks = WorkoutDsl.getSubTasks(workout)
-    val taskMovements = workout.movement.toSeq ++ subTasks.flatMap(_.movement)
-
-    // Fetch the actual movements referenced by the task movements
-    val futReferencedMovements = movementsService.
-      getMovementsByGuid(taskMovements.map(_.guid)).
-      flatMap(movementsService.db2api)
-
     // Find the "ancestry" of the workout (limited to 2 for now)
     val futAncestry = for {
       optParent <- workout.parentGuid.map { parentGuid =>
@@ -126,11 +119,18 @@ class WorkoutsService(
       }.getOrElse(Future.successful(None))
     } yield Seq(optParent, optGrandParent).flatten
 
-    for {
-      referencedMovements <- futReferencedMovements
-      ancestry <- futAncestry
-      result <- {
-        val effectiveWorkout = WorkoutDsl.mergeWorkouts(workout, ancestry)
+    futAncestry.flatMap { ancestry =>
+      val effectiveWorkout = WorkoutDsl.mergeWorkouts(workout, ancestry)
+
+      val subTasks = WorkoutDsl.getSubTasks(effectiveWorkout)
+      val taskMovements = effectiveWorkout.movement.toSeq ++ subTasks.flatMap(_.movement)
+
+      // Fetch the actual movements referenced by the task movements
+      val futReferencedMovements = movementsService.
+        getMovementsByGuid(taskMovements.map(_.guid)).
+        flatMap(movementsService.db2api)
+
+      futReferencedMovements.flatMap { referencedMovements =>
         val validationErrors = WorkoutDsl.validateWorkout(effectiveWorkout, referencedMovements)
 
         if (validationErrors.length > 0) {
@@ -164,7 +164,7 @@ class WorkoutsService(
           }
         }
       }
-    } yield result
+    }
   }
 
 }

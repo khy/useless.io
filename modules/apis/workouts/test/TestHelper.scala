@@ -20,6 +20,15 @@ class TestHelper(
   import dbConfig.db
   import dbConfig.driver.api._
 
+  def createMovementFromJson(
+    rawJson: String
+  )(implicit accessToken: AccessToken): MovementRecord = await {
+    Json.parse(rawJson).validate[core.Movement].fold(
+      error => throw new RuntimeException(s"Invalid movement JSON [$error]: $rawJson"),
+      movement => movementsService.addMovement(movement, accessToken)
+    )
+  }.toSuccess.value
+
   def createMovement(
     name: String = s"movement-${UUID.randomUUID}",
     variables: Option[Seq[Variable]] = None
@@ -31,14 +40,39 @@ class TestHelper(
     db.run(sqlu"delete from movements")
   }
 
+  def buildWorkout(
+    rawJson: String
+  ) = Json.parse(rawJson).validate[core.Workout].fold(
+    error => throw new RuntimeException(s"Invalid workout JSON [$error]: $rawJson"),
+    workout => workout
+  )
+
   def createWorkout(
     rawJson: String
   )(implicit accessToken: AccessToken): WorkoutRecord = await {
-    Json.parse(rawJson).validate[core.Workout].fold(
-      error => throw new RuntimeException("Invalid workout JSON: " + rawJson),
-      workout => workoutsService.addWorkout(workout, accessToken)
-    )
+    workoutsService.addWorkout(buildWorkout(rawJson), accessToken)
   }.toSuccess.value
+
+  def buildWorkout(
+    parentGuid: Option[UUID] = None,
+    time: Option[Measurement] = None,
+    score: Option[String] = Some("time"),
+    movement: Option[MovementRecord] = None
+  ) = core.Workout(
+    parentGuid = parentGuid,
+    name = None,
+    reps = None,
+    time = time,
+    score = score,
+    tasks = None,
+    movement = movement.map { movement =>
+      core.TaskMovement(
+        guid = movement.guid,
+        score = None,
+        variables = None
+      )
+    }
+  )
 
   def createWorkout(
     parentGuid: Option[UUID] = None,
@@ -46,20 +80,11 @@ class TestHelper(
     score: Option[String] = Some("time"),
     movement: Option[MovementRecord] = None
   )(implicit accessToken: AccessToken): WorkoutRecord = await {
-    val workout = core.Workout(
+    val workout = buildWorkout(
       parentGuid = parentGuid,
-      name = None,
-      reps = None,
       time = time,
       score = score,
-      tasks = None,
-      movement = movement.orElse { Some(createMovement()) }.map { movement =>
-        core.TaskMovement(
-          guid = movement.guid,
-          score = None,
-          variables = None
-        )
-      }
+      movement = movement.orElse { Some(createMovement()) }
     )
 
     workoutsService.addWorkout(workout, accessToken)
