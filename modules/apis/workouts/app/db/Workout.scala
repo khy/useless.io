@@ -10,6 +10,7 @@ case class WorkoutRecord(
   guid: UUID,
   schemaVersionMajor: Int,
   schemaVersionMinor: Int,
+  parentGuids: Option[List[UUID]],
   json: JsValue,
   createdAt: ZonedDateTime,
   createdByAccount: UUID,
@@ -25,11 +26,12 @@ class WorkoutsTable(tag: Tag)
   with AuditData[WorkoutRecord]
 {
   def guid = column[UUID]("guid")
+  def parentGuids = column[Option[List[UUID]]]("parent_guids")
   def json = column[JsValue]("json")
 
-  def * = (guid, schemaVersionMajor, schemaVersionMinor, json, createdAt,
-    createdByAccount, createdByAccessToken, deletedAt, deletedByAccount,
-    deletedByAccessToken) <> (WorkoutRecord.tupled, WorkoutRecord.unapply)
+  def * = (guid, schemaVersionMajor, schemaVersionMinor, parentGuids, json,
+    createdAt, createdByAccount, createdByAccessToken, deletedAt,
+    deletedByAccount, deletedByAccessToken) <> (WorkoutRecord.tupled, WorkoutRecord.unapply)
 }
 
 object Workouts extends TableQuery(new WorkoutsTable(_))

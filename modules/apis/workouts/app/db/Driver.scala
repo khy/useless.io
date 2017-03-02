@@ -4,6 +4,7 @@ import com.github.tminglei.slickpg._
 
 trait Driver
   extends ExPostgresDriver
+  with PgArraySupport
   with PgDate2Support
   with PgPlayJsonSupport
   with array.PgArrayJdbcTypes
@@ -13,6 +14,7 @@ trait Driver
 
   object Api
     extends API
+    with ArrayImplicits
     with DateTimeImplicits
     with JsonImplicits
   {

@@ -37,7 +37,6 @@ object JsonImplicits {
 
   implicit val measurementFormat = Json.format[Measurement]
   implicit val variableFormat = Json.format[Variable]
-  implicit val movementFormat = Json.format[Movement]
 
   implicit val coreMovementFormat = Json.format[core.Movement]
   implicit val coreTaskMovementFormat = Json.format[core.TaskMovement]
@@ -51,8 +50,7 @@ object JsonImplicits {
 
   implicit val coreWorkoutFormat = Json.format[core.Workout]
 
-  implicit val taskMovementFormat = Json.format[TaskMovement]
-  implicit val subTaskFormat = Json.format[SubTask]
+  implicit val movementFormat = Json.format[Movement]
   implicit val workoutFormat = Json.format[Workout]
 
 }

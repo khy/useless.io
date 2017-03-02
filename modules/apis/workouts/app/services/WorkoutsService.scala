@@ -48,7 +48,7 @@ class WorkoutsService(
           error => throw new InvalidState(s"Invalid workout JSON from DB [$error]"),
           workout => Workout(
             guid = record.guid,
-            parentGuid = workout.parentGuid,
+            parentGuids = record.parentGuids,
             name = workout.name,
             reps = workout.reps,
             time = workout.time,
@@ -82,15 +82,15 @@ class WorkoutsService(
 
       parentGuids.foreach { parentGuids =>
         query = query.filter { workout =>
-          workout.json +>> "parentGuid" inSet parentGuids.map(_.toString)
+          workout.parentGuids @& parentGuids.toList.bind
         }
       }
 
       isChild.foreach { isChild =>
         if (isChild) {
-          query = query.filter { _.json.+>("parentGuid").?.isDefined }
+          query = query.filter { _.parentGuids.isDefined }
         } else {
-          query = query.filter { _.json.+>("parentGuid").?.isEmpty }
+          query = query.filter { _.parentGuids.isEmpty }
         }
       }
 
@@ -100,64 +100,83 @@ class WorkoutsService(
     }
   }
 
-  private def findWorkout(guid: UUID)(implicit ec: ExecutionContext): Future[Option[Workout]] = {
-    val query = Workouts.filter(_.guid === guid)
-    db.run(query.result).flatMap(db2api).map(_.headOption)
+  private def findRawWorkouts(guids: Seq[UUID])(implicit ec: ExecutionContext): Future[Seq[Workout]] = {
+    val query = Workouts.filter(_.guid.inSet(guids))
+    db.run(query.result).flatMap(db2api)
   }
 
   def addWorkout(
+    parentGuid: Option[UUID],
     workout: core.Workout,
     accessToken: AccessToken
   )(implicit ec: ExecutionContext): Future[Validation[WorkoutRecord]] = {
-    // Find the "ancestry" of the workout (limited to 2 for now)
-    val futAncestry = for {
-      optParent <- workout.parentGuid.map { parentGuid =>
-        findWorkout(parentGuid)
-      }.getOrElse(Future.successful(None))
-      optGrandParent <- optParent.flatMap(_.parentGuid).map { grandParentGuid =>
-        findWorkout(grandParentGuid)
-      }.getOrElse(Future.successful(None))
-    } yield Seq(optParent, optGrandParent).flatten
+    // Find the "ancestry" of the workout
+    val futValAncestry = parentGuid.map { parentGuid =>
+      findRawWorkouts(Seq(parentGuid)).flatMap { workouts =>
+        workouts.headOption.map { workout =>
+          workout.parentGuids.map { parentGuids =>
+            findRawWorkouts(parentGuids)
+          }.getOrElse {
+            Future.successful(Nil)
+          }.map { parentWorkouts =>
+            Validation.success(workout +: parentWorkouts)
+          }
+        }.getOrElse {
+          Future.successful(Validation.failure(
+            key = "parentGuid",
+            messageKey = "unknownWorkoutGuid",
+            messageDetails = "specified" -> parentGuid.toString
+          ))
+        }
+      }
+    }.getOrElse {
+      Future.successful(Validation.success(Nil))
+    }
 
     val subTasks = WorkoutDsl.getSubTasks(workout)
     val taskMovements = workout.movement.toSeq ++ subTasks.flatMap(_.movement)
 
     // Fetch the actual movements referenced by the task movements
-    val futReferencedMovements = movementsService.
+    val futValReferencedMovements = movementsService.
       getMovementsByGuid(taskMovements.map(_.guid)).
-      flatMap(movementsService.db2api)
+      flatMap(movementsService.db2api).
+      map(Validation.success)
 
     for {
-      ancestry <- futAncestry
-      referencedMovements <- futReferencedMovements
+      valAncestry <- futValAncestry
+      valReferencedMovements <- futValReferencedMovements
       result <- {
-        val validationErrors = WorkoutDsl.validateWorkout(workout, referencedMovements)
+        ValidationUtil.flatMapFuture(valAncestry ++ valReferencedMovements) { case (ancestry, referencedMovements) =>
+          val validationErrors = WorkoutDsl.validateWorkout(workout, referencedMovements)
 
-        if (validationErrors.length > 0) {
-          Future.successful(Validation.failure(validationErrors))
-        } else {
-          val ancestryErrors = ancestry.headOption.map { parent =>
-            WorkoutDsl.validateAncestry(workout, parent)
-          }.getOrElse(Nil)
-
-          if (ancestryErrors.length > 0) {
-            Future.successful(Validation.failure(ancestryErrors))
+          if (validationErrors.length > 0) {
+            Future.successful(Validation.failure(validationErrors))
           } else {
-            val projection = Workouts.map { r =>
-              (r.guid, r.schemaVersionMajor, r.schemaVersionMinor, r.json,
-               r.createdByAccount, r.createdByAccessToken)
-            }.returning(Workouts.map(_.guid))
+            val ancestryErrors = ancestry.headOption.map { parent =>
+              WorkoutDsl.validateAncestry(workout, parent)
+            }.getOrElse(Nil)
 
-            val insert = projection += ((UUID.randomUUID, 1, 0, Json.toJson(workout),
-              accessToken.resourceOwner.guid, accessToken.guid))
+            if (ancestryErrors.length > 0) {
+              Future.successful(Validation.failure(ancestryErrors))
+            } else {
+              val projection = Workouts.map { r =>
+                (r.guid, r.schemaVersionMajor, r.schemaVersionMinor, r.parentGuids,
+                 r.json, r.createdByAccount, r.createdByAccessToken)
+              }.returning(Workouts.map(_.guid))
 
-            db.run(insert).flatMap { guid =>
-              val query = Workouts.filter(_.guid === guid)
-              db.run(query.result).map { workouts =>
-                workouts.headOption.map { workout =>
-                  Validation.success(workout)
-                }.getOrElse {
-                  throw new ResourceNotFound("workout", guid)
+              val parentGuids = if (parentGuid.isDefined) Some(ancestry.map(_.guid).toList) else None
+
+              val insert = projection += ((UUID.randomUUID, 1, 0, parentGuids,
+                Json.toJson(workout), accessToken.resourceOwner.guid, accessToken.guid))
+
+              db.run(insert).flatMap { guid =>
+                val query = Workouts.filter(_.guid === guid)
+                db.run(query.result).map { workouts =>
+                  workouts.headOption.map { workout =>
+                    Validation.success(workout)
+                  }.getOrElse {
+                    throw new ResourceNotFound("workout", guid)
+                  }
                 }
               }
             }

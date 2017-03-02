@@ -38,10 +38,13 @@ class WorkoutsController(
     }
   }
 
-  def create = authenticated.async(parse.json) { request =>
+  def createChild(parentGuid: UUID) = create(Some(parentGuid))
+
+  def create(parentGuid: Option[UUID] = None) = authenticated.async(parse.json) { request =>
     request.body.validate[core.Workout].fold(
       error => Future.successful(BadRequest(error.toString)),
       workout => workoutsService.addWorkout(
+        parentGuid = parentGuid,
         workout = workout,
         accessToken = request.accessToken
       ).flatMap { result =>

@@ -1,5 +1,6 @@
-GET  /workouts    controllers.workouts.WorkoutsController.index
-POST /workouts    controllers.workouts.WorkoutsController.create
+GET  /workouts                controllers.workouts.WorkoutsController.index
+POST /workouts                controllers.workouts.WorkoutsController.create()
+POST /workouts/:guid/workouts controllers.workouts.WorkoutsController.createChild(guid: java.util.UUID)
 
 GET  /movements   controllers.workouts.MovementsController.index
 POST /movements   controllers.workouts.MovementsController.create

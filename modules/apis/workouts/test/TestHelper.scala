@@ -40,26 +40,25 @@ class TestHelper(
     db.run(sqlu"delete from movements")
   }
 
-  def buildWorkout(
+  def buildWorkoutFromJson(
     rawJson: String
   ) = Json.parse(rawJson).validate[core.Workout].fold(
     error => throw new RuntimeException(s"Invalid workout JSON [$error]: $rawJson"),
     workout => workout
   )
 
-  def createWorkout(
-    rawJson: String
+  def createWorkoutFromJson(
+    rawJson: String,
+    parentGuid: Option[UUID] = None
   )(implicit accessToken: AccessToken): WorkoutRecord = await {
-    workoutsService.addWorkout(buildWorkout(rawJson), accessToken)
+    workoutsService.addWorkout(parentGuid, buildWorkoutFromJson(rawJson), accessToken)
   }.toSuccess.value
 
   def buildWorkout(
-    parentGuid: Option[UUID] = None,
     time: Option[Measurement] = None,
     score: Option[String] = Some("time"),
     movement: Option[MovementRecord] = None
   ) = core.Workout(
-    parentGuid = parentGuid,
     name = None,
     reps = None,
     time = time,
@@ -81,13 +80,12 @@ class TestHelper(
     movement: Option[MovementRecord] = None
   )(implicit accessToken: AccessToken): WorkoutRecord = await {
     val workout = buildWorkout(
-      parentGuid = parentGuid,
       time = time,
       score = score,
       movement = movement.orElse { Some(createMovement()) }
     )
 
-    workoutsService.addWorkout(workout, accessToken)
+    workoutsService.addWorkout(parentGuid, workout, accessToken)
   }.toSuccess.value
 
   def deleteWorkouts() {

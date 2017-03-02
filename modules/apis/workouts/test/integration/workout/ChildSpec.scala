@@ -18,7 +18,7 @@ class ChildSpec extends IntegrationSpec {
     "create a workout with subtasks" in {
       val pullUp = testHelper.createMovement("Pull Up")
 
-      val parent = testHelper.createWorkout(s"""
+      val parent = testHelper.createWorkoutFromJson(s"""
         {
           "name": "Parent",
           "reps": 1,

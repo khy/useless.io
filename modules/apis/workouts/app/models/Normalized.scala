@@ -12,7 +12,6 @@ package core {
   )
 
   case class Workout(
-    parentGuid: Option[UUID],
     name: Option[String],
     reps: Option[Formula],
     time: Option[Measurement],
@@ -48,7 +47,7 @@ case class Movement(
 
 case class Workout(
   guid: UUID,
-  parentGuid: Option[UUID],
+  parentGuids: Option[Seq[UUID]],
   name: Option[String],
   reps: Option[Formula],
   time: Option[Measurement],
@@ -59,16 +58,4 @@ case class Workout(
   createdBy: User,
   deletedAt: Option[ZonedDateTime],
   deletedBy: Option[User]
-)
-
-case class SubTask(
-  reps: Option[Formula],
-  movement: Option[TaskMovement]
-)
-
-case class TaskMovement(
-  guid: UUID,
-  name: String,
-  score: Option[String],
-  variables: Option[Seq[Variable]]
 )
