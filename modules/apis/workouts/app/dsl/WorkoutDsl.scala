@@ -19,22 +19,6 @@ object WorkoutDsl {
     _getSubTasks(workout.tasks.getOrElse(Nil))
   }
 
-  def mergeWorkouts(workout: core.Workout, ancestry: Seq[Workout]): core.Workout = {
-    def _merge(a: core.Workout, b: Workout) = core.Workout(
-      a.parentGuid.orElse(b.parentGuid),
-      a.name.orElse(b.name),
-      a.reps.orElse(b.reps),
-      a.time.orElse(b.time),
-      a.score.orElse(b.score),
-      a.tasks.orElse(b.tasks),
-      a.movement.orElse(b.movement)
-    )
-
-    ancestry.foldLeft(workout) { (effective, ancestor) =>
-      _merge(effective, ancestor)
-    }
-  }
-
   def validateWorkout(workout: core.Workout, referencedMovements: Seq[Movement]): Seq[Errors] = {
     var errors = Seq.empty[Errors]
 

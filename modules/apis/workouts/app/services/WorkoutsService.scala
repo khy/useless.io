@@ -119,19 +119,19 @@ class WorkoutsService(
       }.getOrElse(Future.successful(None))
     } yield Seq(optParent, optGrandParent).flatten
 
-    futAncestry.flatMap { ancestry =>
-      val effectiveWorkout = WorkoutDsl.mergeWorkouts(workout, ancestry)
+    val subTasks = WorkoutDsl.getSubTasks(workout)
+    val taskMovements = workout.movement.toSeq ++ subTasks.flatMap(_.movement)
 
-      val subTasks = WorkoutDsl.getSubTasks(effectiveWorkout)
-      val taskMovements = effectiveWorkout.movement.toSeq ++ subTasks.flatMap(_.movement)
+    // Fetch the actual movements referenced by the task movements
+    val futReferencedMovements = movementsService.
+      getMovementsByGuid(taskMovements.map(_.guid)).
+      flatMap(movementsService.db2api)
 
-      // Fetch the actual movements referenced by the task movements
-      val futReferencedMovements = movementsService.
-        getMovementsByGuid(taskMovements.map(_.guid)).
-        flatMap(movementsService.db2api)
-
-      futReferencedMovements.flatMap { referencedMovements =>
-        val validationErrors = WorkoutDsl.validateWorkout(effectiveWorkout, referencedMovements)
+    for {
+      ancestry <- futAncestry
+      referencedMovements <- futReferencedMovements
+      result <- {
+        val validationErrors = WorkoutDsl.validateWorkout(workout, referencedMovements)
 
         if (validationErrors.length > 0) {
           Future.successful(Validation.failure(validationErrors))
@@ -164,7 +164,7 @@ class WorkoutsService(
           }
         }
       }
-    }
+    } yield result
   }
 
 }
