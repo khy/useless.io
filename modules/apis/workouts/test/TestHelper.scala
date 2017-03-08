@@ -20,6 +20,11 @@ class TestHelper(
   import dbConfig.db
   import dbConfig.driver.api._
 
+  def clearDb() {
+    deleteMovements()
+    deleteWorkouts()
+  }
+
   def createMovementFromJson(
     rawJson: String
   )(implicit accessToken: AccessToken): MovementRecord = await {

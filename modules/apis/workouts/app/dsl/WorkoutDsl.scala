@@ -86,7 +86,18 @@ object WorkoutDsl {
   }
 
   def validateAncestry(child: core.Workout, parent: Workout): Seq[Errors] = {
-    Seq.empty
+    var errors = Seq.empty[Errors]
+
+    for {
+      childScore <- child.score
+      parentScore <- parent.score
+    } yield {
+      if (child.score != parent.score) {
+        errors = errors :+ Errors.scalar(Seq(Message(key = "scoreDoesNotMatchParent")))
+      }
+    }
+
+    errors
   }
 
 }

@@ -13,6 +13,18 @@ import test.workouts._
 
 class ChildSpec extends IntegrationSpec {
 
+  def buildCleanAndJerk() = testHelper.createMovementFromJson("""
+    {
+      "name": "Clean and Jerk",
+      "variables": [
+        {
+          "name": "Barbell Weight",
+          "dimension": "weight"
+        }
+      ]
+    }
+  """)
+
   "POST /workouts" must {
 
     "create a workout with subtasks" in {
@@ -52,6 +64,105 @@ class ChildSpec extends IntegrationSpec {
       """)) }
 
       response.status mustBe CREATED
+    }
+
+    "reject a workout that does not have the same score as its parent" in {
+      testHelper.clearDb()
+      val cleanAndJerk = buildCleanAndJerk()
+
+      val grace = testHelper.createWorkoutFromJson(s"""
+        {
+          "name": "Pull Up Grace",
+          "reps": 30,
+          "score": "time",
+          "movement": {
+            "guid": "${cleanAndJerk.guid}"
+          }
+        }
+      """)
+
+      val response = await { request(s"/workouts/${grace.guid}/workouts").post(Json.parse(s"""
+        {
+          "name": "Women's Rx",
+          "time": {
+            "unitOfMeasure": "min",
+            "value": 5
+          },
+          "score": "reps",
+          "movement": {
+            "guid": "${cleanAndJerk.guid}",
+            "measurement": {
+              "unitOfMeasure": "lb",
+              "value": 95
+            }
+          }
+        }
+      """)) }
+
+      response.status mustBe BAD_REQUEST
+      val errors = response.json.as[Seq[Errors]].head
+      errors.messages.head.key mustBe "scoreDoesNotMatchParent"
+    }
+
+    "reject a workout with tasks that do no match parent" ignore {
+      testHelper.clearDb()
+      val cleanAndJerk = buildCleanAndJerk()
+
+      val grace = testHelper.createWorkoutFromJson(s"""
+        {
+          "name": "Grace",
+          "reps": 1,
+          "score": "time",
+          "tasks": [
+            {
+              "reps": 30,
+              "movement": {
+                "guid": "${cleanAndJerk.guid}"
+              }
+            }
+          ]
+        }
+      """)
+
+      val snatch = testHelper.createMovementFromJson("""
+        {
+          "name": "Snatch",
+          "variables": [
+            {
+              "name": "Barbell Weight",
+              "dimension": "weight"
+            }
+          ]
+        }
+      """)
+
+      val response = await { request("/workouts").post(Json.parse(s"""
+        {
+          "parentGuid": "${grace.guid}",
+          "name": "Grace",
+          "reps": 1,
+          "score": "time",
+          "tasks": [
+            {
+              "reps": 30,
+              "movement": {
+                "guid": "${snatch.guid}",
+                "variables": [
+                  {
+                    "name": "Barbell Weight",
+                    "measurement": {
+                      "unitOfMeasure": "lb",
+                      "value": 95
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      """)) }
+
+      response.status mustBe BAD_REQUEST
     }
 
   }

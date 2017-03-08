@@ -23,7 +23,7 @@ object UnitOfMeasure {
   val Second = UnitOfMeasure(Dimension.Time, "sec")
   val Minute = UnitOfMeasure(Dimension.Time, "min")
 
-  val Pound = UnitOfMeasure(Dimension.Weight, "lbs")
+  val Pound = UnitOfMeasure(Dimension.Weight, "lb")
   val Kilogram = UnitOfMeasure(Dimension.Weight, "kg")
   val Pood = UnitOfMeasure(Dimension.Weight, "pood")
 
