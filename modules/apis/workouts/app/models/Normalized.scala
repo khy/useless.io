@@ -4,6 +4,13 @@ import java.util.UUID
 import java.time.ZonedDateTime
 import io.useless.account.User
 
+trait Task {
+  def reps: Option[Formula]
+  def time: Option[Measurement]
+  def tasks: Option[Seq[Task]]
+  def movement: Option[core.TaskMovement]
+}
+
 package core {
 
   case class Movement(
@@ -18,14 +25,14 @@ package core {
     score: Option[String],
     tasks: Option[Seq[SubTask]],
     movement: Option[TaskMovement]
-  )
+  ) extends Task
 
   case class SubTask(
     reps: Option[Formula],
     time: Option[Measurement],
     tasks: Option[Seq[SubTask]],
     movement: Option[TaskMovement]
-  )
+  ) extends Task
 
   case class TaskMovement(
     guid: UUID,

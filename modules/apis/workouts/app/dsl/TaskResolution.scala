@@ -10,33 +10,17 @@ case class ResolvedTask(
 
 object TaskResolver {
 
-  def resolveTasks(workout: core.Workout): Stream[ResolvedTask] = {
-    workout.movement.map { movement =>
+  def resolveTasks(task: Task): Stream[ResolvedTask] = {
+    task.movement.map { movement =>
       val resolvedTask = ResolvedTask(
-        reps = workout.reps.map { reps => resolveFormula(reps) },
-        seconds = workout.time.map { time => resolveTimeMeasurement(time) },
+        reps = task.reps.map { reps => resolveFormula(reps) },
+        seconds = task.time.map { time => resolveTimeMeasurement(time) },
         movement = movement
       )
 
       Stream(resolvedTask)
     }.getOrElse {
-      workout.tasks.map { tasks =>
-        tasks.toStream.flatMap(resolveTasks)
-      }.getOrElse(Stream.empty)
-    }
-  }
-
-  def resolveTasks(subTask: core.SubTask): Stream[ResolvedTask] = {
-    subTask.movement.map { movement =>
-      val resolvedTask = ResolvedTask(
-        reps = subTask.reps.map { reps => resolveFormula(reps) },
-        seconds = subTask.time.map { time => resolveTimeMeasurement(time) },
-        movement = movement
-      )
-
-      Stream(resolvedTask)
-    }.getOrElse {
-      subTask.tasks.map { tasks =>
+      task.tasks.map { tasks =>
         tasks.toStream.flatMap(resolveTasks)
       }.getOrElse(Stream.empty)
     }
