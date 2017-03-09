@@ -20,8 +20,14 @@ object TaskResolver {
 
       Stream(resolvedTask)
     }.getOrElse {
-      task.tasks.map { tasks =>
-        tasks.toStream.flatMap(resolveTasks)
+      task.reps.map { reps =>
+        val resolvedReps = resolveFormula(reps)
+
+        Range(0, resolvedReps).toStream.flatMap { rep =>
+          task.tasks.map { tasks =>
+            tasks.toStream.flatMap(resolveTasks)
+          }.getOrElse(Stream.empty)
+        }
       }.getOrElse(Stream.empty)
     }
   }
