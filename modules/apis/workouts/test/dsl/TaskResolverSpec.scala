@@ -35,6 +35,37 @@ class TaskResolverSpec extends IntegrationSpec {
       task.seconds mustBe None
     }
 
+    "return subtasks in sequence" in {
+      testHelper.clearDb()
+      val pullUp = testHelper.createMovement("Pull Up")
+      val pushUp = testHelper.createMovement("Push Up")
+
+      val workout = testHelper.buildWorkoutFromJson(s"""
+        {
+          "name": "Boring",
+          "reps": 1,
+          "score": "time",
+          "tasks": [
+            {
+              "reps": 10,
+              "movement": {
+                "guid": "${pullUp.guid}"
+              }
+            },
+            {
+              "reps": 10,
+              "movement": {
+                "guid": "${pushUp.guid}"
+              }
+            }
+          ]
+        }
+      """)
+
+      val tasks = TaskResolver.resolveTasks(workout)
+      tasks.length mustBe 2
+    }
+
   }
 
 }

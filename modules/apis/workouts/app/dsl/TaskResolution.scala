@@ -27,7 +27,19 @@ object TaskResolver {
   }
 
   def resolveTasks(subTask: core.SubTask): Stream[ResolvedTask] = {
-    Stream.empty
+    subTask.movement.map { movement =>
+      val resolvedTask = ResolvedTask(
+        reps = subTask.reps.map { reps => resolveFormula(reps) },
+        seconds = subTask.time.map { time => resolveTimeMeasurement(time) },
+        movement = movement
+      )
+
+      Stream(resolvedTask)
+    }.getOrElse {
+      subTask.tasks.map { tasks =>
+        tasks.toStream.flatMap(resolveTasks)
+      }.getOrElse(Stream.empty)
+    }
   }
 
   def resolveFormula(formula: Formula): Int = formula match {
