@@ -28,7 +28,7 @@ class ScoreSpec extends IntegrationSpec {
               {
                 "name": "Barbell Weight",
                 "measurement": {
-                  "unitOfMeasure": "lbs",
+                  "unitOfMeasure": "lb",
                   "value": 95
                 }
               }
@@ -56,7 +56,7 @@ class ScoreSpec extends IntegrationSpec {
               {
                 "name": "Barbell Weight",
                 "measurement": {
-                  "unitOfMeasure": "lbs",
+                  "unitOfMeasure": "lb",
                   "value": 95
                 }
               }
@@ -83,7 +83,7 @@ class ScoreSpec extends IntegrationSpec {
               {
                 "name": "Barbell Weight",
                 "measurement": {
-                  "unitOfMeasure": "lbs",
+                  "unitOfMeasure": "lb",
                   "value": 95
                 }
               }
@@ -122,7 +122,7 @@ class ScoreSpec extends IntegrationSpec {
               {
                 "name": "Barbell Weight",
                 "measurement": {
-                  "unitOfMeasure": "lbs",
+                  "unitOfMeasure": "lb",
                   "value": 95
                 }
               }

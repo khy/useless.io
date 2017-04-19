@@ -36,7 +36,7 @@ class BasicSpec extends IntegrationSpec {
               {
                 "name": "Barbell Weight",
                 "measurement": {
-                  "unitOfMeasure": "lbs",
+                  "unitOfMeasure": "lb",
                   "value": 95
                 }
               }
