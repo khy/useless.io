@@ -84,7 +84,7 @@ class TaskResolverSpec extends IntegrationSpec {
               }
             },
             {
-              "reps": 10,
+              "reps": 15,
               "movement": {
                 "guid": "${pushUp.guid}"
               }
@@ -95,6 +95,78 @@ class TaskResolverSpec extends IntegrationSpec {
 
       val tasks = TaskResolver.resolveTasks(workout)
       tasks.length mustBe 4
+
+      tasks(0).movement.guid mustBe pullUp.guid
+      tasks(0).reps mustBe Some(10)
+
+      tasks(1).movement.guid mustBe pushUp.guid
+      tasks(1).reps mustBe Some(15)
+
+      tasks(2).movement.guid mustBe pullUp.guid
+      tasks(2).reps mustBe Some(10)
+
+      tasks(3).movement.guid mustBe pushUp.guid
+      tasks(3).reps mustBe Some(15)
+    }
+
+    "return AMRAP subtasks" in {
+      testHelper.clearDb()
+      val pullUp = testHelper.createMovement("Pull Up")
+      val pushUp = testHelper.createMovement("Push Up")
+
+      val workout = testHelper.buildWorkoutFromJson(s"""
+        {
+          "name": "Boring, Looped",
+          "score": "reps",
+          "tasks": [
+            {
+              "time" : {
+                "unitOfMeasure": "sec",
+                "value": 120
+              },
+              "tasks": [
+                {
+                  "reps": 10,
+                  "movement": {
+                    "guid": "${pullUp.guid}"
+                  }
+                },
+                {
+                  "reps": 15,
+                  "movement": {
+                    "guid": "${pushUp.guid}"
+                  }
+                }
+              ]
+            },
+            {
+              "time" : {
+                "unitOfMeasure": "sec",
+                "value": 360
+              },
+              "tasks": [
+                {
+                  "reps": 2,
+                  "movement": {
+                    "guid": "${pullUp.guid}"
+                  }
+                },
+                {
+                  "reps": 4,
+                  "movement": {
+                    "guid": "${pushUp.guid}"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      """)
+
+      val tasks = TaskResolver.resolveTasks(workout)
+
+      tasks(0).movement.guid mustBe pullUp.guid
+      tasks(0).reps mustBe Some(10)
     }
 
   }
