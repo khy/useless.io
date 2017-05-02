@@ -1,11 +1,18 @@
 package models.workouts.newy
 
 import java.util.UUID
+import java.time.ZonedDateTime
+
+import models.workouts.newy.core.{AbstractTask, FreeVariable, ScoreExpression}
 
 case class Workout(
   guid: UUID,
   name: Option[String],
   score: Option[ScoreExpression],
   variables: Option[Seq[FreeVariable]],
-  task: AbstractTask
+  task: AbstractTask,
+  createdAt: ZonedDateTime,
+  createdByAccount: UUID,
+  deletedAt: Option[ZonedDateTime],
+  deletedByAccount: Option[UUID]
 )

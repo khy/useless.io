@@ -1,4 +1,4 @@
-package models.workouts.newy
+package models.workouts.newy.core
 
 import java.util.UUID
 
