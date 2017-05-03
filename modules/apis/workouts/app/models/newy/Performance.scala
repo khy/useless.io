@@ -2,6 +2,7 @@ package models.workouts.newy
 
 import java.util.UUID
 import java.time.ZonedDateTime
+import play.api.libs.json.Json
 
 import models.workouts.newy.core.{BoundVariable, ConcreteTask}
 
@@ -15,3 +16,9 @@ case class Performance(
   deletedAt: Option[ZonedDateTime],
   deletedByAccount: Option[UUID]
 )
+
+object Performance {
+
+  implicit val jsonFormat = Json.format[Performance]
+
+}
