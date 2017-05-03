@@ -1,5 +1,13 @@
 package models.workouts.newy.core
 
-case class WhileExpression(
-  val raw: String
-) extends Expression
+class WhileExpression private (raw: String) extends Expression {
+  val code = raw
+}
+
+object WhileExpression extends ExpressionCompanion[WhileExpression] {
+
+  def parse(raw: String) = Right(new WhileExpression(raw))
+
+  implicit val jsonFormat = Expression.jsonFormat(this)
+
+}

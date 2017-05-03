@@ -1,5 +1,13 @@
 package models.workouts.newy.core
 
-case class ConstraintExpression(
-  val raw: String
-) extends Expression
+class ConstraintExpression private (raw: String) extends Expression {
+  val code = raw
+}
+
+object ConstraintExpression extends ExpressionCompanion[ConstraintExpression] {
+
+  def parse(raw: String) = Right(new ConstraintExpression(raw))
+
+  implicit val jsonFormat = Expression.jsonFormat(this)
+
+}

@@ -1,6 +1,7 @@
 package models.workouts.newy.core
 
 import java.util.UUID
+import play.api.libs.json.Json
 
 case class Workout(
   name: Option[String],
@@ -8,3 +9,9 @@ case class Workout(
   variables: Option[Seq[FreeVariable]],
   task: AbstractTask
 )
+
+object Workout {
+
+  implicit val jsonFormat = Json.format[Workout]
+
+}
