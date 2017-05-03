@@ -1,6 +1,6 @@
 package dsl.workouts
 
-import models.workouts._
+import models.workouts.old._
 
 case class ResolvedTask(
   reps: Option[Int],

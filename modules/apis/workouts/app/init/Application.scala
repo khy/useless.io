@@ -11,9 +11,9 @@ import io.useless.play.authentication.AuthenticatedComponents
 import io.useless.util.configuration.RichConfiguration._
 
 import workouts.Routes
-import controllers.workouts._
+import controllers.workouts.old._
 import db.workouts.DbConfigComponents
-import services.workouts.ServiceComponents
+import services.workouts.old
 
 object ApplicationComponents {
 
@@ -42,7 +42,7 @@ class AbstractApplicationComponents(context: Context)
   with NingWSComponents
   with SlickComponents
   with DbConfigComponents
-  with ServiceComponents
+  with old.ServiceComponents
 {
 
   self: AccountClientComponents with AccessTokenClientComponents =>

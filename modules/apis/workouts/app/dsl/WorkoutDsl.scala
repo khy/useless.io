@@ -3,7 +3,7 @@ package dsl.workouts
 import io.useless.Message
 import io.useless.validation._
 
-import models.workouts._
+import models.workouts.old._
 
 object WorkoutDsl {
 

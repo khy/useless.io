@@ -1,9 +1,12 @@
-GET  /workouts                controllers.workouts.WorkoutsController.index
-POST /workouts                controllers.workouts.WorkoutsController.create()
-POST /workouts/:guid/workouts controllers.workouts.WorkoutsController.createChild(guid: java.util.UUID)
 
-GET  /movements   controllers.workouts.MovementsController.index
-POST /movements   controllers.workouts.MovementsController.create
 
-GET  /dimensions   controllers.workouts.MeasuresController.dimensions
-GET  /unitsOfMeasure   controllers.workouts.MeasuresController.unitsOfMeasure
+
+GET  /old/workouts                controllers.workouts.old.WorkoutsController.index
+POST /old/workouts                controllers.workouts.old.WorkoutsController.create()
+POST /old/workouts/:guid/workouts controllers.workouts.old.WorkoutsController.createChild(guid: java.util.UUID)
+
+GET  /old/movements   controllers.workouts.old.MovementsController.index
+POST /old/movements   controllers.workouts.old.MovementsController.create
+
+GET  /old/dimensions   controllers.workouts.old.MeasuresController.dimensions
+GET  /old/unitsOfMeasure   controllers.workouts.old.MeasuresController.unitsOfMeasure
