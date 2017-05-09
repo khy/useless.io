@@ -9,8 +9,6 @@ import io.useless.accesstoken.AccessToken
 import io.useless.client.accesstoken.{AccessTokenClient, MockAccessTokenClient}
 import io.useless.client.account.{AccountClient, MockAccountClient}
 
-import test.workouts.old.TestHelper
-
 trait IntegrationSpec
   extends PlaySpec
   with OneServerPerSuite
@@ -51,6 +49,7 @@ trait IntegrationSpec
   override implicit lazy val app = applicationComponents.application
 
   lazy val testHelper = new TestHelper(applicationComponents)
+  lazy val oldTestHelper = new old.TestHelper(applicationComponents)
 
   def unauthenticatedRequest(path: String) = {
     val url = if (path.startsWith("http")) {

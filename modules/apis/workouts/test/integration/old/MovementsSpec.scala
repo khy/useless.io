@@ -140,10 +140,10 @@ class MovementsSpec extends IntegrationSpec {
     }
 
     "return a paginated list of movements" in {
-      testHelper.deleteMovements()
-      val movement1 = testHelper.createMovement()
-      val movement2 = testHelper.createMovement()
-      val movement3 = testHelper.createMovement()
+      oldTestHelper.deleteMovements()
+      val movement1 = oldTestHelper.createMovement()
+      val movement2 = oldTestHelper.createMovement()
+      val movement3 = oldTestHelper.createMovement()
 
       val response = await {
         unauthenticatedRequest("/old/movements").get()
@@ -155,11 +155,11 @@ class MovementsSpec extends IntegrationSpec {
     }
 
     "return movements filtered by name" in {
-      testHelper.deleteMovements()
-      val movement1 = testHelper.createMovement(name = "Alice")
-      val movement2 = testHelper.createMovement(name = "Albert")
-      val movement3 = testHelper.createMovement(name = "Anthony")
-      val movement4 = testHelper.createMovement(name = "Alfred")
+      oldTestHelper.deleteMovements()
+      val movement1 = oldTestHelper.createMovement(name = "Alice")
+      val movement2 = oldTestHelper.createMovement(name = "Albert")
+      val movement3 = oldTestHelper.createMovement(name = "Anthony")
+      val movement4 = oldTestHelper.createMovement(name = "Alfred")
 
       val response = await {
         unauthenticatedRequest("/old/movements").withQueryString(

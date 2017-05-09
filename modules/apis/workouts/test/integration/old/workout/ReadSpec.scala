@@ -24,8 +24,8 @@ class ReadSpec extends IntegrationSpec {
     }
 
     "return all attributes of the workout" in {
-      testHelper.deleteWorkouts()
-      val workout = testHelper.createWorkout(
+      oldTestHelper.deleteWorkouts()
+      val workout = oldTestHelper.createWorkout(
         score = Some("time"),
         time = Some(Measurement(UnitOfMeasure.Second, 50))
       )
@@ -42,10 +42,10 @@ class ReadSpec extends IntegrationSpec {
     }
 
     "return a paginated list of workouts" in {
-      testHelper.deleteWorkouts()
-      val workout1 = testHelper.createWorkout()
-      val workout2 = testHelper.createWorkout()
-      val workout3 = testHelper.createWorkout()
+      oldTestHelper.deleteWorkouts()
+      val workout1 = oldTestHelper.createWorkout()
+      val workout2 = oldTestHelper.createWorkout()
+      val workout3 = oldTestHelper.createWorkout()
 
       val response = await {
         unauthenticatedRequest("/old/workouts").get()
@@ -57,9 +57,9 @@ class ReadSpec extends IntegrationSpec {
     }
 
     "return workouts filtered by guid" in {
-      testHelper.deleteWorkouts()
-      val workout1 = testHelper.createWorkout()
-      val workout2 = testHelper.createWorkout()
+      oldTestHelper.deleteWorkouts()
+      val workout1 = oldTestHelper.createWorkout()
+      val workout2 = oldTestHelper.createWorkout()
 
       val response = await {
         unauthenticatedRequest("/old/workouts").withQueryString(
@@ -74,9 +74,9 @@ class ReadSpec extends IntegrationSpec {
     }
 
     "return workouts without parents" in {
-      testHelper.deleteWorkouts()
-      val workout1 = testHelper.createWorkout()
-      val workout2 = testHelper.createWorkout(
+      oldTestHelper.deleteWorkouts()
+      val workout1 = oldTestHelper.createWorkout()
+      val workout2 = oldTestHelper.createWorkout(
         parentGuid = Some(workout1.guid)
       )
 
@@ -102,9 +102,9 @@ class ReadSpec extends IntegrationSpec {
     }
 
     "return child workouts for the specified parent" in {
-      testHelper.deleteWorkouts()
-      val workout1 = testHelper.createWorkout()
-      val workout2 = testHelper.createWorkout(
+      oldTestHelper.deleteWorkouts()
+      val workout1 = oldTestHelper.createWorkout()
+      val workout2 = oldTestHelper.createWorkout(
         parentGuid = Some(workout1.guid)
       )
 

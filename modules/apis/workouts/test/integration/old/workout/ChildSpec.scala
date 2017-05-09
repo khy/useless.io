@@ -13,7 +13,7 @@ import test.workouts._
 
 class ChildSpec extends IntegrationSpec {
 
-  def buildCleanAndJerk() = testHelper.createMovementFromJson("""
+  def buildCleanAndJerk() = oldTestHelper.createMovementFromJson("""
     {
       "name": "Clean and Jerk",
       "variables": [
@@ -28,9 +28,9 @@ class ChildSpec extends IntegrationSpec {
   "POST /old/workouts" must {
 
     "create a workout with subtasks" in {
-      val pullUp = testHelper.createMovement("Pull Up")
+      val pullUp = oldTestHelper.createMovement("Pull Up")
 
-      val parent = testHelper.createWorkoutFromJson(s"""
+      val parent = oldTestHelper.createWorkoutFromJson(s"""
         {
           "name": "Parent",
           "reps": 1,
@@ -67,10 +67,10 @@ class ChildSpec extends IntegrationSpec {
     }
 
     "reject a workout that does not have the same score as its parent" in {
-      testHelper.clearDb()
+      oldTestHelper.clearDb()
       val cleanAndJerk = buildCleanAndJerk()
 
-      val grace = testHelper.createWorkoutFromJson(s"""
+      val grace = oldTestHelper.createWorkoutFromJson(s"""
         {
           "name": "Pull Up Grace",
           "reps": 30,
@@ -105,10 +105,10 @@ class ChildSpec extends IntegrationSpec {
     }
 
     "reject a workout with tasks that do no match parent" ignore {
-      testHelper.clearDb()
+      oldTestHelper.clearDb()
       val cleanAndJerk = buildCleanAndJerk()
 
-      val grace = testHelper.createWorkoutFromJson(s"""
+      val grace = oldTestHelper.createWorkoutFromJson(s"""
         {
           "name": "Grace",
           "reps": 1,
@@ -124,7 +124,7 @@ class ChildSpec extends IntegrationSpec {
         }
       """)
 
-      val snatch = testHelper.createMovementFromJson("""
+      val snatch = oldTestHelper.createMovementFromJson("""
         {
           "name": "Snatch",
           "variables": [

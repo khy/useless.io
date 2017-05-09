@@ -16,9 +16,9 @@ class SubTaskSpec extends IntegrationSpec {
   "POST /old/workouts" must {
 
     "create a workout with subtasks" in {
-      val pullUp = testHelper.createMovement("Pull Up")
-      val pushUp = testHelper.createMovement("Push Up")
-      val sitUp = testHelper.createMovement("Sit Up")
+      val pullUp = oldTestHelper.createMovement("Pull Up")
+      val pushUp = oldTestHelper.createMovement("Push Up")
+      val sitUp = oldTestHelper.createMovement("Sit Up")
 
       val response = await { request("/old/workouts").post(Json.parse(s"""
         {

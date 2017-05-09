@@ -14,8 +14,8 @@ class TaskResolverSpec extends IntegrationSpec {
   "TaskResolver.resolveTasks" must {
 
     "return 1 task for single movement workouts" in {
-      val pullUp = testHelper.createMovement("Pull Up")
-      val workout = testHelper.buildWorkoutFromJson(s"""
+      val pullUp = oldTestHelper.createMovement("Pull Up")
+      val workout = oldTestHelper.buildWorkoutFromJson(s"""
         {
           "name": "Pull Up Grace",
           "reps": 30,
@@ -36,11 +36,11 @@ class TaskResolverSpec extends IntegrationSpec {
     }
 
     "return subtasks in sequence" in {
-      testHelper.clearDb()
-      val pullUp = testHelper.createMovement("Pull Up")
-      val pushUp = testHelper.createMovement("Push Up")
+      oldTestHelper.clearDb()
+      val pullUp = oldTestHelper.createMovement("Pull Up")
+      val pushUp = oldTestHelper.createMovement("Push Up")
 
-      val workout = testHelper.buildWorkoutFromJson(s"""
+      val workout = oldTestHelper.buildWorkoutFromJson(s"""
         {
           "name": "Boring",
           "reps": 1,
@@ -67,11 +67,11 @@ class TaskResolverSpec extends IntegrationSpec {
     }
 
     "return looped subtasks" in {
-      testHelper.clearDb()
-      val pullUp = testHelper.createMovement("Pull Up")
-      val pushUp = testHelper.createMovement("Push Up")
+      oldTestHelper.clearDb()
+      val pullUp = oldTestHelper.createMovement("Pull Up")
+      val pushUp = oldTestHelper.createMovement("Push Up")
 
-      val workout = testHelper.buildWorkoutFromJson(s"""
+      val workout = oldTestHelper.buildWorkoutFromJson(s"""
         {
           "name": "Boring, Looped",
           "reps": 2,
@@ -110,11 +110,11 @@ class TaskResolverSpec extends IntegrationSpec {
     }
 
     "return AMRAP subtasks" ignore {
-      testHelper.clearDb()
-      val pullUp = testHelper.createMovement("Pull Up")
-      val pushUp = testHelper.createMovement("Push Up")
+      oldTestHelper.clearDb()
+      val pullUp = oldTestHelper.createMovement("Pull Up")
+      val pushUp = oldTestHelper.createMovement("Push Up")
 
-      val workout = testHelper.buildWorkoutFromJson(s"""
+      val workout = oldTestHelper.buildWorkoutFromJson(s"""
         {
           "name": "Boring, Looped",
           "score": "reps",
