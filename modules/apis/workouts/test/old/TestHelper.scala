@@ -1,4 +1,4 @@
-package test.workouts
+package test.workouts.old
 
 import java.util.UUID
 import play.api.test.Helpers._
@@ -8,7 +8,7 @@ import io.useless.accesstoken.AccessToken
 
 import init.workouts.AbstractApplicationComponents
 import db.workouts._
-import models.workouts._
+import models.workouts.old._
 import JsonImplicits._
 
 class TestHelper(

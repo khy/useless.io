@@ -1,4 +1,4 @@
-package test.workouts.integration
+package test.workouts.integration.old.workout
 
 import java.util.UUID
 import play.api.test._
@@ -7,17 +7,17 @@ import play.api.libs.json._
 import io.useless.validation.Errors
 import io.useless.play.json.validation.ErrorsJson._
 
-import models.workouts._
-import models.workouts.JsonImplicits._
+import models.workouts.old._
+import models.workouts.old.JsonImplicits._
 import test.workouts._
 
 class BasicSpec extends IntegrationSpec {
 
-  "POST /workouts" must {
+  "POST /old/workouts" must {
 
     "reject unauthenticated requests" in {
       val response = await {
-        unauthenticatedRequest("/workouts").post(Json.obj())
+        unauthenticatedRequest("/old/workouts").post(Json.obj())
       }
 
       response.status mustBe UNAUTHORIZED
@@ -25,7 +25,7 @@ class BasicSpec extends IntegrationSpec {
 
     "reject a workout that references a non-existant movement" in {
       val badMovementGuid = UUID.randomUUID
-      val response = await { request("/workouts").post(Json.parse(s"""
+      val response = await { request("/old/workouts").post(Json.parse(s"""
         {
           "name": "1 Rep Max",
           "reps": 1,
@@ -54,7 +54,7 @@ class BasicSpec extends IntegrationSpec {
     }
 
     "reject a workout that does not have either a movement or tasks" in {
-      val response = await { request("/workouts").post(Json.parse(s"""
+      val response = await { request("/old/workouts").post(Json.parse(s"""
         {
           "name": "20 Reps",
           "reps": 20,

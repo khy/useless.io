@@ -13,7 +13,7 @@ import io.useless.pagination._
 import io.useless.exception.service._
 
 import db.workouts._
-import dsl.workouts.WorkoutDsl
+import dsl.workouts.old.WorkoutDsl
 import models.workouts.old._
 import models.workouts.old.JsonImplicits._
 

@@ -9,6 +9,8 @@ import io.useless.accesstoken.AccessToken
 import io.useless.client.accesstoken.{AccessTokenClient, MockAccessTokenClient}
 import io.useless.client.account.{AccountClient, MockAccountClient}
 
+import test.workouts.old.TestHelper
+
 trait IntegrationSpec
   extends PlaySpec
   with OneServerPerSuite

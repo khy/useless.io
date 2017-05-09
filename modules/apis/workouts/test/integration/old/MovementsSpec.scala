@@ -1,4 +1,4 @@
-package test.workouts.integration
+package test.workouts.integration.old
 
 import java.util.UUID
 import play.api.test._
@@ -7,17 +7,17 @@ import play.api.libs.json._
 import io.useless.validation.Errors
 import io.useless.play.json.validation.ErrorsJson._
 
-import models.workouts._
-import models.workouts.JsonImplicits._
+import models.workouts.old._
+import models.workouts.old.JsonImplicits._
 import test.workouts._
 
 class MovementsSpec extends IntegrationSpec {
 
-  "POST /movements" must {
+  "POST /old/movements" must {
 
     "reject unauthenticated requests" in {
       val response = await {
-        unauthenticatedRequest("/movements").post(Json.obj())
+        unauthenticatedRequest("/old/movements").post(Json.obj())
       }
 
       response.status mustBe UNAUTHORIZED
@@ -25,7 +25,7 @@ class MovementsSpec extends IntegrationSpec {
 
     "reject a movement that does not have a name" in {
       val response = await {
-        request("/movements").post(Json.parse("""
+        request("/old/movements").post(Json.parse("""
           {
             "variables": [
               {
@@ -42,7 +42,7 @@ class MovementsSpec extends IntegrationSpec {
 
     "create a movement that does not have variables" in {
       val response = await {
-        request("/movements").post(Json.parse("""
+        request("/old/movements").post(Json.parse("""
           {
             "name": "Push Up"
           }
@@ -56,7 +56,7 @@ class MovementsSpec extends IntegrationSpec {
 
     "create a movement that has variables" in {
       val response = await {
-        request("/movements").post(Json.parse("""
+        request("/old/movements").post(Json.parse("""
           {
             "name": "Wall Ball",
             "variables": [
@@ -85,7 +85,7 @@ class MovementsSpec extends IntegrationSpec {
 
     "reject a movement that has an invalid dimesion" in {
       val response = await {
-        request("/movements").post(Json.parse("""
+        request("/old/movements").post(Json.parse("""
           {
             "name": "Wall Ball",
             "variables": [
@@ -103,7 +103,7 @@ class MovementsSpec extends IntegrationSpec {
 
     "reject a movement that has multiple variables with the same name" in {
       val response = await {
-        request("/movements").post(Json.parse("""
+        request("/old/movements").post(Json.parse("""
           {
             "name": "Wall Ball",
             "variables": [
@@ -129,11 +129,11 @@ class MovementsSpec extends IntegrationSpec {
 
   }
 
-  "GET /movements" must {
+  "GET /old/movements" must {
 
     "accept unauthenticated requests" in {
       val response = await {
-        unauthenticatedRequest("/movements").get()
+        unauthenticatedRequest("/old/movements").get()
       }
 
       response.status mustBe OK
@@ -146,7 +146,7 @@ class MovementsSpec extends IntegrationSpec {
       val movement3 = testHelper.createMovement()
 
       val response = await {
-        unauthenticatedRequest("/movements").get()
+        unauthenticatedRequest("/old/movements").get()
       }
 
       response.status mustBe OK
@@ -162,7 +162,7 @@ class MovementsSpec extends IntegrationSpec {
       val movement4 = testHelper.createMovement(name = "Alfred")
 
       val response = await {
-        unauthenticatedRequest("/movements").withQueryString(
+        unauthenticatedRequest("/old/movements").withQueryString(
           "name" -> "Al",
           "p.order" -> "name"
         ).get()

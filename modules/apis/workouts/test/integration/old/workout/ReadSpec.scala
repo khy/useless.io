@@ -1,4 +1,4 @@
-package test.workouts.integration.workout
+package test.workouts.integration.old.workout
 
 import java.util.UUID
 import play.api.test._
@@ -7,17 +7,17 @@ import play.api.libs.json._
 import io.useless.validation.Errors
 import io.useless.play.json.validation.ErrorsJson._
 
-import models.workouts._
-import models.workouts.JsonImplicits._
+import models.workouts.old._
+import models.workouts.old.JsonImplicits._
 import test.workouts._
 
 class ReadSpec extends IntegrationSpec {
 
-  "GET /workouts" must {
+  "GET /old/workouts" must {
 
     "accept unauthenticated requests" in {
       val response = await {
-        unauthenticatedRequest("/workouts").get()
+        unauthenticatedRequest("/old/workouts").get()
       }
 
       response.status mustBe OK
@@ -31,7 +31,7 @@ class ReadSpec extends IntegrationSpec {
       )
 
       val response = await {
-        unauthenticatedRequest("/workouts").withQueryString(
+        unauthenticatedRequest("/old/workouts").withQueryString(
           "guid" -> workout.guid.toString
         ).get()
       }
@@ -48,7 +48,7 @@ class ReadSpec extends IntegrationSpec {
       val workout3 = testHelper.createWorkout()
 
       val response = await {
-        unauthenticatedRequest("/workouts").get()
+        unauthenticatedRequest("/old/workouts").get()
       }
 
       response.status mustBe OK
@@ -62,7 +62,7 @@ class ReadSpec extends IntegrationSpec {
       val workout2 = testHelper.createWorkout()
 
       val response = await {
-        unauthenticatedRequest("/workouts").withQueryString(
+        unauthenticatedRequest("/old/workouts").withQueryString(
           "guid" -> workout1.guid.toString
         ).get()
       }
@@ -81,7 +81,7 @@ class ReadSpec extends IntegrationSpec {
       )
 
       val response1 = await {
-        unauthenticatedRequest("/workouts").withQueryString(
+        unauthenticatedRequest("/old/workouts").withQueryString(
           "child" -> "false"
         ).get()
       }
@@ -91,7 +91,7 @@ class ReadSpec extends IntegrationSpec {
       movements1.head.guid mustBe workout1.guid
 
       val response2 = await {
-        unauthenticatedRequest("/workouts").withQueryString(
+        unauthenticatedRequest("/old/workouts").withQueryString(
           "child" -> "true"
         ).get()
       }
@@ -109,7 +109,7 @@ class ReadSpec extends IntegrationSpec {
       )
 
       val response = await {
-        unauthenticatedRequest("/workouts").withQueryString(
+        unauthenticatedRequest("/old/workouts").withQueryString(
           "parentGuid" -> workout1.guid.toString
         ).get()
       }

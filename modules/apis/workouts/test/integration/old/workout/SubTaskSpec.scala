@@ -1,4 +1,4 @@
-package test.workouts.integration.workout
+package test.workouts.integration.old.workout
 
 import java.util.UUID
 import play.api.test._
@@ -7,20 +7,20 @@ import play.api.libs.json._
 import io.useless.validation.Errors
 import io.useless.play.json.validation.ErrorsJson._
 
-import models.workouts._
-import models.workouts.JsonImplicits._
+import models.workouts.old._
+import models.workouts.old.JsonImplicits._
 import test.workouts._
 
 class SubTaskSpec extends IntegrationSpec {
 
-  "POST /workouts" must {
+  "POST /old/workouts" must {
 
     "create a workout with subtasks" in {
       val pullUp = testHelper.createMovement("Pull Up")
       val pushUp = testHelper.createMovement("Push Up")
       val sitUp = testHelper.createMovement("Sit Up")
 
-      val response = await { request("/workouts").post(Json.parse(s"""
+      val response = await { request("/old/workouts").post(Json.parse(s"""
         {
           "name": "Sub",
           "reps": 1,
@@ -79,7 +79,7 @@ class SubTaskSpec extends IntegrationSpec {
   }
 
   "reject a workout with subtasks that do not have either a movement or tasks" in {
-    val response = await { request("/workouts").post(Json.parse(s"""
+    val response = await { request("/old/workouts").post(Json.parse(s"""
       {
         "name": "Sub",
         "reps": 1,

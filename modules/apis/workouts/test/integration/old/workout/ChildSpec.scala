@@ -1,4 +1,4 @@
-package test.workouts.integration.workout
+package test.workouts.integration.old.workout
 
 import java.util.UUID
 import play.api.test._
@@ -7,8 +7,8 @@ import play.api.libs.json._
 import io.useless.validation.Errors
 import io.useless.play.json.validation.ErrorsJson._
 
-import models.workouts._
-import models.workouts.JsonImplicits._
+import models.workouts.old._
+import models.workouts.old.JsonImplicits._
 import test.workouts._
 
 class ChildSpec extends IntegrationSpec {
@@ -25,7 +25,7 @@ class ChildSpec extends IntegrationSpec {
     }
   """)
 
-  "POST /workouts" must {
+  "POST /old/workouts" must {
 
     "create a workout with subtasks" in {
       val pullUp = testHelper.createMovement("Pull Up")
@@ -46,7 +46,7 @@ class ChildSpec extends IntegrationSpec {
         }
       """)
 
-      val response = await { request("/workouts").post(Json.parse(s"""
+      val response = await { request("/old/workouts").post(Json.parse(s"""
         {
           "parentGuid": "${parent.guid}",
           "reps": 1,
@@ -81,7 +81,7 @@ class ChildSpec extends IntegrationSpec {
         }
       """)
 
-      val response = await { request(s"/workouts/${grace.guid}/workouts").post(Json.parse(s"""
+      val response = await { request(s"/old/workouts/${grace.guid}/workouts").post(Json.parse(s"""
         {
           "name": "Women's Rx",
           "time": {
@@ -136,7 +136,7 @@ class ChildSpec extends IntegrationSpec {
         }
       """)
 
-      val response = await { request("/workouts").post(Json.parse(s"""
+      val response = await { request("/old/workouts").post(Json.parse(s"""
         {
           "parentGuid": "${grace.guid}",
           "name": "Grace",

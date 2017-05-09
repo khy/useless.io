@@ -1,4 +1,4 @@
-package dsl.workouts
+package dsl.workouts.old
 
 import models.workouts.old._
 

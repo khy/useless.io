@@ -1,4 +1,4 @@
-package dsl.workouts
+package dsl.workouts.old
 
 import io.useless.Message
 import io.useless.validation._

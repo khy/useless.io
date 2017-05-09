@@ -1,4 +1,4 @@
-package dsl.workouts
+package dsl.workouts.old
 
 import java.util.UUID
 import scala.concurrent.ExecutionContext.Implicits.global

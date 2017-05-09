@@ -1,4 +1,4 @@
-package test.workouts.integration.workout
+package test.workouts.integration.old.workout
 
 import java.util.UUID
 import play.api.test._
@@ -7,18 +7,18 @@ import play.api.libs.json._
 import io.useless.validation.Errors
 import io.useless.play.json.validation.ErrorsJson._
 
-import models.workouts._
-import models.workouts.JsonImplicits._
+import models.workouts.old._
+import models.workouts.old.JsonImplicits._
 import test.workouts._
 
 class ScoreSpec extends IntegrationSpec {
 
   val movement = testHelper.createMovement()
 
-  "POST /workouts" must {
+  "POST /old/workouts" must {
 
     "reject a workout that has no score, and no parent" in {
-      val response = await { request("/workouts").post(Json.parse(s"""
+      val response = await { request("/old/workouts").post(Json.parse(s"""
         {
           "name": "1 Rep",
           "reps": 1,
@@ -44,7 +44,7 @@ class ScoreSpec extends IntegrationSpec {
     }
 
     "reject a workout that has multiple scores" in {
-      val response = await { request("/workouts").post(Json.parse(s"""
+      val response = await { request("/old/workouts").post(Json.parse(s"""
         {
           "name": "1 Rep",
           "score": "time",
@@ -72,7 +72,7 @@ class ScoreSpec extends IntegrationSpec {
     }
 
     "reject a workout that has a top-level score that is neither 'time' or 'reps'" in {
-      val response = await { request("/workouts").post(Json.parse(s"""
+      val response = await { request("/old/workouts").post(Json.parse(s"""
         {
           "name": "1 Rep",
           "score": "Barbell Weight",
@@ -100,7 +100,7 @@ class ScoreSpec extends IntegrationSpec {
     }
 
     "accept a workout that has no score, but has a parent" in {
-      val parentResponse = await { request("/workouts").post(Json.parse(s"""
+      val parentResponse = await { request("/old/workouts").post(Json.parse(s"""
         {
           "name": "100 Reps",
           "score": "time",
@@ -112,7 +112,7 @@ class ScoreSpec extends IntegrationSpec {
       """)) }
       val parent = parentResponse.json.as[Workout]
 
-      val childResponse = await { request("/workouts").post(Json.parse(s"""
+      val childResponse = await { request("/old/workouts").post(Json.parse(s"""
         {
           "parentGuid": "${parent.guid}",
           "score": "time",
@@ -136,7 +136,7 @@ class ScoreSpec extends IntegrationSpec {
 
     "reject a workout that has a movement score that doesn't reference a free " +
     "variable in either the referenced movement or is inline in the workout" in {
-      val response = await { request("/workouts").post(Json.parse(s"""
+      val response = await { request("/old/workouts").post(Json.parse(s"""
         {
           "name": "1 Rep",
           "reps": 1,
