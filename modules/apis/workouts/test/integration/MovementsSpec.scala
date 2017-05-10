@@ -7,8 +7,7 @@ import play.api.libs.json._
 import io.useless.validation.Errors
 import io.useless.play.json.validation.ErrorsJson._
 
-import models.workouts.old._
-import models.workouts.old.JsonImplicits._
+import models.workouts._
 import test.workouts._
 
 class MovementsSpec extends IntegrationSpec {
@@ -22,10 +21,10 @@ class MovementsSpec extends IntegrationSpec {
 
       response.status mustBe UNAUTHORIZED
     }
-/*
+
     "reject a movement that does not have a name" in {
       val response = await {
-        request("/old/movements").post(Json.parse("""
+        request("/movements").post(Json.parse("""
           {
             "variables": [
               {
@@ -42,7 +41,7 @@ class MovementsSpec extends IntegrationSpec {
 
     "create a movement that does not have variables" in {
       val response = await {
-        request("/old/movements").post(Json.parse("""
+        request("/movements").post(Json.parse("""
           {
             "name": "Push Up"
           }
@@ -56,7 +55,7 @@ class MovementsSpec extends IntegrationSpec {
 
     "create a movement that has variables" in {
       val response = await {
-        request("/old/movements").post(Json.parse("""
+        request("/movements").post(Json.parse("""
           {
             "name": "Wall Ball",
             "variables": [
@@ -78,14 +77,14 @@ class MovementsSpec extends IntegrationSpec {
       movement.name mustBe "Wall Ball"
       movement.variables.get.length mustBe 2
       val ballWeight = movement.variables.get.find { _.name == "Ball Weight" }.get
-      ballWeight.dimension mustBe Some(Dimension.Weight)
+      ballWeight.dimension mustBe core.Dimension.Weight
       val targetHeight = movement.variables.get.find { _.name == "Target Height" }.get
-      targetHeight.dimension mustBe Some(Dimension.Distance)
+      targetHeight.dimension mustBe core.Dimension.Distance
     }
 
     "reject a movement that has an invalid dimesion" in {
       val response = await {
-        request("/old/movements").post(Json.parse("""
+        request("/movements").post(Json.parse("""
           {
             "name": "Wall Ball",
             "variables": [
@@ -103,7 +102,7 @@ class MovementsSpec extends IntegrationSpec {
 
     "reject a movement that has multiple variables with the same name" in {
       val response = await {
-        request("/old/movements").post(Json.parse("""
+        request("/movements").post(Json.parse("""
           {
             "name": "Wall Ball",
             "variables": [
@@ -121,32 +120,32 @@ class MovementsSpec extends IntegrationSpec {
       }
 
       response.status mustBe BAD_REQUEST
-      val scalarErrors = response.json.as[Seq[Errors]].head
-      val message = scalarErrors.messages.head
-      message.key mustBe "duplicateVariableName"
-      message.details("name") mustBe "Ball Weight"
+      // val scalarErrors = response.json.as[Seq[Errors]].head
+      // val message = scalarErrors.messages.head
+      // message.key mustBe "duplicateVariableName"
+      // message.details("name") mustBe "Ball Weight"
     }
 
   }
 
-  "GET /old/movements" must {
+  "GET /movements" must {
 
     "accept unauthenticated requests" in {
       val response = await {
-        unauthenticatedRequest("/old/movements").get()
+        unauthenticatedRequest("/movements").get()
       }
 
       response.status mustBe OK
     }
 
     "return a paginated list of movements" in {
-      oldTestHelper.deleteMovements()
-      val movement1 = oldTestHelper.createMovement()
-      val movement2 = oldTestHelper.createMovement()
-      val movement3 = oldTestHelper.createMovement()
+      testHelper.deleteMovements()
+      val movement1 = testHelper.createMovement()
+      val movement2 = testHelper.createMovement()
+      val movement3 = testHelper.createMovement()
 
       val response = await {
-        unauthenticatedRequest("/old/movements").get()
+        unauthenticatedRequest("/movements").get()
       }
 
       response.status mustBe OK
@@ -155,14 +154,14 @@ class MovementsSpec extends IntegrationSpec {
     }
 
     "return movements filtered by name" in {
-      oldTestHelper.deleteMovements()
-      val movement1 = oldTestHelper.createMovement(name = "Alice")
-      val movement2 = oldTestHelper.createMovement(name = "Albert")
-      val movement3 = oldTestHelper.createMovement(name = "Anthony")
-      val movement4 = oldTestHelper.createMovement(name = "Alfred")
+      testHelper.deleteMovements()
+      val movement1 = testHelper.createMovement(name = "Alice")
+      val movement2 = testHelper.createMovement(name = "Albert")
+      val movement3 = testHelper.createMovement(name = "Anthony")
+      val movement4 = testHelper.createMovement(name = "Alfred")
 
       val response = await {
-        unauthenticatedRequest("/old/movements").withQueryString(
+        unauthenticatedRequest("/movements").withQueryString(
           "name" -> "Al",
           "p.order" -> "name"
         ).get()
@@ -173,7 +172,7 @@ class MovementsSpec extends IntegrationSpec {
       movements.length mustBe 3
       movements.map(_.name) mustBe Seq("Albert", "Alfred", "Alice")
     }
-*/
+
   }
 
 }

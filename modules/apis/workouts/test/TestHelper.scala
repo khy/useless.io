@@ -16,6 +16,14 @@ class TestHelper(
 
   import applicationComponents._
 
+  import dbConfig.db
+  import dbConfig.driver.api._
+
+
+  def deleteMovements() {
+    db.run(sqlu"delete from movements")
+  }
+
   def createMovementFromJson(
     rawJson: String
   )(implicit accessToken: AccessToken): MovementRecord = await {
@@ -23,14 +31,14 @@ class TestHelper(
       error => throw new RuntimeException(s"Invalid movement JSON [$error]: $rawJson"),
       movement => movementsService.addMovement(movement, accessToken)
     )
-  }.toSuccess.value
+  }.right.get
 
   def createMovement(
     name: String = s"movement-${UUID.randomUUID}",
     variables: Option[Seq[core.FreeVariable]] = None
   )(implicit accessToken: AccessToken): MovementRecord = await {
     movementsService.addMovement(core.Movement(name, variables), accessToken)
-  }.toSuccess.value
+  }.right.get
 
   def buildAbstractTask(
     `while`: core.WhileExpression = core.WhileExpression.parse("task.rep < 1").right.get,

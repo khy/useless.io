@@ -2,7 +2,8 @@ package services.workouts
 
 import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
-import play.api.libs.json.Json
+import play.api.libs.json.{Json, JsPath}
+import play.api.data.validation.ValidationError
 import slick.backend.DatabaseConfig
 import io.useless.Message
 import io.useless.accesstoken.AccessToken
@@ -12,6 +13,7 @@ import io.useless.exception.service._
 
 import db.workouts._
 import models.workouts._
+import dsl.workouts.MovementValidator
 
 class MovementsService(
   dbConfig: DatabaseConfig[Driver]
@@ -86,22 +88,11 @@ class MovementsService(
   def addMovement(
     movement: core.Movement,
     accessToken: AccessToken
-  )(implicit ec: ExecutionContext): Future[Validation[MovementRecord]] = {
-    movement.variables.foreach { variables =>
-      val dupNames = variables.groupBy(_.name).
-        filter { case (_, variables) => variables.length > 1 }.
-        map { case (name, _ ) => name }
+  )(implicit ec: ExecutionContext): Future[Either[Seq[(JsPath, Seq[ValidationError])], MovementRecord]] = {
+    val errors = MovementValidator.validateMovement(movement)
 
-      if (dupNames.size > 0) {
-        val errors = Errors.scalar(dupNames.map { dupName =>
-          Message(
-            key = "duplicateVariableName",
-            details = "name" -> dupName
-          )
-        }.toSeq)
-
-        return Future.successful(Validation.failure(Seq(errors)))
-      }
+    if (errors.length > 0) {
+      return Future.successful(Left(errors))
     }
 
     val projection = Movements.map { r =>
@@ -116,7 +107,7 @@ class MovementsService(
       val query = Movements.filter(_.guid === guid)
       db.run(query.result).map { movements =>
         movements.headOption.map { movement =>
-          Validation.success(movement)
+          Right(movement)
         }.getOrElse {
           throw new ResourceNotFound("movement", guid)
         }

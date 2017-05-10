@@ -22,12 +22,8 @@ class TestHelper(
   import dbConfig.driver.api._
 
   def clearDb() {
-    deleteMovements()
+    newTestHelper.deleteMovements()
     deleteWorkouts()
-  }
-
-  def deleteMovements() {
-    db.run(sqlu"delete from movements")
   }
 
   def buildWorkoutFromJson(
