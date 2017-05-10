@@ -1,13 +1,9 @@
 package dsl.workouts
 
 import java.util.UUID
-import scala.concurrent.ExecutionContext.Implicits.global
-import play.api.test._
-import play.api.test.Helpers._
-import play.api.libs.json._
+import play.api.libs.json.JsPath
 
-import models.workouts._
-import test.workouts._
+import test.workouts.IntegrationSpec
 
 class WorkoutValidatorSpec extends IntegrationSpec {
 

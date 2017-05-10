@@ -23,6 +23,11 @@ class TestHelper(
       value: ConstraintExpression = ConstraintExpression.parse("workout.bodyWeight * 1.5").right.get
     ) = Constraint(variable, value)
 
+    def buildMovement(
+      name: String = "Pull Up",
+      variables: Option[Seq[FreeVariable]] = None
+    ) = Movement(name, variables)
+
     def buildWorkout(
       name: Option[String] = None,
       score: Option[ScoreExpression] = None,
