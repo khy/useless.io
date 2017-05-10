@@ -1,4 +1,4 @@
-package controllers.workouts.old
+package controllers.workouts
 
 import java.util.UUID
 import scala.concurrent.Future
@@ -11,9 +11,8 @@ import io.useless.play.http.QueryStringUtil._
 import io.useless.play.pagination.PaginationController
 import io.useless.play.authentication.Authenticated
 
-import models.workouts.old._
-import models.workouts.old.JsonImplicits._
-import services.workouts.old.MovementsService
+import models.workouts._
+import services.workouts.MovementsService
 
 class MovementsController(
   authenticated: Authenticated,

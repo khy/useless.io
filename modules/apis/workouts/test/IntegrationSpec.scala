@@ -49,7 +49,7 @@ trait IntegrationSpec
   override implicit lazy val app = applicationComponents.application
 
   lazy val testHelper = new TestHelper(applicationComponents)
-  lazy val oldTestHelper = new old.TestHelper(applicationComponents)
+  lazy val oldTestHelper = new old.TestHelper(applicationComponents, testHelper)
 
   def unauthenticatedRequest(path: String) = {
     val url = if (path.startsWith("http")) {

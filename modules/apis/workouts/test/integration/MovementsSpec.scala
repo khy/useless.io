@@ -1,4 +1,4 @@
-package test.workouts.integration.old
+package test.workouts.integration
 
 import java.util.UUID
 import play.api.test._
@@ -13,16 +13,16 @@ import test.workouts._
 
 class MovementsSpec extends IntegrationSpec {
 
-  "POST /old/movements" must {
+  "POST /movements" must {
 
     "reject unauthenticated requests" in {
       val response = await {
-        unauthenticatedRequest("/old/movements").post(Json.obj())
+        unauthenticatedRequest("/movements").post(Json.obj())
       }
 
       response.status mustBe UNAUTHORIZED
     }
-
+/*
     "reject a movement that does not have a name" in {
       val response = await {
         request("/old/movements").post(Json.parse("""
@@ -173,7 +173,7 @@ class MovementsSpec extends IntegrationSpec {
       movements.length mustBe 3
       movements.map(_.name) mustBe Seq("Albert", "Alfred", "Alice")
     }
-
+*/
   }
 
 }

@@ -7,7 +7,7 @@ import test.workouts.IntegrationSpec
 
 class WorkoutValidatorSpec extends IntegrationSpec {
 
-  import testHelper.core._
+  import testHelper._
 
   "WorkoutValidator.validateWorkout" must {
 

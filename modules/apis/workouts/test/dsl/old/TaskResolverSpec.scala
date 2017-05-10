@@ -14,7 +14,7 @@ class TaskResolverSpec extends IntegrationSpec {
   "TaskResolver.resolveTasks" must {
 
     "return 1 task for single movement workouts" in {
-      val pullUp = oldTestHelper.createMovement("Pull Up")
+      val pullUp = testHelper.createMovement("Pull Up")
       val workout = oldTestHelper.buildWorkoutFromJson(s"""
         {
           "name": "Pull Up Grace",
@@ -37,8 +37,8 @@ class TaskResolverSpec extends IntegrationSpec {
 
     "return subtasks in sequence" in {
       oldTestHelper.clearDb()
-      val pullUp = oldTestHelper.createMovement("Pull Up")
-      val pushUp = oldTestHelper.createMovement("Push Up")
+      val pullUp = testHelper.createMovement("Pull Up")
+      val pushUp = testHelper.createMovement("Push Up")
 
       val workout = oldTestHelper.buildWorkoutFromJson(s"""
         {
@@ -68,8 +68,8 @@ class TaskResolverSpec extends IntegrationSpec {
 
     "return looped subtasks" in {
       oldTestHelper.clearDb()
-      val pullUp = oldTestHelper.createMovement("Pull Up")
-      val pushUp = oldTestHelper.createMovement("Push Up")
+      val pullUp = testHelper.createMovement("Pull Up")
+      val pushUp = testHelper.createMovement("Push Up")
 
       val workout = oldTestHelper.buildWorkoutFromJson(s"""
         {
@@ -111,8 +111,8 @@ class TaskResolverSpec extends IntegrationSpec {
 
     "return AMRAP subtasks" ignore {
       oldTestHelper.clearDb()
-      val pullUp = oldTestHelper.createMovement("Pull Up")
-      val pushUp = oldTestHelper.createMovement("Push Up")
+      val pullUp = testHelper.createMovement("Pull Up")
+      val pushUp = testHelper.createMovement("Push Up")
 
       val workout = oldTestHelper.buildWorkoutFromJson(s"""
         {

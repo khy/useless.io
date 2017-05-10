@@ -1,4 +1,4 @@
-package services.workouts.old
+package services.workouts
 
 import io.useless.client.account.AccountClientComponents
 
@@ -10,6 +10,6 @@ trait ServiceComponents {
 
   lazy val movementsService = new MovementsService(dbConfig)
 
-  lazy val workoutsService = new WorkoutsService(dbConfig, movementsService, accountClient)
+  lazy val oldWorkoutsService = new old.WorkoutsService(dbConfig, accountClient)
 
 }

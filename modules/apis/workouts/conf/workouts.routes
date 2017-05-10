@@ -5,8 +5,8 @@ GET  /old/workouts                controllers.workouts.old.WorkoutsController.in
 POST /old/workouts                controllers.workouts.old.WorkoutsController.create()
 POST /old/workouts/:guid/workouts controllers.workouts.old.WorkoutsController.createChild(guid: java.util.UUID)
 
-GET  /old/movements   controllers.workouts.old.MovementsController.index
-POST /old/movements   controllers.workouts.old.MovementsController.create
+GET  /movements   controllers.workouts.MovementsController.index
+POST /movements   controllers.workouts.MovementsController.create
 
 GET  /old/dimensions   controllers.workouts.old.MeasuresController.dimensions
 GET  /old/unitsOfMeasure   controllers.workouts.old.MeasuresController.unitsOfMeasure

@@ -13,7 +13,7 @@ import test.workouts._
 
 class ChildSpec extends IntegrationSpec {
 
-  def buildCleanAndJerk() = oldTestHelper.createMovementFromJson("""
+  def buildCleanAndJerk() = testHelper.createMovementFromJson("""
     {
       "name": "Clean and Jerk",
       "variables": [
@@ -28,7 +28,7 @@ class ChildSpec extends IntegrationSpec {
   "POST /old/workouts" must {
 
     "create a workout with subtasks" in {
-      val pullUp = oldTestHelper.createMovement("Pull Up")
+      val pullUp = testHelper.createMovement("Pull Up")
 
       val parent = oldTestHelper.createWorkoutFromJson(s"""
         {
@@ -124,7 +124,7 @@ class ChildSpec extends IntegrationSpec {
         }
       """)
 
-      val snatch = oldTestHelper.createMovementFromJson("""
+      val snatch = testHelper.createMovementFromJson("""
         {
           "name": "Snatch",
           "variables": [

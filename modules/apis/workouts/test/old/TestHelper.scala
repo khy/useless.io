@@ -12,7 +12,8 @@ import models.workouts.old._
 import JsonImplicits._
 
 class TestHelper(
-  applicationComponents: AbstractApplicationComponents
+  applicationComponents: AbstractApplicationComponents,
+  newTestHelper: test.workouts.TestHelper
 ) {
 
   import applicationComponents._
@@ -24,22 +25,6 @@ class TestHelper(
     deleteMovements()
     deleteWorkouts()
   }
-
-  def createMovementFromJson(
-    rawJson: String
-  )(implicit accessToken: AccessToken): MovementRecord = await {
-    Json.parse(rawJson).validate[core.Movement].fold(
-      error => throw new RuntimeException(s"Invalid movement JSON [$error]: $rawJson"),
-      movement => movementsService.addMovement(movement, accessToken)
-    )
-  }.toSuccess.value
-
-  def createMovement(
-    name: String = s"movement-${UUID.randomUUID}",
-    variables: Option[Seq[Variable]] = None
-  )(implicit accessToken: AccessToken): MovementRecord = await {
-    movementsService.addMovement(core.Movement(name, variables), accessToken)
-  }.toSuccess.value
 
   def deleteMovements() {
     db.run(sqlu"delete from movements")
@@ -56,7 +41,7 @@ class TestHelper(
     rawJson: String,
     parentGuid: Option[UUID] = None
   )(implicit accessToken: AccessToken): WorkoutRecord = await {
-    workoutsService.addWorkout(parentGuid, buildWorkoutFromJson(rawJson), accessToken)
+    oldWorkoutsService.addWorkout(parentGuid, buildWorkoutFromJson(rawJson), accessToken)
   }.toSuccess.value
 
   def buildWorkout(
@@ -87,10 +72,10 @@ class TestHelper(
     val workout = buildWorkout(
       time = time,
       score = score,
-      movement = movement.orElse { Some(createMovement()) }
+      movement = movement.orElse { Some(newTestHelper.createMovement()) }
     )
 
-    workoutsService.addWorkout(parentGuid, workout, accessToken)
+    oldWorkoutsService.addWorkout(parentGuid, workout, accessToken)
   }.toSuccess.value
 
   def deleteWorkouts() {

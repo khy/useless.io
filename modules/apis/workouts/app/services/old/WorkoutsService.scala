@@ -19,7 +19,6 @@ import models.workouts.old.JsonImplicits._
 
 class WorkoutsService(
   dbConfig: DatabaseConfig[Driver],
-  movementsService: MovementsService,
   accountClient: AccountClient
 ) {
 
@@ -137,10 +136,7 @@ class WorkoutsService(
     val taskMovements = workout.movement.toSeq ++ subTasks.flatMap(_.movement)
 
     // Fetch the actual movements referenced by the task movements
-    val futValReferencedMovements = movementsService.
-      getMovementsByGuid(taskMovements.map(_.guid)).
-      flatMap(movementsService.db2api).
-      map(Validation.success)
+    val futValReferencedMovements = Future.successful(Validation.success(Nil))
 
     for {
       valAncestry <- futValAncestry

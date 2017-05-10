@@ -1,4 +1,4 @@
-package services.workouts.old
+package services.workouts
 
 import java.util.UUID
 import scala.concurrent.{ExecutionContext, Future}
@@ -11,8 +11,7 @@ import io.useless.validation._
 import io.useless.exception.service._
 
 import db.workouts._
-import models.workouts.old._
-import models.workouts.old.JsonImplicits._
+import models.workouts._
 
 class MovementsService(
   dbConfig: DatabaseConfig[Driver]

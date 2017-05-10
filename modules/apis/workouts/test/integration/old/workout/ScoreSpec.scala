@@ -13,7 +13,7 @@ import test.workouts._
 
 class ScoreSpec extends IntegrationSpec {
 
-  val movement = oldTestHelper.createMovement()
+  val movement = testHelper.createMovement()
 
   "POST /old/workouts" must {
 
