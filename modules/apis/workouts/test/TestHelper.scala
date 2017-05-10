@@ -18,6 +18,11 @@ class TestHelper(
       tasks: Option[Seq[AbstractTask]] = None
     ) = AbstractTask(`while`, movement, constraints, tasks)
 
+    def buildConstraint(
+      variable: String = "Barbell Weight",
+      value: ConstraintExpression = ConstraintExpression.parse("workout.bodyWeight * 1.5").right.get
+    ) = Constraint(variable, value)
+
     def buildWorkout(
       name: Option[String] = None,
       score: Option[ScoreExpression] = None,
