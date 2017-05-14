@@ -8,7 +8,23 @@ import models.workouts._
 object WorkoutValidator {
 
   def validateWorkout(workout: core.Workout, referencedMovements: Seq[Movement]): Seq[(JsPath, Seq[ValidationError])] = {
-    appendJsPath(JsPath \ "task", validateTask(workout.task, referencedMovements))
+    var errors = Seq.empty[(JsPath, Seq[ValidationError])]
+
+    errors = errors ++ appendJsPath(JsPath \ "task", validateTask(workout.task, referencedMovements))
+
+    workout.variables.foreach { variables =>
+      var seenNames = Seq.empty[String]
+
+      variables.zipWithIndex.foreach { case (variable, index) =>
+        if (seenNames.contains(variable.name)) {
+          errors = errors :+ ((JsPath \ "variables")(index) \ "name", Seq(ValidationError("duplicate")))
+        } else {
+          seenNames = seenNames :+ variable.name
+        }
+      }
+    }
+
+    errors
   }
 
   private def validateTask(task: core.AbstractTask, referencedMovements: Seq[Movement]): Seq[(JsPath, Seq[ValidationError])] = {
@@ -16,6 +32,10 @@ object WorkoutValidator {
 
     task.movement.foreach { movement =>
       val refMovement = referencedMovements.find { _.guid == movement }
+
+      if (refMovement.isEmpty) {
+        errors = errors :+ (JsPath \ "movement", Seq(ValidationError("unknown")))
+      }
 
       refMovement.foreach { refMovement =>
         task.constraints.foreach { constraints =>
@@ -27,10 +47,6 @@ object WorkoutValidator {
             }
           }
         }
-      }
-
-      if (refMovement.isEmpty) {
-        errors = errors :+ (JsPath \ "movement", Seq(ValidationError("unknown")))
       }
     }
 

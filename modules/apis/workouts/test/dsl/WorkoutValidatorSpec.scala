@@ -6,6 +6,7 @@ import play.api.libs.json.JsPath
 
 import db.workouts.MovementRecord
 import models.workouts._
+import models.workouts.core
 import test.workouts.IntegrationSpec
 
 class WorkoutValidatorSpec extends IntegrationSpec {
@@ -21,6 +22,24 @@ class WorkoutValidatorSpec extends IntegrationSpec {
     "accept the workout built by TestHelper" in {
       val workout = buildWorkout()
       WorkoutValidator.validateWorkout(workout, Nil) mustBe Nil
+    }
+
+    "reject a workout with duplicate variable names" in {
+      val movement = db2api(createMovement())
+
+      val workout = buildWorkout(
+        variables = Some(Seq(
+          core.FreeVariable(name = "Body Weight", dimension = core.Dimension.Weight),
+          core.FreeVariable(name = "Body Weight", dimension = core.Dimension.Weight)
+        )),
+        task = buildAbstractTask(
+          movement = Some(movement.guid)
+        )
+      )
+
+      val (jsPath, errors) = WorkoutValidator.validateWorkout(workout, Seq(movement)).head
+      jsPath mustBe (JsPath \ "variables")(1) \ "name"
+      errors.head.message mustBe "duplicate"
     }
 
     "reject a workout with a task with both a movement and tasks" in {
