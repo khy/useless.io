@@ -4,6 +4,8 @@ import java.util.UUID
 import play.api.libs.json._
 import play.api.libs.functional.syntax._
 
+import dsl.workouts.WhileExpression
+
 case class AbstractTask(
   `while`: WhileExpression,
   movement: Option[UUID],

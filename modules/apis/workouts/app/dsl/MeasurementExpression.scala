@@ -1,8 +1,10 @@
-package models.workouts.core
+package dsl.workouts
 
 import scala.util.Try
 import scala.util.parsing.combinator._
 import scala.util.parsing.input._
+
+import models.workouts.core._
 
 class MeasurementExpression private (
   magnitude: BigDecimal,

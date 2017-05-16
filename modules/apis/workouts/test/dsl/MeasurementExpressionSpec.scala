@@ -1,4 +1,4 @@
-package models.workouts.core
+package dsl.workouts
 
 import org.scalatest._
 

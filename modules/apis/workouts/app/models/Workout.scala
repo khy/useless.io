@@ -4,7 +4,8 @@ import java.util.UUID
 import java.time.ZonedDateTime
 import play.api.libs.json.Json
 
-import models.workouts.core.{AbstractTask, FreeVariable, ScoreExpression}
+import models.workouts.core.{AbstractTask, FreeVariable}
+import dsl.workouts.ScoreExpression
 
 case class Workout(
   guid: UUID,

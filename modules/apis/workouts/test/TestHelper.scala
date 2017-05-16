@@ -9,6 +9,7 @@ import io.useless.accesstoken.AccessToken
 import db.workouts._
 import init.workouts.AbstractApplicationComponents
 import models.workouts._
+import dsl.workouts._
 
 class TestHelper(
   applicationComponents: AbstractApplicationComponents
@@ -41,7 +42,7 @@ class TestHelper(
   }.right.get
 
   def buildAbstractTask(
-    `while`: core.WhileExpression = core.WhileExpression.parse("task.rep < 1").right.get,
+    `while`: WhileExpression = WhileExpression.parse("task.rep < 1").right.get,
     movement: Option[UUID] = None,
     constraints: Option[Seq[core.Constraint]] = None,
     tasks: Option[Seq[core.AbstractTask]] = None
@@ -49,7 +50,7 @@ class TestHelper(
 
   def buildConstraint(
     variable: String = "Barbell Weight",
-    value: core.ConstraintExpression = core.ConstraintExpression.parse("workout.bodyWeight * 1.5").right.get
+    value: ConstraintExpression = ConstraintExpression.parse("workout.bodyWeight * 1.5").right.get
   ) = core.Constraint(variable, value)
 
   def buildMovement(
@@ -59,7 +60,7 @@ class TestHelper(
 
   def buildWorkout(
     name: Option[String] = None,
-    score: Option[core.ScoreExpression] = None,
+    score: Option[ScoreExpression] = None,
     variables: Option[Seq[core.FreeVariable]] = None,
     task: core.AbstractTask = buildAbstractTask()
   ) = core.Workout(name, score, variables, task)

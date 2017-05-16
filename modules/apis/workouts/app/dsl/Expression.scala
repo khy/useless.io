@@ -1,4 +1,4 @@
-package models.workouts.core
+package dsl.workouts
 
 import play.api.libs.json._
 import play.api.data.validation.ValidationError

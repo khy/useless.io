@@ -1,4 +1,4 @@
-package models.workouts.core
+package dsl.workouts
 
 class WhileExpression private (raw: String) extends Expression {
   val code = raw
