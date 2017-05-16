@@ -7,39 +7,32 @@ import scala.util.parsing.input._
 import models.workouts.core._
 
 class MeasurementExpression private (
-  magnitude: BigDecimal,
-  unitOfMeasure: UnitOfMeasure
+  val magnitude: BigDecimal,
+  val unitOfMeasure: UnitOfMeasure
 ) extends Expression {
   val code = s"${magnitude} ${unitOfMeasure.symbol}"
 }
 
 object MeasurementExpression extends ExpressionCompanion[MeasurementExpression] {
 
-  sealed trait Token
+  sealed trait Token extends Positional
   case class MAGNITUDE(value: String) extends Token
   case class UNIT(symbol: String) extends Token
 
   object Lexer extends RegexParsers {
-    private val magnitude = """\d+(\.\d*)?""".r ^^ { str => MAGNITUDE(str) }
-    private val unit = "[a-zA-Z]+".r ^^ { str => UNIT(str) }
+    private val magnitude = positioned("""\d+(\.\d*)?""".r ^^ { str => MAGNITUDE(str) })
+    private val unit = positioned("[a-zA-Z]+".r ^^ { str => UNIT(str) })
     private val tokens = phrase(rep1(magnitude | unit))
 
-    def lex(code: String): Either[String, Seq[Token]] = {
+    def lex(code: String): Either[CompileError, Seq[Token]] = {
       parse(tokens, code) match {
-        case NoSuccess(msg, next) => Left(msg)
+        case NoSuccess(msg, next) => Left(CompileError(next.pos.column, msg))
         case Success(result, next) => Right(result)
       }
     }
   }
 
-  class SeqReader[T](elems: Seq[T]) extends Reader[T] {
-    override def first: T = elems.head
-    override def atEnd: Boolean = elems.isEmpty
-    override def pos: Position = NoPosition
-    override def rest: Reader[T] = new SeqReader(elems.tail)
-  }
-
-  case class Ast(magnitude: BigDecimal, unitOfMeasure: UnitOfMeasure)
+  case class Ast(magnitude: BigDecimal, unitOfMeasure: UnitOfMeasure) extends Positional
 
   object Parser extends Parsers {
     override type Elem = Token
@@ -52,14 +45,14 @@ object MeasurementExpression extends ExpressionCompanion[MeasurementExpression] 
       case UNIT(symbol) if UnitOfMeasure.values.map(_.symbol).contains(symbol) => UnitOfMeasure.values.find(_.symbol == symbol).get
     })
 
-    private val measurement = phrase(magnitude ~ unitOfMeasure) ^^ {
+    private val measurement = positioned(phrase(magnitude ~ unitOfMeasure) ^^ {
       case magnitude ~ unitOfMeasure => Ast(magnitude, unitOfMeasure)
-    }
+    })
 
-    def parse(tokens: Seq[Token]): Either[String, Ast] = {
-      val reader = new SeqReader(tokens)
+    def parse(tokens: Seq[Token]): Either[CompileError, Ast] = {
+      val reader = new TokenReader(tokens)
       measurement(reader) match {
-        case NoSuccess(msg, next) => Left(msg)
+        case NoSuccess(msg, next) => Left(CompileError(next.pos.column, msg))
         case Success(result, next) => Right(result)
       }
     }

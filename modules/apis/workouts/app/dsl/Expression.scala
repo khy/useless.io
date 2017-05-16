@@ -8,7 +8,7 @@ trait Expression {
 }
 
 trait ExpressionCompanion[E <: Expression] {
-  def parse(raw: String): Either[String, E]
+  def parse(raw: String): Either[CompileError, E]
 }
 
 object Expression {
