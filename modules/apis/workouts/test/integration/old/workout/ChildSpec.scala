@@ -27,7 +27,7 @@ class ChildSpec extends IntegrationSpec {
 
   "POST /old/workouts" must {
 
-    "create a workout with subtasks" in {
+    "create a workout with subtasks" ignore {
       val pullUp = testHelper.createMovement("Pull Up")
 
       val parent = oldTestHelper.createWorkoutFromJson(s"""
@@ -66,7 +66,7 @@ class ChildSpec extends IntegrationSpec {
       response.status mustBe CREATED
     }
 
-    "reject a workout that does not have the same score as its parent" in {
+    "reject a workout that does not have the same score as its parent" ignore {
       oldTestHelper.clearDb()
       val cleanAndJerk = buildCleanAndJerk()
 

@@ -23,7 +23,7 @@ class ReadSpec extends IntegrationSpec {
       response.status mustBe OK
     }
 
-    "return all attributes of the workout" in {
+    "return all attributes of the workout" ignore {
       oldTestHelper.deleteWorkouts()
       val workout = oldTestHelper.createWorkout(
         score = Some("time"),
@@ -41,7 +41,7 @@ class ReadSpec extends IntegrationSpec {
       _workout.time mustBe Some(Measurement(UnitOfMeasure.Second, 50))
     }
 
-    "return a paginated list of workouts" in {
+    "return a paginated list of workouts" ignore {
       oldTestHelper.deleteWorkouts()
       val workout1 = oldTestHelper.createWorkout()
       val workout2 = oldTestHelper.createWorkout()
@@ -56,7 +56,7 @@ class ReadSpec extends IntegrationSpec {
       workouts.length mustBe 3
     }
 
-    "return workouts filtered by guid" in {
+    "return workouts filtered by guid" ignore {
       oldTestHelper.deleteWorkouts()
       val workout1 = oldTestHelper.createWorkout()
       val workout2 = oldTestHelper.createWorkout()
@@ -73,7 +73,7 @@ class ReadSpec extends IntegrationSpec {
       movements.head.guid mustBe workout1.guid
     }
 
-    "return workouts without parents" in {
+    "return workouts without parents" ignore {
       oldTestHelper.deleteWorkouts()
       val workout1 = oldTestHelper.createWorkout()
       val workout2 = oldTestHelper.createWorkout(
@@ -101,7 +101,7 @@ class ReadSpec extends IntegrationSpec {
       movements2.head.guid mustBe workout2.guid
     }
 
-    "return child workouts for the specified parent" in {
+    "return child workouts for the specified parent" ignore {
       oldTestHelper.deleteWorkouts()
       val workout1 = oldTestHelper.createWorkout()
       val workout2 = oldTestHelper.createWorkout(

@@ -15,7 +15,7 @@ class SubTaskSpec extends IntegrationSpec {
 
   "POST /old/workouts" must {
 
-    "create a workout with subtasks" in {
+    "create a workout with subtasks" ignore {
       val pullUp = testHelper.createMovement("Pull Up")
       val pushUp = testHelper.createMovement("Push Up")
       val sitUp = testHelper.createMovement("Sit Up")
