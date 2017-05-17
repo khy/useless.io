@@ -1,10 +1,11 @@
-package dsl.workouts
+package dsl.workouts.validate
 
 import java.util.UUID
 import play.api.test.Helpers._
 import play.api.libs.json.JsPath
 
 import db.workouts.MovementRecord
+import dsl.workouts.compile._
 import models.workouts._
 import models.workouts.core
 import test.workouts.IntegrationSpec
@@ -95,7 +96,7 @@ class WorkoutValidatorSpec extends IntegrationSpec {
           movement = Some(movement.guid),
           constraints = Some(Seq(buildConstraint(
             variable = "Box Height",
-            value = ConstraintExpression.parse("30 in").right.get
+            value = ConstraintCompiler.compile("30 in").right.get
           )))
         )
       )

@@ -1,4 +1,4 @@
-package dsl.workouts
+package dsl.workouts.validate
 
 import play.api.libs.json.JsPath
 import play.api.data.validation.ValidationError

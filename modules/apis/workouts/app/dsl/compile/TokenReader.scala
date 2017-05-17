@@ -1,4 +1,4 @@
-package dsl.workouts
+package dsl.workouts.compile
 
 import scala.util.parsing.combinator._
 import scala.util.parsing.input._

@@ -13,7 +13,7 @@ import io.useless.exception.service._
 
 import db.workouts._
 import models.workouts._
-import dsl.workouts.MovementValidator
+import dsl.workouts.validate.MovementValidator
 
 class MovementsService(
   dbConfig: DatabaseConfig[Driver]

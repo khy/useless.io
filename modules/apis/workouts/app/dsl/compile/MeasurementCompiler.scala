@@ -1,4 +1,4 @@
-package dsl.workouts
+package dsl.workouts.compile
 
 import scala.util.Try
 import scala.util.parsing.combinator._
@@ -6,14 +6,12 @@ import scala.util.parsing.input._
 
 import models.workouts.core._
 
-class MeasurementExpression private (
-  val magnitude: BigDecimal,
-  val unitOfMeasure: UnitOfMeasure
-) extends Expression {
-  val code = s"${magnitude} ${unitOfMeasure.symbol}"
-}
+object MeasurementCompiler extends Compiler[MeasurementAst] {
 
-object MeasurementExpression extends ExpressionCompanion[MeasurementExpression] {
+  def compile(raw: String) = for {
+    tokens <- Lexer.lex(raw).right
+    ast <- Parser.parse(tokens).right
+  } yield ast
 
   sealed trait Token extends Positional
   case class MAGNITUDE(value: String) extends Token
@@ -32,8 +30,6 @@ object MeasurementExpression extends ExpressionCompanion[MeasurementExpression] 
     }
   }
 
-  case class Ast(magnitude: BigDecimal, unitOfMeasure: UnitOfMeasure) extends Positional
-
   object Parser extends Parsers {
     override type Elem = Token
 
@@ -45,11 +41,11 @@ object MeasurementExpression extends ExpressionCompanion[MeasurementExpression] 
       case UNIT(symbol) if UnitOfMeasure.values.map(_.symbol).contains(symbol) => UnitOfMeasure.values.find(_.symbol == symbol).get
     })
 
-    private val measurement = positioned(phrase(magnitude ~ unitOfMeasure) ^^ {
-      case magnitude ~ unitOfMeasure => Ast(magnitude, unitOfMeasure)
-    })
+    private val measurement = phrase(magnitude ~ unitOfMeasure) ^^ {
+      case magnitude ~ unitOfMeasure => new MeasurementAst(magnitude, unitOfMeasure)
+    }
 
-    def parse(tokens: Seq[Token]): Either[CompileError, Ast] = {
+    def parse(tokens: Seq[Token]): Either[CompileError, MeasurementAst] = {
       val reader = new TokenReader(tokens)
       measurement(reader) match {
         case NoSuccess(msg, next) => Left(CompileError(next.pos.column, msg))
@@ -57,12 +53,5 @@ object MeasurementExpression extends ExpressionCompanion[MeasurementExpression] 
       }
     }
   }
-
-  def parse(raw: String) = for {
-    tokens <- Lexer.lex(raw).right
-    ast <- Parser.parse(tokens).right
-  } yield new MeasurementExpression(ast.magnitude, ast.unitOfMeasure)
-
-  implicit val jsonFormat = Expression.jsonFormat(this)
 
 }
