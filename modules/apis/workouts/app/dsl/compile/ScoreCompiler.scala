@@ -19,6 +19,7 @@ object ScoreCompiler extends Compiler[ScoreAst] {
   case class OpenBracket() extends Token
   case class ClosedBracket() extends Token
   case class Index(number: Int) extends Token
+  case class Plus() extends Token
 
   private object Lexer extends RegexParsers {
     val field = positioned("[a-z]+".r ^^ { text => Field(text) })
@@ -26,7 +27,9 @@ object ScoreCompiler extends Compiler[ScoreAst] {
     val openBracket = positioned("""\[{1}""".r ^^ { _ => OpenBracket() })
     val closedBracket = positioned("""\]{1}""".r ^^ { _ => ClosedBracket() })
     val index = positioned("""\d+""".r ^^ { text => Index(text.toInt) })
-    val tokens = phrase(rep1(field | dot | openBracket | closedBracket | index))
+    val plus = positioned("""\+{1}""".r ^^ { text => Plus() })
+
+    val tokens = phrase(rep1(field | dot | openBracket | closedBracket | index | plus))
 
     def lex(code: String): Either[CompileError, Seq[Token]] = {
       parse(tokens, code) match {
@@ -52,7 +55,7 @@ object ScoreCompiler extends Compiler[ScoreAst] {
       rep(propAccess | indexAccess)
     }
 
-    def ref = phrase(field ~ accesses) ^^ { case field ~ accesses => {
+    def ref = (field ~ accesses) ^^ { case field ~ accesses => {
       def trans(base: String, accesses: Seq[Access]): ScoreAst.Ref = {
         accesses.headOption.map {
           case PropAccess(prop: String) => ScoreAst.ObjectRef(trans(base, accesses.tail), prop)
@@ -65,7 +68,9 @@ object ScoreCompiler extends Compiler[ScoreAst] {
       trans(field.text, accesses.reverse)
     }}
 
-    lazy val expression = ref ^^ { ref => new ScoreAst("hi", ref) }
+    def op = (ref ~ Plus() ~ ref) ^^ { case leftRef ~ plus ~ rightRef => ScoreAst.AdditionOp(leftRef, rightRef) }
+
+    lazy val expression = (op | ref) ^^ { case expression: Expression => new ScoreAst("hi", expression) }
 
     def parse(tokens: Seq[Token]): Either[CompileError, ScoreAst] = {
       val reader = new TokenReader(tokens)

@@ -20,4 +20,7 @@ object ScoreAst {
   case class ObjectRef(ref: Ref, property: String) extends Ref
   case class ArrayRef(ref: Ref, index: Int) extends Ref
 
+  trait Op extends Expression
+  case class AdditionOp(left: Ref, right: Ref) extends Op
+
 }

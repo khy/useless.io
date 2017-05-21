@@ -46,6 +46,11 @@ class ScoreCompilerSpec
       ref5.property mustBe "workout"
     }
 
+    "support a score that adds references" in {
+      val scoreAst = ScoreCompiler.compile("workout.task.tasks[0].reps + workout.task.tasks[3].reps").right.get
+      val expression = scoreAst.expression.asInstanceOf[AdditionOp]
+    }
+
   }
 
 }
