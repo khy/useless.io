@@ -4,21 +4,10 @@ import scala.util.Try
 import scala.util.parsing.combinator._
 import scala.util.parsing.input._
 
-import models.workouts.core.Ast
-
 class ArithmeticAst(
-  val expression: ArithmeticAst.Expression
-) extends Ast {
+  val expression: Ast.Expression
+) extends models.workouts.core.Ast {
   def code = "yo"
-}
-
-object ArithmeticAst {
-  sealed trait Expression
-  case class Number(value: BigDecimal) extends Expression
-  case class Add(left: Expression, right: Expression) extends Expression
-  case class Subtract(left: Expression, right: Expression) extends Expression
-  case class Multiply(left: Expression, right: Expression) extends Expression
-  case class Divide(left: Expression, right: Expression) extends Expression
 }
 
 object ArithmeticCompiler extends Compiler[ArithmeticAst] {
@@ -55,7 +44,7 @@ object ArithmeticCompiler extends Compiler[ArithmeticAst] {
     }
   }
 
-  import ArithmeticAst._
+  import Ast._
 
   object Parser extends Parsers {
     override type Elem = Token

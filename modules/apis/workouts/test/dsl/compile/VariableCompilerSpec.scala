@@ -7,42 +7,42 @@ class VariableCompilerSpec
   with MustMatchers
 {
 
-  import VariableAst._
+  import Ast._
 
   "VariableCompiler.compile" must {
 
     "support a score referencing the workout task's time" in {
-      val scoreAst = VariableCompiler.compile("workout.task.time").right.get
-      val ref = scoreAst.ref.asInstanceOf[ObjectRef]
+      val variableAst = VariableCompiler.compile("workout.task.time").right.get
+      val var1 = variableAst.variable.asInstanceOf[ObjectRef]
 
-      val ref1 = ref.asInstanceOf[ObjectRef]
-      ref1.property mustBe "time"
+      val var2 = var1.asInstanceOf[ObjectRef]
+      var2.property mustBe "time"
 
-      val ref2 = ref1.ref.asInstanceOf[ObjectRef]
-      ref2.property mustBe "task"
+      val var3 = var2.variable.asInstanceOf[ObjectRef]
+      var3.property mustBe "task"
 
-      val ref3 = ref2.ref.asInstanceOf[ImplicitRef]
-      ref3.property mustBe "workout"
+      val var4 = var3.variable.asInstanceOf[ImplicitRef]
+      var4.property mustBe "workout"
     }
 
     "support a score referencing one of the workout task's task's times" in {
       val scoreAst = VariableCompiler.compile("workout.task.tasks[0].reps").right.get
-      val ref = scoreAst.ref.asInstanceOf[ObjectRef]
+      val var1 = scoreAst.variable.asInstanceOf[ObjectRef]
 
-      val ref1 = ref.asInstanceOf[ObjectRef]
-      ref1.property mustBe "reps"
+      val var2 = var1.asInstanceOf[ObjectRef]
+      var2.property mustBe "reps"
 
-      val ref2 = ref1.ref.asInstanceOf[ArrayRef]
-      ref2.index mustBe 0
+      val var3 = var2.variable.asInstanceOf[ArrayRef]
+      var3.index mustBe 0
 
-      val ref3 = ref2.ref.asInstanceOf[ObjectRef]
-      ref3.property mustBe "tasks"
+      val var4 = var3.variable.asInstanceOf[ObjectRef]
+      var4.property mustBe "tasks"
 
-      val ref4 = ref3.ref.asInstanceOf[ObjectRef]
-      ref4.property mustBe "task"
+      val var5 = var4.variable.asInstanceOf[ObjectRef]
+      var5.property mustBe "task"
 
-      val ref5 = ref4.ref.asInstanceOf[ImplicitRef]
-      ref5.property mustBe "workout"
+      val var6 = var5.variable.asInstanceOf[ImplicitRef]
+      var6.property mustBe "workout"
     }
 
   }

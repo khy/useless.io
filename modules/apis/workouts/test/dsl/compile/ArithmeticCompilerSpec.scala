@@ -7,7 +7,7 @@ class ArithmeticCompilerSpec
   with MustMatchers
 {
 
-  import ArithmeticAst._
+  import Ast._
 
   "ArithmeticCompiler.compile" must {
 

@@ -4,19 +4,10 @@ import scala.util.Try
 import scala.util.parsing.combinator._
 import scala.util.parsing.input._
 
-import models.workouts.core.Ast
-
 class VariableAst(
-  val ref: VariableAst.Ref
-) extends Ast {
+  val variable: Ast.Variable
+) extends models.workouts.core.Ast {
   def code = "yo"
-}
-
-object VariableAst {
-  sealed trait Ref
-  case class ImplicitRef(property: String) extends Ref
-  case class ObjectRef(ref: Ref, property: String) extends Ref
-  case class ArrayRef(ref: Ref, index: Int) extends Ref
 }
 
 object VariableCompiler extends Compiler[VariableAst] {
@@ -50,7 +41,7 @@ object VariableCompiler extends Compiler[VariableAst] {
     }
   }
 
-  import VariableAst._
+  import Ast._
 
   object Parser extends Parsers {
     override type Elem = Token
@@ -59,7 +50,7 @@ object VariableCompiler extends Compiler[VariableAst] {
     val index = accept("index", { case index @ INDEX(_) => index })
 
     def ref = (field ~ rep(DOT() ~> field | OPEN_BRACKET() ~> index <~ CLOSED_BRACKET())) ^^ { case field ~ ops => {
-      def trans(base: String, ops: Seq[Token]): Ref = {
+      def trans(base: String, ops: Seq[Token]): Variable = {
         ops.headOption.map {
           case FIELD(text: String) => ObjectRef(trans(base, ops.tail), text)
           case INDEX(number: Int) => ArrayRef(trans(base, ops.tail), number)
@@ -70,7 +61,7 @@ object VariableCompiler extends Compiler[VariableAst] {
       }
 
       trans(field.text, ops.reverse)
-    }} ^^ { case ref: Ref => new VariableAst(ref) }
+    }} ^^ { case ref: Variable => new VariableAst(ref) }
 
     def parse(tokens: Seq[Token]): Either[CompileError, VariableAst] = {
       val reader = new TokenReader(tokens)
