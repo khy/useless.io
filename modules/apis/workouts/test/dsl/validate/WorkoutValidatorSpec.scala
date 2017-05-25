@@ -96,7 +96,7 @@ class WorkoutValidatorSpec extends IntegrationSpec {
           movement = Some(movement.guid),
           constraints = Some(Seq(buildConstraint(
             variable = "Box Height",
-            value = ConstraintCompiler.compile("30 in").right.get
+            value = core.Code("30", ArithmeticCompiler.compile("30").right.get)
           )))
         )
       )

@@ -13,7 +13,7 @@ class VariableCompilerSpec
 
     "support a score referencing the workout task's time" in {
       val variableAst = VariableCompiler.compile("workout.task.time").right.get
-      val var1 = variableAst.variable.asInstanceOf[ObjectRef]
+      val var1 = variableAst.asInstanceOf[ObjectRef]
 
       val var2 = var1.asInstanceOf[ObjectRef]
       var2.property mustBe "time"
@@ -26,8 +26,8 @@ class VariableCompilerSpec
     }
 
     "support a score referencing one of the workout task's task's times" in {
-      val scoreAst = VariableCompiler.compile("workout.task.tasks[0].reps").right.get
-      val var1 = scoreAst.variable.asInstanceOf[ObjectRef]
+      val variableAst = VariableCompiler.compile("workout.task.tasks[0].reps").right.get
+      val var1 = variableAst.asInstanceOf[ObjectRef]
 
       val var2 = var1.asInstanceOf[ObjectRef]
       var2.property mustBe "reps"

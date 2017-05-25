@@ -4,16 +4,10 @@ import scala.util.Try
 import scala.util.parsing.combinator._
 import scala.util.parsing.input._
 
-class VariableAst(
-  val variable: Ast.Variable
-) extends models.workouts.core.Ast {
-  def code = "yo"
-}
+object VariableCompiler extends Compiler[Ast.Variable] {
 
-object VariableCompiler extends Compiler[VariableAst] {
-
-  def compile(raw: String) = for {
-    tokens <- Lexer.lex(raw).right
+  def compile(source: String) = for {
+    tokens <- Lexer.lex(source).right
     ast <- Parser.parse(tokens).right
   } yield ast
 
@@ -49,23 +43,23 @@ object VariableCompiler extends Compiler[VariableAst] {
     val field = accept("field", { case field @ FIELD(_) => field })
     val index = accept("index", { case index @ INDEX(_) => index })
 
-    def ref = (field ~ rep(DOT() ~> field | OPEN_BRACKET() ~> index <~ CLOSED_BRACKET())) ^^ { case field ~ ops => {
-      def trans(base: String, ops: Seq[Token]): Variable = {
+    def variable = (field ~ rep(DOT() ~> field | OPEN_BRACKET() ~> index <~ CLOSED_BRACKET())) ^^ { case field ~ ops => {
+      def tree(base: String, ops: Seq[Token]): Variable = {
         ops.headOption.map {
-          case FIELD(text: String) => ObjectRef(trans(base, ops.tail), text)
-          case INDEX(number: Int) => ArrayRef(trans(base, ops.tail), number)
+          case FIELD(text: String) => ObjectRef(tree(base, ops.tail), text)
+          case INDEX(number: Int) => ArrayRef(tree(base, ops.tail), number)
           case token => throw new RuntimeException(s"Unexpected token: ${token}")
         }.getOrElse {
           ImplicitRef(base)
         }
       }
 
-      trans(field.text, ops.reverse)
-    }} ^^ { case ref: Variable => new VariableAst(ref) }
+      tree(field.text, ops.reverse)
+    }}
 
-    def parse(tokens: Seq[Token]): Either[CompileError, VariableAst] = {
+    def parse(tokens: Seq[Token]): Either[CompileError, Ast.Variable] = {
       val reader = new TokenReader(tokens)
-      ref(reader) match {
+      variable(reader) match {
         case NoSuccess(msg, next) => Left(CompileError(next.pos.column, msg))
         case Success(result, next) => Right(result)
       }

@@ -42,7 +42,7 @@ class TestHelper(
   }.right.get
 
   def buildAbstractTask(
-    `while`: core.WhileAst = WhileCompiler.compile("task.rep < 1").right.get,
+    `while`: core.Code[Ast.Boolean] = core.Code("task.rep < 1", BooleanCompiler.compile("task.rep < 1").right.get),
     movement: Option[UUID] = None,
     constraints: Option[Seq[core.Constraint]] = None,
     tasks: Option[Seq[core.AbstractTask]] = None
@@ -50,7 +50,7 @@ class TestHelper(
 
   def buildConstraint(
     variable: String = "Barbell Weight",
-    value: core.ConstraintAst = ConstraintCompiler.compile("workout.bodyWeight * 1.5").right.get
+    value: core.Code[Ast.Arithmetic] = core.Code("1.5", ArithmeticCompiler.compile("1.5").right.get)
   ) = core.Constraint(variable, value)
 
   def buildMovement(
@@ -60,7 +60,7 @@ class TestHelper(
 
   def buildWorkout(
     name: Option[String] = None,
-    score: Option[core.ScoreAst] = None,
+    score: Option[core.Code[Ast.Arithmetic]] = None,
     variables: Option[Seq[core.FreeVariable]] = None,
     task: core.AbstractTask = buildAbstractTask()
   ) = core.Workout(name, score, variables, task)

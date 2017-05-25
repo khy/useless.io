@@ -6,7 +6,7 @@ import scala.util.parsing.input._
 
 import models.workouts.core._
 
-object MeasurementCompiler extends Compiler[MeasurementAst] {
+object MeasurementCompiler extends Compiler[Ast.Measurement] {
 
   def compile(raw: String) = for {
     tokens <- Lexer.lex(raw).right
@@ -42,10 +42,10 @@ object MeasurementCompiler extends Compiler[MeasurementAst] {
     })
 
     private val measurement = phrase(magnitude ~ unitOfMeasure) ^^ {
-      case magnitude ~ unitOfMeasure => new MeasurementAst(magnitude, unitOfMeasure)
+      case magnitude ~ unitOfMeasure => Ast.Measurement(magnitude, unitOfMeasure)
     }
 
-    def parse(tokens: Seq[Token]): Either[CompileError, MeasurementAst] = {
+    def parse(tokens: Seq[Token]): Either[CompileError, Ast.Measurement] = {
       val reader = new TokenReader(tokens)
       measurement(reader) match {
         case NoSuccess(msg, next) => Left(CompileError(next.pos.column, msg))
