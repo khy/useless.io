@@ -53,8 +53,9 @@ class AbstractApplicationComponents(context: Context)
 
   lazy val workoutsRouter = new Routes(
     httpErrorHandler,
-    new old.WorkoutsController(authenticated, oldWorkoutsService),
     new MovementsController(authenticated, movementsService),
+    new WorkoutsController(authenticated, workoutsService),
+    new old.WorkoutsController(authenticated, oldWorkoutsService),
     new old.MeasuresController
   )
 

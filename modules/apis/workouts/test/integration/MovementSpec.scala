@@ -10,7 +10,7 @@ import io.useless.play.json.validation.ErrorsJson._
 import models.workouts._
 import test.workouts._
 
-class MovementsSpec extends IntegrationSpec {
+class MovementSpec extends IntegrationSpec {
 
   "POST /movements" must {
 
