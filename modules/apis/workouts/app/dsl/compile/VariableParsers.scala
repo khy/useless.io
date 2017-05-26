@@ -4,30 +4,9 @@ import scala.util.Try
 import scala.util.parsing.combinator._
 import scala.util.parsing.input._
 
-object VariableCompiler extends Compiler[Ast.Variable] {
+import Ast._
 
-  def compile(source: String) = for {
-    tokens <- Lexer.lex(source).right
-    ast <- Parser.parse(tokens).right
-  } yield ast
-
-  object Parser extends Parsers with VariableParsers {
-    def parse(tokens: Seq[Token]): Either[CompileError, Ast.Variable] = {
-      val reader = new TokenReader(tokens)
-      variable(reader) match {
-        case NoSuccess(msg, next) => Left(CompileError(next.pos.column, msg))
-        case Success(result, next) => Right(result)
-      }
-    }
-  }
-
-}
-
-trait VariableParsers {
-
-  self: Parsers =>
-
-  import Ast._
+trait VariableParsers { self: Parsers =>
 
   override type Elem = Token
 
