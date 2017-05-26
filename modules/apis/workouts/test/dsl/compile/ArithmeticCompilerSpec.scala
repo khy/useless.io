@@ -36,6 +36,20 @@ class ArithmeticCompilerSpec
       arithmetic mustBe Multiply(Add(Number(1), Number(2)), Add(Number(3), Number(4)))
     }
 
+    "accept simply a variable" in {
+      val arithmetic = ArithmeticCompiler.compile("workout.task.time").right.get
+      arithmetic mustBe ObjectRef(ObjectRef(ImplicitRef("workout"), "task"), "time")
+    }
+
+    "accept an arithmetic expression with variables" in {
+      val source = "workout.task.tasks[0].time + workout.task.tasks[2].time"
+      val arithmetic = ArithmeticCompiler.compile(source).right.get
+      arithmetic mustBe Add(
+        ObjectRef(ArrayRef(ObjectRef(ObjectRef(ImplicitRef("workout"), "task"), "tasks"), 0), "time"),
+        ObjectRef(ArrayRef(ObjectRef(ObjectRef(ImplicitRef("workout"), "task"), "tasks"), 2), "time")
+      )
+    }
+
   }
 
 }
