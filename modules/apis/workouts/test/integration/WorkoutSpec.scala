@@ -22,6 +22,54 @@ class WorkoutSpec extends IntegrationSpec {
       response.status mustBe UNAUTHORIZED
     }
 
+    "reject a workout that does not have a task" in {
+      val response = await {
+        request("/workouts").post(Json.parse("""
+          {
+            "name": "Rest"
+          }
+        """))
+      }
+
+      response.status mustBe BAD_REQUEST
+    }
+
+    "reject a workout with an invalid movement GUID" in {
+      val invalidMovementGuid = UUID.randomUUID
+      val response = await {
+        request("/workouts").post(Json.parse(s"""
+          {
+            "score": "workout.task.time",
+            "task": {
+              "while": "rep < 10",
+              "movement": "$invalidMovementGuid"
+            }
+          }
+        """))
+      }
+
+      response.status mustBe BAD_REQUEST
+      val error = response.json.as[Seq[Errors]].head
+      error.key mustBe Some("/task/movement")
+      error.messages.head.key mustBe "unknown"
+    }
+
+    "create a valid workout" in {
+      val pullUp = testHelper.createMovement("Pull Up")
+
+      val response = await { request("/workouts").post(Json.parse(s"""
+        {
+          "score": "workout.task.time",
+          "task": {
+            "while": "rep < 10",
+            "movement": "${pullUp.guid}"
+          }
+        }
+      """)) }
+
+      response.status mustBe CREATED
+    }
+
   }
 
 }

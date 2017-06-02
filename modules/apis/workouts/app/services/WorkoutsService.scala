@@ -13,9 +13,11 @@ import io.useless.exception.service._
 
 import db.workouts._
 import models.workouts._
+import dsl.workouts.validate.WorkoutValidator
 
 class WorkoutsService(
-  dbConfig: DatabaseConfig[Driver]
+  dbConfig: DatabaseConfig[Driver],
+  movementsService: MovementsService
 ) {
 
   import dbConfig.db
@@ -47,7 +49,52 @@ class WorkoutsService(
     workout: core.Workout,
     accessToken: AccessToken
   )(implicit ec: ExecutionContext): Future[Either[Seq[(JsPath, Seq[ValidationError])], WorkoutRecord]] = {
-    Future.successful(Left(Nil))
+    val movementUuids = getTasks(workout).map(_.movement).flatten
+
+    val futReferencedMovements = db.run(Movements.filter(_.guid inSet movementUuids).result).flatMap { records =>
+      movementsService.db2api(records)
+    }
+
+    for {
+      referencedMovements <- futReferencedMovements
+      result <- {
+        val errors = WorkoutValidator.validateWorkout(workout, referencedMovements)
+
+        if (errors.length > 0) {
+          Future.successful(Left(errors))
+        } else {
+          val projection = Workouts.map { r =>
+            (r.guid, r.schemaVersionMajor, r.schemaVersionMinor, r.parentGuids,
+             r.json, r.createdByAccount, r.createdByAccessToken)
+          }.returning(Workouts.map(_.guid))
+
+          val insert = projection += ((UUID.randomUUID, 1, 0, None,
+            Json.toJson(workout), accessToken.resourceOwner.guid, accessToken.guid))
+
+          db.run(insert).flatMap { guid =>
+            db.run(Workouts.filter(_.guid === guid).result).map { workouts =>
+              workouts.headOption.map { workout =>
+                Right(workout)
+              }.getOrElse {
+                throw new ResourceNotFound("workout", guid)
+              }
+            }
+          }
+        }
+      }
+    } yield result
+  }
+
+  def getTasks(workout: core.Workout) = {
+    def _getTasks(tasks: Seq[core.AbstractTask]): Seq[core.AbstractTask] = {
+      if (!tasks.isEmpty) {
+        tasks ++ _getTasks(tasks.flatMap(_.tasks.getOrElse(Nil)))
+      } else {
+        Nil
+      }
+    }
+
+    _getTasks(Seq(workout.task))
   }
 
 }
